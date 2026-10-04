@@ -69,6 +69,7 @@ export default function DoctorDetailPage() {
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
   const [showLoginModal, setShowLoginModal] = useState<boolean>(false);
 
+  
   // เช็กสถานะการล็อกอินเมื่อโหลดหน้าเว็บ
   useEffect(() => {
     const storedUser = localStorage.getItem('user');

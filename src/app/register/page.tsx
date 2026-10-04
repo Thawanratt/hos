@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 
 export default function RegisterPage() {
@@ -70,14 +71,21 @@ export default function RegisterPage() {
       />
 
       <div className="relative z-10 w-full max-w-md space-y-6 text-center">
+        {/* HEADER SECTION */}
         <div className="space-y-2">
-          <div className="mx-auto w-16 h-16 rounded-full bg-gradient-to-tr from-[#d4af37] to-[#f3e5ab] flex items-center justify-center shadow-sm">
-            <span className="text-[#1a2b6d] font-bold text-xl tracking-wider">N+</span>
+          {/* รูปโลโก้โรงพยาบาลแทนวงกลม N+ เดิม */}
+          <div className="flex justify-center">
+            <Image 
+              src="/lll.png" 
+              alt="NOVARIA Logo" 
+              width={160} 
+              height={160} 
+              className="h-24 w-auto object-contain"
+              priority
+            />
           </div>
-          <p className="text-[10px] tracking-widest text-[#b8972e] font-bold uppercase">
-            NOVARIA HOSPITAL
-          </p>
-          <h1 className="text-2xl font-bold text-[#1a2b6d] pt-2">สมัครสมาชิก</h1>
+          
+          <h1 className="text-2xl font-bold text-[#1a2b6d]">สมัครสมาชิก</h1>
           <p className="text-xs text-gray-500">สร้างบัญชีใหม่เพื่อใช้งานบริการของเรา</p>
         </div>
 

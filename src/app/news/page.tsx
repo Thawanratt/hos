@@ -1,241 +1,467 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 
+interface NewsItem {
+  id: number;
+  title: string;
+  content: string;
+  category: string;
+  imageUrl?: string;
+  createdAt: string;
+}
+
+interface ToastState {
+  show: boolean;
+  message: string;
+  type: 'success' | 'error' | 'info';
+}
+
+interface ConfirmState {
+  show: boolean;
+  message: string;
+  onConfirm: () => void;
+}
+
 export default function NewsPage() {
+  const [newsList, setNewsList] = useState<NewsItem[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>('ทั้งหมด');
+  const [loading, setLoading] = useState<boolean>(true);
 
-  // ข้อมูลบทความหลัก (ฝั่งซ้าย)
-  const articles = [
-    {
-      id: 1,
-      title: 'หมออุ้มรัก',
-      date: 'Monday 05, September 2026',
-      description:
-        'สื่อถึงหน้าที่ของหมอทำคลอดที่คอยประคบประคอง "ความรัก" ของพ่อแม่ตั้งแต่ในครรภ์ จนถึงวินาทีที่อุ้มเด็กออกมาลืมตาดูโลก ฟังแล้วรู้สึกปลอดภัย อบอุ่น และเต็มไปด้วยความใส่ใจ',
-      imgPlaceholder: '[ รูปหมออุ้มรับรางวัล / มอบโล่ ]',
-      category: 'ทางการแพทย์',
-    },
-    {
-      id: 2,
-      title: '"ไม่ต้องเสียเวลาเดินทางหลายที่ ไม่ต้องรอคอยอย่างกังวลใจ"',
-      date: 'Monday 15, September 2026',
-      description:
-        'มาร่วมสร้างเกราะป้องกันที่แข็งแกร่งให้ร่างกายของคุณวันนี้กับโปรแกรมตรวจสุขภาพแบบครบวงจรที่ออกแบบมาเพื่อคุณโดยเฉพาะ เซ็ตรายละเอียดแม่นยำและรวดเร็วตรวจครบ...จบในจุดเดียวเพื่อให้คุณได้ใช้ชีวิตได้อย่างเต็มที่และมั่นใจ โดยไม่ต้องกังวลเรื่องปัญหาสุขภาพที่ซ่อนอยู่ เพราะการป้องกันย่อมดีกว่าการรักษาเสมอ',
-      imgPlaceholder: '[ รูปแพทย์ตรวจร่างกายคนไข้ ]',
-      category: 'การดูแลสุขภาพ',
-    },
-    {
-      id: 3,
-      title: 'การตรวจสุขภาพไม่ใช่เรื่องของคนป่วย แต่คือจุดเริ่มต้นของคนรักตัวเอง',
-      date: 'Monday 05, September 2026',
-      description:
-        'อย่ารอให้ร่างกายส่งสัญญาณเตือนจนสายเกินไปให้เราได้ร่วมเป็นส่วนหนึ่งในการวางแผนสุขภาพที่ดีระยะยาวให้กับคุณด้วยบริการตรวจเช็กสุขภาพอย่างละเอียดครบครันตั้งแต่งการคัดกรองเบื้องต้นไปจนถึงการวิเคราะห์เชิงลึกตรวจครบจบที่เดียวพร้อมรับคำแนะนำตรงจากแพทย์เฉพาะทางเพื่อให้คุณมีพลังกายที่พร้อมสำหรับทุกเป้าหมายในอนาคต',
-      imgPlaceholder: '[ รูปทีมแพทย์ในเคาน์เตอร์โรงพยาบาล ]',
-      category: 'การดูแลสุขภาพ',
-    },
-  ];
+  // States สำหรับสิทธิ์ ADMIN และฟอร์มจัดการข่าวสาร
+  const [isAdmin, setIsAdmin] = useState<boolean>(false);
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [newsTitle, setNewsTitle] = useState('');
+  const [newsCategory, setNewsCategory] = useState('ข่าวประชาสัมพันธ์');
+  const [newsContent, setNewsContent] = useState('');
+  const [newsImageUrl, setNewsImageUrl] = useState('');
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
-  // ข้อมูลโพสต์ล่าสุด (ฝั่งขวา)
-  const recentPosts = [
-    { title: 'หมอสุดหล่อ', date: 'Monday 05, September 2021', img: '[ รูปหมอ 1 ]' },
-    { title: 'หมอสุดสวย', date: 'Monday 15, September 2021', img: '[ รูปหมอ 2 ]' },
-    { title: 'หมอสุดน่ารัก', date: 'Monday 25, September 2021', img: '[ รูปหมอ 3 ]' },
-    { title: 'ทีมแพทย์จบนอก', date: 'Monday 15, September 2021', img: '[ รูปทีมแพทย์ ]' },
-    { title: 'ดูแลทุกระดับประทับใจ', date: 'Monday 05, September 2021', img: '[ รูปดูแลคนไข้ ]' },
-    { title: 'สะอาด บริการดี', date: 'Monday 25, September 2021', img: '[ รูปอาคาร รพ. ]' },
-  ];
+  // Custom UI Notifications
+  const [toast, setToast] = useState<ToastState>({ show: false, message: '', type: 'info' });
+  const [confirmModal, setConfirmModal] = useState<ConfirmState>({ show: false, message: '', onConfirm: () => {} });
 
-  // รายการหมวดหมู่พร้อมจำนวน
-  const categories = [
-    { name: 'การผ่าตัด', count: 3 },
-    { name: 'การดูแลสุขภาพ', count: 5 },
-    { name: 'ทางการแพทย์', count: 8 },
-    { name: 'other', count: 10 },
-  ];
+  const showToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
+    setToast({ show: true, message, type });
+    setTimeout(() => {
+      setToast({ show: false, message: '', type: 'info' });
+    }, 3500);
+  };
 
-  const filteredArticles =
+  // 1. เช็กสิทธิ์ Admin
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const storedUser = localStorage.getItem('user');
+      if (storedUser) {
+        try {
+          const user = JSON.parse(storedUser);
+          if (user.role === 'ADMIN' || user.email === 'admin@novalia.com') {
+            setIsAdmin(true);
+          }
+        } catch (e) {
+          setIsAdmin(false);
+        }
+      }
+    }
+  }, []);
+
+  // 2. ดึงข้อมูลข่าวสาร
+  const fetchNews = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch('/api/admin');
+      const result = await res.json();
+      if (result.success) {
+        const fetchedNews = result.data?.news || result.data || [];
+        setNewsList(fetchedNews);
+      }
+    } catch (error) {
+      console.error('Failed to fetch news:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchNews();
+  }, []);
+
+  // 3. ฟังก์ชันอัปโหลดรูปภาพ
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadingImage(true);
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await res.json();
+      if (data.success) {
+        setNewsImageUrl(data.imageUrl);
+        showToast('อัปโหลดรูปภาพสำเร็จ', 'success');
+      } else {
+        showToast(data.message || 'อัปโหลดรูปภาพไม่สำเร็จ', 'error');
+      }
+    } catch (err) {
+      showToast('เกิดข้อผิดพลาดในการอัปโหลดรูปภาพ', 'error');
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
+  // 4. บันทึกข้อมูล
+  const handleSubmitNews = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newsTitle || !newsContent) {
+      return showToast('กรุณากรอกหัวข้อและเนื้อหาข่าวให้ครบถ้วน', 'error');
+    }
+
+    setSubmitting(true);
+    try {
+      const method = editingId ? 'PATCH' : 'POST';
+      const bodyPayload = editingId 
+        ? { newsId: editingId, title: newsTitle, category: newsCategory, content: newsContent, imageUrl: newsImageUrl }
+        : { title: newsTitle, category: newsCategory, content: newsContent, imageUrl: newsImageUrl };
+
+      const res = await fetch('/api/admin', {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(bodyPayload),
+      });
+
+      const result = await res.json();
+      if (result.success) {
+        showToast(editingId ? 'บันทึกการแก้ไขเรียบร้อย' : 'เผยแพร่ข่าวสารเรียบร้อย', 'success');
+        resetForm();
+        fetchNews();
+      } else {
+        showToast(result.message || 'ดำเนินการไม่สำเร็จ', 'error');
+      }
+    } catch (err) {
+      showToast('เกิดข้อผิดพลาดในการบันทึกข้อมูล', 'error');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // 5. ลบข่าวสาร
+  const handleDeleteNews = (newsId: number) => {
+    setConfirmModal({
+      show: true,
+      message: 'คุณต้องการลบข่าวสารนี้ออกจากระบบใช่หรือไม่?',
+      onConfirm: async () => {
+        setConfirmModal((prev) => ({ ...prev, show: false }));
+        try {
+          const res = await fetch(`/api/admin?newsId=${newsId}`, {
+            method: 'DELETE',
+          });
+          const result = await res.json();
+          if (result.success) {
+            showToast('ลบข่าวสารเรียบร้อยแล้ว', 'success');
+            fetchNews();
+          } else {
+            showToast(result.message || 'ลบไม่สำเร็จ', 'error');
+          }
+        } catch (err) {
+          showToast('เกิดข้อผิดพลาดในการลบข่าวสาร', 'error');
+        }
+      },
+    });
+  };
+
+  // 6. กดปุ่มแก้ไขข่าว
+  const handleEditClick = (article: NewsItem) => {
+    setEditingId(article.id);
+    setNewsTitle(article.title);
+    setNewsCategory(article.category || 'ข่าวประชาสัมพันธ์');
+    setNewsContent(article.content);
+    setNewsImageUrl(article.imageUrl || '');
+    window.scrollTo({ top: 150, behavior: 'smooth' });
+  };
+
+  const resetForm = () => {
+    setEditingId(null);
+    setNewsTitle('');
+    setNewsCategory('ข่าวประชาสัมพันธ์');
+    setNewsContent('');
+    setNewsImageUrl('');
+  };
+
+  const categoriesList = ['ทั้งหมด', 'ข่าวประชาสัมพันธ์', 'วิชาการแพทย์', 'เกร็ดความรู้สุขภาพ'];
+
+  const filteredNews =
     selectedCategory === 'ทั้งหมด'
-      ? articles
-      : articles.filter((item) => item.category === selectedCategory);
+      ? newsList
+      : newsList.filter((item) => item.category === selectedCategory);
 
   return (
-    <div className="bg-white pb-20 font-sans text-gray-700">
-      {/* 1. TOP BANNER SECTION */}
-      <section className="relative w-full h-[260px] md:h-[320px] bg-sky-50 overflow-hidden flex items-center mb-12">
-        <div className="absolute right-0 top-0 bottom-0 w-full md:w-3/4 bg-[#e8f1fd] flex items-center justify-center text-slate-400 font-bold text-xl">
-          [ Banner รวมทีมแพทย์ Novaria ]
+    <div className="bg-[#f8fafc] min-h-screen pb-20 font-sans text-slate-800 space-y-8 relative">
+      
+      {/* TOAST NOTIFICATION */}
+      {toast.show && (
+        <div className="fixed bottom-6 right-6 z-50 transition-all duration-300">
+          <div
+            className={`px-4 py-2.5 rounded-xl shadow-xl border text-xs font-semibold flex items-center gap-3 ${
+              toast.type === 'success'
+                ? 'bg-slate-900 text-white border-slate-800'
+                : toast.type === 'error'
+                ? 'bg-red-900 text-white border-red-800'
+                : 'bg-slate-800 text-white border-slate-700'
+            }`}
+          >
+            <span className={`w-2 h-2 rounded-full ${toast.type === 'success' ? 'bg-emerald-400' : 'bg-red-400'}`} />
+            <span>{toast.message}</span>
+            <button onClick={() => setToast({ show: false, message: '', type: 'info' })} className="ml-2 text-slate-400 hover:text-white">&times;</button>
+          </div>
         </div>
-        <div className="max-w-7xl mx-auto px-8 w-full z-10">
-          <p className="text-xs text-gray-500 font-medium mb-1">
-            <Link href="/" className="hover:underline">หน้าแรก</Link> / ข่าวสาร
-          </p>
-          <h1 className="text-4xl md:text-5xl font-bold text-[#1a2b6d]">
-            ข่าวสาร
-          </h1>
-        </div>
-      </section>
+      )}
 
-      {/* 2. MAIN CONTENT LAYOUT (LEFT: ARTICLES, RIGHT: SIDEBAR) */}
-      <div className="max-w-6xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-3 gap-10">
-        
-        {/* LEFT COLUMN: ARTICLES LIST */}
-        <main className="lg:col-span-2 space-y-16">
-          {filteredArticles.map((article) => (
-            <article key={article.id} className="space-y-4">
-              {/* Image Container */}
-              <div className="w-full h-[320px] md:h-[380px] bg-slate-200 rounded-2xl overflow-hidden flex items-center justify-center text-slate-400 font-medium text-sm">
-                {article.imgPlaceholder}
-              </div>
-
-              {/* Date */}
-              <div className="flex items-center space-x-2 text-xs text-slate-500 font-medium pt-2">
-                <svg className="w-4 h-4 text-[#c5a035]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-                <span>{article.date}</span>
-              </div>
-
-              {/* Title */}
-              <h2 className="text-2xl font-bold text-[#1a2b6d] leading-snug">
-                {article.title}
-              </h2>
-
-              {/* Description */}
-              <p className="text-xs md:text-sm text-gray-600 leading-relaxed">
-                {article.description}
-              </p>
-
-              {/* Read More Button */}
-              <div className="pt-2">
-                <button className="bg-[#b2cdfc] hover:bg-sky-300 text-[#1a2b6d] px-5 py-2.5 rounded-full text-xs font-semibold transition flex items-center space-x-2">
-                  <span>อ่านเพิ่มเติม</span>
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                  </svg>
-                </button>
-              </div>
-            </article>
-          ))}
-        </main>
-
-        {/* RIGHT COLUMN: SIDEBAR */}
-        <aside className="space-y-8">
-          
-          {/* RECENT POSTS WIDGET */}
-          <div className="bg-[#f8fbff] p-6 rounded-2xl border border-slate-100 space-y-6">
-            <h3 className="text-xl font-bold text-[#1a2b6d]">โพสต์ล่าสุด</h3>
-            
-            <div className="space-y-4">
-              {recentPosts.map((post, idx) => (
-                <div key={idx} className="flex items-center space-x-3 group cursor-pointer">
-                  <div className="w-14 h-14 bg-slate-200 rounded-xl flex-shrink-0 flex items-center justify-center text-[9px] text-slate-400 font-medium">
-                    {post.img}
-                  </div>
-                  <div className="space-y-0.5">
-                    <p className="text-[10px] text-sky-500 font-medium">{post.date}</p>
-                    <h4 className="text-xs font-bold text-gray-800 group-hover:text-blue-700 transition">
-                      {post.title}
-                    </h4>
-                  </div>
-                </div>
-              ))}
+      {/* CONFIRM MODAL */}
+      {confirmModal.show && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+            <h3 className="font-bold text-slate-900 text-sm">ยืนยันการทำรายการ</h3>
+            <p className="text-xs text-slate-600 leading-relaxed">{confirmModal.message}</p>
+            <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+              <button onClick={() => setConfirmModal((prev) => ({ ...prev, show: false }))} className="px-3.5 py-1.5 rounded-lg text-xs font-medium border border-slate-300 text-slate-600 hover:bg-slate-50">ยกเลิก</button>
+              <button onClick={confirmModal.onConfirm} className="px-3.5 py-1.5 rounded-lg text-xs bg-red-600 text-white font-semibold hover:bg-red-700">ยืนยันการลบ</button>
             </div>
           </div>
+        </div>
+      )}
 
-          {/* CATEGORIES WIDGET */}
-          <div className="bg-[#f8fbff] p-6 rounded-2xl border border-slate-100 space-y-4">
-            <h3 className="text-xl font-bold text-[#1a2b6d]">หมวดหมู่</h3>
+      {/* HEADER BANNER */}
+      <section className="bg-white border-b border-slate-200/80 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 md:px-8 py-6">
+          <div className="space-y-2">
+            <nav className="text-[11px] text-slate-400 font-medium tracking-wider uppercase flex items-center gap-1.5">
+              <Link href="/" className="hover:text-[#1a2b6d] transition-colors">หน้าแรก</Link>
+              <span className="text-slate-300">/</span>
+              <span className="text-slate-600 font-semibold">ข่าวสารและบทความ</span>
+            </nav>
 
-            <div className="space-y-2">
-              <button
-                onClick={() => setSelectedCategory('ทั้งหมด')}
-                className={`w-full flex justify-between items-center py-2 px-3 rounded-xl text-xs font-medium transition ${
-                  selectedCategory === 'ทั้งหมด'
-                    ? 'bg-[#1a2b6d] text-white'
-                    : 'text-gray-600 hover:bg-slate-100'
-                }`}
-              >
-                <span>ทั้งหมด</span>
-              </button>
+            <div className="pl-3.5 border-l-4 border-[#1a2b6d] py-0.5 flex flex-col md:flex-row md:items-end justify-between gap-3">
+              <div>
+                <h1 className="text-2xl font-light text-slate-900 tracking-tight">
+                  ข่าวสารและ <span className="font-semibold text-[#1a2b6d]">บทความทางการแพทย์</span>
+                </h1>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  ติดตามอัปเดตความเคลื่อนไหว และความรู้สุขภาพจากโรงพยาบาลโนวาเลีย
+                </p>
+              </div>
 
-              {categories.map((cat, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => setSelectedCategory(cat.name)}
-                  className={`w-full flex justify-between items-center py-2.5 px-3 rounded-xl text-xs font-medium transition ${
-                    selectedCategory === cat.name
-                      ? 'bg-[#1a2b6d] text-white'
-                      : 'text-gray-600 hover:bg-slate-100'
-                  }`}
-                >
-                  <span>{cat.name}</span>
-                  <span
-                    className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold ${
-                      selectedCategory === cat.name
-                        ? 'bg-white text-[#1a2b6d]'
-                        : 'bg-[#c5a035] text-white'
+              {/* FILTER BUTTONS (แนวนอน ให้เลือกหมวดหมู่ได้เร็ว) */}
+              <div className="flex flex-wrap gap-1.5 pt-2 md:pt-0">
+                {categoriesList.map((cat) => (
+                  <button
+                    key={cat}
+                    onClick={() => setSelectedCategory(cat)}
+                    className={`px-3 py-1 rounded-full text-xs font-medium transition cursor-pointer ${
+                      selectedCategory === cat
+                        ? 'bg-[#1a2b6d] text-white shadow-sm'
+                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                     }`}
                   >
-                    {cat.count}
-                  </span>
-                </button>
-              ))}
+                    {cat}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
-
-        </aside>
-      </div>
-
-      {/* 3. CONTACT CARDS (ส่วนการ์ดติดต่อก่อนจบหน้า) */}
-      <section className="max-w-6xl mx-auto px-6 mt-24 text-center space-y-8">
-        <h2 className="text-2xl font-bold text-[#1a2b6d]">ติดต่อเรา</h2>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="bg-[#b2cdfc]/40 p-6 rounded-2xl text-[#1a2b6d] text-center space-y-2 border border-blue-100">
-            <div className="w-10 h-10 mx-auto rounded-full bg-white flex items-center justify-center text-[#1a2b6d] shadow-sm">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-              </svg>
-            </div>
-            <h4 className="font-bold text-sm pt-1">ฉุกเฉิน</h4>
-            <p className="text-xs font-semibold">02-165-5555</p>
-          </div>
-
-          <div className="bg-[#1a2b6d] p-6 rounded-2xl text-white text-center space-y-2 shadow-md">
-            <div className="w-10 h-10 mx-auto rounded-full bg-white/10 flex items-center justify-center text-amber-400">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L12 22.343l-5.657-5.657a8 8 0 1111.314 0z" />
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
-            </div>
-            <h4 className="font-bold text-sm pt-1">ที่ตั้ง</h4>
-            <p className="text-xs text-slate-200">225 นครปฐม กำแพงแสน</p>
-          </div>
-
-          <div className="bg-[#b2cdfc]/40 p-6 rounded-2xl text-[#1a2b6d] text-center space-y-2 border border-blue-100">
-            <div className="w-10 h-10 mx-auto rounded-full bg-white flex items-center justify-center text-[#1a2b6d] shadow-sm">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-              </svg>
-            </div>
-            <h4 className="font-bold text-sm pt-1">Email</h4>
-            <p className="text-xs font-semibold">novaria@gmail.com</p>
-          </div>
-
-          <div className="bg-[#b2cdfc]/40 p-6 rounded-2xl text-[#1a2b6d] text-center space-y-2 border border-blue-100">
-            <div className="w-10 h-10 mx-auto rounded-full bg-white flex items-center justify-center text-[#1a2b6d] shadow-sm">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-            <h4 className="font-bold text-sm pt-1">เวลาทำการ</h4>
-            <p className="text-xs font-semibold">Mon-Sat 09:00-23:00</p>
           </div>
         </div>
       </section>
 
+      {/* ADMIN CONTROLS PANEL */}
+      {isAdmin && (
+        <div className="max-w-7xl mx-auto px-4 md:px-8">
+          <div className="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-sm space-y-4">
+            <div className="flex justify-between items-center border-b border-slate-100 pb-2.5">
+              <h2 className="font-bold text-[#1a2b6d] text-sm">
+                {editingId ? 'แก้ไขข้อมูลข่าวสาร' : 'จัดการและเพิ่มข่าวสารใหม่'}
+              </h2>
+              {editingId && (
+                <button onClick={resetForm} className="text-xs font-semibold text-slate-500 hover:text-slate-800">
+                  ยกเลิกการแก้ไข
+                </button>
+              )}
+            </div>
+
+            <form onSubmit={handleSubmitNews} className="space-y-3 text-xs">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div className="md:col-span-2 space-y-1">
+                  <label className="font-semibold text-slate-700">หัวข้อข่าวสาร</label>
+                  <input
+                    type="text"
+                    value={newsTitle}
+                    onChange={(e) => setNewsTitle(e.target.value)}
+                    placeholder="หัวข้อข่าวสาร..."
+                    className="w-full p-2 rounded-lg border border-slate-300 focus:outline-none focus:border-[#1a2b6d]"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="font-semibold text-slate-700">หมวดหมู่</label>
+                  <select
+                    value={newsCategory}
+                    onChange={(e) => setNewsCategory(e.target.value)}
+                    className="w-full p-2 rounded-lg border border-slate-300 focus:outline-none focus:border-[#1a2b6d]"
+                  >
+                    <option value="ข่าวประชาสัมพันธ์">ข่าวประชาสัมพันธ์</option>
+                    <option value="วิชาการแพทย์">วิชาการแพทย์</option>
+                    <option value="เกร็ดความรู้สุขภาพ">เกร็ดความรู้สุขภาพ</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 border-t border-slate-100 pt-3">
+                <div className="space-y-1">
+                  <label className="font-semibold text-slate-700">1. อัปโหลดรูปภาพ</label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileUpload}
+                    className="block w-full text-[11px] text-slate-500 border border-slate-300 rounded-lg file:mr-2 file:py-1.5 file:px-2.5 file:border-0 file:text-[11px] file:bg-[#1a2b6d] file:text-white"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="font-semibold text-slate-700">2. หรือระบุ URL รูปภาพ</label>
+                  <input
+                    type="text"
+                    value={newsImageUrl}
+                    onChange={(e) => setNewsImageUrl(e.target.value)}
+                    placeholder="/images/5.jpg หรือ https://..."
+                    className="w-full p-2 rounded-lg border border-slate-300 focus:outline-none focus:border-[#1a2b6d]"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1 border-t border-slate-100 pt-3">
+                <label className="font-semibold text-slate-700">เนื้อหาข่าวสาร</label>
+                <textarea
+                  rows={3}
+                  value={newsContent}
+                  onChange={(e) => setNewsContent(e.target.value)}
+                  placeholder="รายละเอียด..."
+                  className="w-full p-2 rounded-lg border border-slate-300 focus:outline-none focus:border-[#1a2b6d]"
+                />
+              </div>
+
+              <div className="flex gap-2 pt-1">
+                <button
+                  type="submit"
+                  disabled={submitting || uploadingImage}
+                  className="bg-[#1a2b6d] text-white font-semibold px-4 py-2 rounded-lg hover:bg-[#0f1a42] transition text-xs"
+                >
+                  {submitting ? 'กำลังบันทึก...' : editingId ? 'บันทึกการแก้ไข' : 'เผยแพร่ข่าวสาร'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MAIN CONTENT GRID (GRID 3-4 COLS แบบการ์ดขนาดกลางลงมา) */}
+      <main className="max-w-7xl mx-auto px-4 md:px-8 space-y-4">
+        
+        <div className="flex justify-between items-center text-xs text-slate-500 font-medium px-1">
+          <span>หมวดหมู่: <strong className="text-slate-800">{selectedCategory}</strong></span>
+          <span>พบ <strong className="text-[#1a2b6d]">{filteredNews.length}</strong> รายการ</span>
+        </div>
+
+        {loading ? (
+          <div className="flex flex-col items-center justify-center py-20 bg-white rounded-2xl border border-slate-200/80">
+            <div className="w-7 h-7 border-2 border-[#1a2b6d] border-t-transparent rounded-full animate-spin"></div>
+            <p className="text-xs text-slate-400 mt-2">กำลังโหลดข่าวสาร...</p>
+          </div>
+        ) : filteredNews.length > 0 ? (
+          /* GRID LAYOUT: 1 Col (Mobile), 2 Cols (Tablet), 3-4 Cols (Desktop) */
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+            {filteredNews.map((article) => (
+              <article 
+                key={article.id} 
+                className="bg-white rounded-xl border border-slate-200/80 overflow-hidden shadow-sm hover:shadow-md hover:border-slate-300 transition duration-300 flex flex-col justify-between group"
+              >
+                <div>
+                  {/* Compact Image Container (อัตราส่วน 16:9 ขนาดพอดี) */}
+                  <div className="w-full h-40 bg-slate-100 overflow-hidden relative">
+                    {article.imageUrl ? (
+                      <img 
+                        src={article.imageUrl} 
+                        alt={article.title} 
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" 
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-slate-300 text-[11px]">
+                        [ ไม่มีรูปภาพ ]
+                      </div>
+                    )}
+                    <span className="absolute top-2 left-2 bg-slate-900/70 backdrop-blur-md text-white text-[10px] px-2 py-0.5 rounded-md font-medium">
+                      {article.category || 'ข่าวทั่วไป'}
+                    </span>
+                  </div>
+
+                  {/* Body Content */}
+                  <div className="p-3.5 space-y-2">
+                    <p className="text-[10px] text-slate-400 font-medium flex items-center gap-1">
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                      {new Date(article.createdAt).toLocaleDateString('th-TH')}
+                    </p>
+
+                    <h3 className="text-xs font-bold text-slate-800 group-hover:text-[#1a2b6d] transition-colors leading-snug line-clamp-2">
+                      {article.title}
+                    </h3>
+
+                    <p className="text-[11px] text-slate-500 leading-relaxed line-clamp-2 font-normal">
+                      {article.content}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Footer Action */}
+                <div className="p-3.5 pt-0 border-t border-slate-50 mt-2 flex items-center justify-between">
+                  {isAdmin && (
+                    <div className="flex gap-1.5">
+                      <button
+                        onClick={() => handleEditClick(article)}
+                        className="text-[10px] font-semibold text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 px-2 py-1 rounded"
+                      >
+                        แก้ไข
+                      </button>
+                      <button
+                        onClick={() => handleDeleteNews(article.id)}
+                        className="text-[10px] font-semibold text-red-600 hover:text-white bg-red-50 hover:bg-red-600 px-2 py-1 rounded transition"
+                      >
+                        ลบ
+                      </button>
+                    </div>
+                  )}
+
+                  <Link href={`/news/${article.id}`} className="ml-auto">
+                    <span className="text-[11px] font-semibold text-[#1a2b6d] group-hover:underline flex items-center gap-1">
+                      อ่านต่อ
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                      </svg>
+                    </span>
+                  </Link>
+                </div>
+              </article>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-16 bg-white rounded-xl border border-slate-200/80 text-slate-400 text-xs">
+            ไม่พบข่าวสารในหมวดหมู่นี้
+          </div>
+        )}
+      </main>
 
     </div>
   );

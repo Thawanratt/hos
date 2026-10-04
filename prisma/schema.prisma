@@ -109,6 +109,34 @@ model Appointment {
   @@map("appointments")
 }
 
+model News {
+  id        Int      @id @default(autoincrement())
+  title     String
+  content   String   @db.Text
+  category  String
+  imageUrl  String?  @map("image_url")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("news")
+}
+
+model Package {
+  id            Int      @id @default(autoincrement())
+  title         String
+  subtitle      String?
+  category      String
+  price         String   // เช่น "3,500 ฿" หรือ "3500"
+  originalPrice String?  // เช่น "6,000 ฿"
+  tag           String?  // เช่น "Special Offer"
+  imageUrl      String?  @map("image_url")
+  features      String[] // Array ของรายการคุณสมบัติ/รายละเอียดเพิ่มเติม
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  @@map("packages")
+}
+
 enum AppointmentStatus {
   PENDING
   CONFIRMED
