@@ -26,7 +26,7 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { title, subtitle, category, price, originalPrice, tag, imageUrl, features } = body;
+    const { title, subtitle, category, price, originalPrice, tag, imageUrl, hospital, validDate, features, terms } = body;
 
     if (!title || !price) {
       return NextResponse.json(
@@ -44,7 +44,10 @@ export async function POST(request: NextRequest) {
         originalPrice: originalPrice || null,
         tag: tag || null,
         imageUrl: imageUrl || null,
+        hospital: hospital || 'โรงพยาบาลโนวาเลีย สำนักงานใหญ่',
+        validDate: validDate || 'ใช้สิทธิ์ได้ถึงวันที่ 31 ธันวาคม 2026',
         features: Array.isArray(features) ? features : [],
+        terms: Array.isArray(terms) ? terms : [],
       },
     });
 
@@ -64,7 +67,7 @@ export async function POST(request: NextRequest) {
 export async function PATCH(request: NextRequest) {
   try {
     const body = await request.json();
-    const { packageId, title, subtitle, category, price, originalPrice, tag, imageUrl, features } = body;
+    const { packageId, title, subtitle, category, price, originalPrice, tag, imageUrl, hospital, validDate, features, terms } = body;
 
     if (!packageId) {
       return NextResponse.json(
@@ -83,7 +86,10 @@ export async function PATCH(request: NextRequest) {
         originalPrice: originalPrice !== undefined ? originalPrice : undefined,
         tag: tag !== undefined ? tag : undefined,
         imageUrl: imageUrl !== undefined ? imageUrl : undefined,
+        hospital: hospital !== undefined ? hospital : undefined,
+        validDate: validDate !== undefined ? validDate : undefined,
         ...(features && { features }),
+        ...(terms && { terms }),
       },
     });
 

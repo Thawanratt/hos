@@ -18,7 +18,7 @@ function BranchesContent() {
   const [showLoginModal, setShowLoginModal] = useState<boolean>(false);
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
 
-  // 🟢 เพิ่ม State สำหรับควบคุม Modal เลือกสาขา
+  //  เพิ่ม State สำหรับควบคุม Modal เลือกสาขา
   const [isBranchModalOpen, setIsBranchModalOpen] = useState<boolean>(false);
 
   // ตรวจสอบการล็อกอินเมื่อโหลดหน้า

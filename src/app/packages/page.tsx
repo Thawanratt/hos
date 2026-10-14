@@ -13,6 +13,10 @@ interface PackageItem {
   originalPrice?: string;
   tag?: string;
   imageUrl?: string;
+  hospital?: string;
+  validDate?: string;
+  features?: string[];
+  terms?: string[];
 }
 
 interface CartItem extends PackageItem {
@@ -50,6 +54,7 @@ export default function PackagesPage() {
   // State สำหรับควบคุม Auth Modal
   const [showAuthModal, setShowAuthModal] = useState<boolean>(false);
 
+  // เพิ่มฟิลด์ featuresText, termsText และ validDate ในฟอร์มแอดมินให้ครบถ้วน
   const [formData, setFormData] = useState({
     title: '',
     subtitle: '',
@@ -58,6 +63,10 @@ export default function PackagesPage() {
     originalPrice: '',
     tag: '',
     imageUrl: '',
+    hospital: 'โรงพยาบาลโนวาเลีย สำนักงานใหญ่',
+    validDate: 'ใช้สิทธิ์ได้ถึงวันที่ 31 ธันวาคม 2026',
+    featuresText: '',
+    termsText: '',
   });
 
   const [submitting, setSubmitting] = useState(false);
@@ -110,7 +119,7 @@ export default function PackagesPage() {
     if (typeof window !== 'undefined') {
       const cartKey = getCartStorageKey(currentUser);
       localStorage.setItem(cartKey, JSON.stringify(newCart));
-      localStorage.setItem('novaria_cart', JSON.stringify(newCart)); // Sync ไว้ที่คีย์หลักด้วย
+      localStorage.setItem('novaria_cart', JSON.stringify(newCart));
       window.dispatchEvent(new Event('cartUpdated'));
     }
   };
@@ -121,7 +130,6 @@ export default function PackagesPage() {
       return;
     }
 
-    // ดึงข้อมูล Cart ล่าสุดจาก localStorage โดยตรง
     const cartKey = getCartStorageKey(currentUser);
     let currentCart: CartItem[] = [];
 
@@ -194,10 +202,33 @@ export default function PackagesPage() {
       return showToast('กรุณากรอกชื่อแพ็กเกจและราคาโปรโมชั่น', 'error');
     }
 
+    // แปลง Textarea บรรทัดต่อบรรทัดให้เป็น Array ของ features และ terms
+    const featuresArray = formData.featuresText
+      ? formData.featuresText.split('\n').map((item) => item.trim()).filter(Boolean)
+      : [];
+
+    const termsArray = formData.termsText
+      ? formData.termsText.split('\n').map((item) => item.trim()).filter(Boolean)
+      : [];
+
+    const payload = {
+      title: formData.title,
+      subtitle: formData.subtitle,
+      category: formData.category,
+      price: formData.price,
+      originalPrice: formData.originalPrice,
+      tag: formData.tag,
+      imageUrl: formData.imageUrl,
+      hospital: formData.hospital,
+      validDate: formData.validDate,
+      features: featuresArray,
+      terms: termsArray,
+    };
+
     setSubmitting(true);
     try {
       const method = editingId ? 'PATCH' : 'POST';
-      const bodyPayload = editingId ? { packageId: editingId, ...formData } : formData;
+      const bodyPayload = editingId ? { packageId: editingId, ...payload } : payload;
 
       const res = await fetch('/api/packages', {
         method,
@@ -252,6 +283,10 @@ export default function PackagesPage() {
       originalPrice: pkg.originalPrice || '',
       tag: pkg.tag || '',
       imageUrl: pkg.imageUrl || '',
+      hospital: pkg.hospital || 'โรงพยาบาลโนวาเลีย สำนักงานใหญ่',
+      validDate: pkg.validDate || 'ใช้สิทธิ์ได้ถึงวันที่ 31 ธันวาคม 2026',
+      featuresText: pkg.features ? pkg.features.join('\n') : '',
+      termsText: pkg.terms ? pkg.terms.join('\n') : '',
     });
     window.scrollTo({ top: 220, behavior: 'smooth' });
   };
@@ -266,6 +301,10 @@ export default function PackagesPage() {
       originalPrice: '',
       tag: '',
       imageUrl: '',
+      hospital: 'โรงพยาบาลโนวาเลีย สำนักงานใหญ่',
+      validDate: 'ใช้สิทธิ์ได้ถึงวันที่ 31 ธันวาคม 2026',
+      featuresText: '',
+      termsText: '',
     });
   };
 
@@ -352,27 +391,29 @@ export default function PackagesPage() {
         </div>
       )}
 
-  {/* BANNER STYLE 2: EXECUTIVE ACCENT BAR */}
-<section className="bg-white border-b border-slate-200 py-8 md:py-12">
-  <div className="max-w-7xl mx-auto px-6 md:px-8">
-    {/* Breadcrumb บอกลำดับหน้า */}
-    <div className="text-xs text-slate-400 font-normal mb-3">
-      <Link href="/" className="hover:text-[#1a2b6d]">หน้าแรก</Link>
-      <span className="mx-1.5 text-slate-300">&gt;</span>
-      <span className="text-slate-700 font-medium">แพ็กเกจและโปรโมชั่น</span>
-    </div>
+      {/* 🏥 HEADER BANNER */}
+      <section className="bg-white border-b border-slate-200/80 shadow-xs">
+        <div className="max-w-7xl mx-auto px-4 md:px-8 py-8 space-y-6">
+          <div className="space-y-3">
+            <nav className="text-[11px] text-slate-400 font-medium tracking-wider uppercase flex items-center gap-1.5">
+              <Link href="/" className="hover:text-[#1a2b6d] transition-colors">หน้าแรก</Link>
+              <span className="text-slate-300">/</span>
+              <span className="text-slate-600 font-semibold">แพ็กเกจและโปรโมชั่น</span>
+            </nav>
 
-    {/* หัวข้อฝั่งซ้าย พร้อมเส้นแนวตั้งขอบสีน้ำเงิน */}
-    <div className="border-l-4 border-[#1a2b6d] pl-4 space-y-1">
-      <h1 className="text-2xl md:text-3xl font-bold text-slate-900 tracking-tight">
-        แพ็กเกจและโปรโมชั่น
-      </h1>
-      <p className="text-xs md:text-sm text-slate-500 font-normal">
-        เลือกสรรโปรแกรมตรวจสุขภาพและสิทธิพิเศษทางการแพทย์ตามช่วงวัย
-      </p>
-    </div>
-  </div>
-</section>
+            <div className="pl-4 border-l-4 border-[#1a2b6d] py-0.5 flex flex-col md:flex-row md:items-end justify-between gap-4">
+              <div>
+                <h1 className="text-2xl md:text-3xl font-light text-slate-900 tracking-tight leading-tight">
+                  แพ็กเกจและ <span className="font-semibold text-[#1a2b6d]">โปรโมชั่นสุขภาพ</span>
+                </h1>
+                <p className="text-xs md:text-sm text-slate-500 mt-1 font-normal">
+                  รวมโปรแกรมตรวจสุขภาพและสิทธิพิเศษเพื่อการดูแลสุขภาพอย่างครอบคลุม
+                </p>
+              </div>
+            </div>
+          </div> 
+        </div>
+      </section>
 
       {/* ADMIN CONTROLS PANEL */}
       {isAdmin && (
@@ -494,10 +535,46 @@ export default function PackagesPage() {
               <div className="space-y-1.5 border-t border-slate-200 pt-4">
                 <label className="font-semibold text-slate-700">คำอธิบายสั้นๆ (Subtitle)</label>
                 <textarea
-                  rows={3}
+                  rows={2}
                   value={formData.subtitle}
                   onChange={(e) => setFormData({ ...formData, subtitle: e.target.value })}
                   placeholder="รายละเอียดหรือคำอธิบายเพิ่มเติมเกี่ยวกับแพ็กเกจ..."
+                  className="w-full p-2.5 rounded-md border border-slate-300 bg-white focus:outline-none focus:border-[#1a2b6d]"
+                />
+              </div>
+
+              {/* ข้อมูลแพ็กเกจ / รายการตรวจ (Features) */}
+              <div className="space-y-1.5 border-t border-slate-200 pt-4">
+                <label className="font-semibold text-slate-700">ข้อมูลแพ็กเกจ / รายการตรวจ (แยกแต่ละข้อด้วยการขึ้นบรรทัดใหม่)</label>
+                <textarea
+                  rows={4}
+                  value={formData.featuresText}
+                  onChange={(e) => setFormData({ ...formData, featuresText: e.target.value })}
+                  placeholder="ตรวจวิเคราะห์สุขภาพเบื้องต้น&#10;ตรวจวัดสัญญาณชีพ ความดันโลหิต&#10;..."
+                  className="w-full p-2.5 rounded-md border border-slate-300 bg-white focus:outline-none focus:border-[#1a2b6d]"
+                />
+              </div>
+
+              {/* ระยะเวลา (Valid Date) */}
+              <div className="space-y-1.5">
+                <label className="font-semibold text-slate-700">ระยะเวลา (Valid Date)</label>
+                <input
+                  type="text"
+                  value={formData.validDate}
+                  onChange={(e) => setFormData({ ...formData, validDate: e.target.value })}
+                  placeholder="เช่น ใช้สิทธิ์ได้ถึงวันที่ 31 ธันวาคม 2026"
+                  className="w-full p-2.5 rounded-md border border-slate-300 bg-white focus:outline-none focus:border-[#1a2b6d]"
+                />
+              </div>
+
+              {/* เงื่อนไขการใช้บริการ (Terms) */}
+              <div className="space-y-1.5">
+                <label className="font-semibold text-slate-700">เงื่อนไขการใช้บริการ (แยกแต่ละข้อด้วยการขึ้นบรรทัดใหม่)</label>
+                <textarea
+                  rows={4}
+                  value={formData.termsText}
+                  onChange={(e) => setFormData({ ...formData, termsText: e.target.value })}
+                  placeholder="ขอสงวนสิทธิ์สำหรับผู้ซื้อแพ็กเกจผ่านระบบออนไลน์เท่านั้น&#10;ไม่สามารถแลกเปลี่ยนหรือทอนเป็นเงินสดได้&#10;..."
                   className="w-full p-2.5 rounded-md border border-slate-300 bg-white focus:outline-none focus:border-[#1a2b6d]"
                 />
               </div>

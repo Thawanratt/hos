@@ -130,11 +130,38 @@ model Package {
   originalPrice String?  // เช่น "6,000 ฿"
   tag           String?  // เช่น "Special Offer"
   imageUrl      String?  @map("image_url")
+  hospital      String?  // ฟิลด์สถานที่รับบริการ
+  validDate     String?  @map("valid_date") // ฟิลด์ระยะเวลา
   features      String[] // Array ของรายการคุณสมบัติ/รายละเอียดเพิ่มเติม
+  terms         String[] // ฟิลด์เงื่อนไขการใช้บริการ
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")
 
   @@map("packages")
+}
+model MentalHealthAssessment {
+  id           String   @id @default(uuid())
+  refId        String   @unique
+  gender       String?
+  ageGroup     String?  @map("age_group") // รองรับช่วงอายุจาก Step 1
+  riskFactor   String?  @map("risk_factor") // รองรับปัจจัยเสี่ยงจาก Step 1
+  province     String?  @default("นครปฐม")
+  
+  // คะแนนแต่ละส่วน
+  happiness    Int      @default(0)
+  rqScore      Int      @default(0)
+  burnoutScore Int      @default(0)
+  st5Score     Int      @default(0)
+  q2Score      Int      @default(0)
+  q9Score      Int      @default(0)
+  suicideScore Int      @default(0)
+  
+  overallRisk  String   @map("overall_risk") // ระดับความเสี่ยงโดยรวม
+  isConsent    Boolean  @default(false) @map("is_consent")
+
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@map("mental_health_assessments")
 }
 
 enum AppointmentStatus {

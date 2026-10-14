@@ -91,7 +91,7 @@ export default function PackageDetailPage({ params }: { params: Promise<{ id: st
     }
   };
 
-  // ฟังก์ชันเพิ่มสินค้าลงตะกร้าแบบตรงไปตรงมา (ไม่มี Pop-up/Alert)
+  // ฟังก์ชันเพิ่มสินค้าลงตะกร้าแบบตรงไปตรงมา
   const handleAddToCart = () => {
     if (!pkg) return;
 
@@ -130,7 +130,7 @@ export default function PackageDetailPage({ params }: { params: Promise<{ id: st
     );
   }
 
-  // กำหนด Default Fallback กรณีที่ไม่ได้กรอกข้อมูลบางช่องลงใน Database
+  // ดึงข้อมูลรายการตรวจ (Features) และเงื่อนไข (Terms) ที่แอดมินกรอกเข้ามา หรือใช้ค่า Fallback
   const featuresList = pkg.features && pkg.features.length > 0 ? pkg.features : [
     'ตรวจวิเคราะห์สุขภาพเบื้องต้นโดยแพทย์ผู้เชี่ยวชาญ',
     'ตรวจวัดสัญญาณชีพ ความดันโลหิต และดัชนีมวลกาย',
@@ -228,14 +228,13 @@ export default function PackageDetailPage({ params }: { params: Promise<{ id: st
           </ul>
         </div>
 
-        {/* ระยะเวลา */}
+       {/* ระยะเวลา */}
         <div className="bg-white rounded-2xl border border-slate-200 p-6 md:p-8 space-y-3 shadow-xs">
           <h2 className="text-sm font-bold text-[#1a2b6d] flex items-center gap-2 border-b border-slate-100 pb-3">
             ระยะเวลา
           </h2>
-          <div className="space-y-1 text-xs text-slate-600">
+          <div className="space-y-1 text-xs md:text-sm text-slate-600 leading-relaxed">
             <p>{pkg.validDate || 'ใช้สิทธิ์ได้ถึงวันที่ 31 ธันวาคม 2026'}</p>
-            {pkg.releaseDate && <p>{pkg.releaseDate}</p>}
           </div>
         </div>
 
@@ -244,11 +243,11 @@ export default function PackageDetailPage({ params }: { params: Promise<{ id: st
           <h2 className="text-sm font-bold text-[#1a2b6d] flex items-center gap-2 border-b border-slate-100 pb-3">
             เงื่อนไขการใช้บริการ
           </h2>
-          <ol className="space-y-2 text-xs text-slate-600 list-decimal pl-5 leading-relaxed">
+          <ul className="space-y-2 text-xs md:text-sm text-slate-600 list-disc pl-5 leading-relaxed">
             {termsList.map((term: string, idx: number) => (
               <li key={idx}>{term}</li>
             ))}
-          </ol>
+          </ul>
         </div>
 
       </main>

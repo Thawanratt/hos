@@ -237,33 +237,36 @@ export default function NewsPage() {
         </div>
       )}
 
-      {/* HEADER BANNER */}
-      <section className="bg-white border-b border-slate-200/80 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 md:px-8 py-6">
-          <div className="space-y-2">
+      {/* 🏥 HEADER BANNER - EXECUTIVE ACCENT BAR STYLE */}
+      <section className="bg-white border-b border-slate-200/80 shadow-xs">
+        <div className="max-w-7xl mx-auto px-4 md:px-8 py-8 space-y-6">
+          
+          {/* Breadcrumb & Executive Title Banner */}
+          <div className="space-y-3">
             <nav className="text-[11px] text-slate-400 font-medium tracking-wider uppercase flex items-center gap-1.5">
               <Link href="/" className="hover:text-[#1a2b6d] transition-colors">หน้าแรก</Link>
               <span className="text-slate-300">/</span>
               <span className="text-slate-600 font-semibold">ข่าวสารและบทความ</span>
             </nav>
 
-            <div className="pl-3.5 border-l-4 border-[#1a2b6d] py-0.5 flex flex-col md:flex-row md:items-end justify-between gap-3">
+            {/* Executive Accent Header */}
+            <div className="pl-4 border-l-4 border-[#1a2b6d] py-0.5 flex flex-col md:flex-row md:items-end justify-between gap-4">
               <div>
-                <h1 className="text-2xl font-light text-slate-900 tracking-tight">
+                <h1 className="text-2xl md:text-3xl font-light text-slate-900 tracking-tight leading-tight">
                   ข่าวสารและ <span className="font-semibold text-[#1a2b6d]">บทความทางการแพทย์</span>
                 </h1>
-                <p className="text-xs text-slate-500 mt-0.5">
+                <p className="text-xs md:text-sm text-slate-500 mt-1 font-normal">
                   ติดตามอัปเดตความเคลื่อนไหว และความรู้สุขภาพจากโรงพยาบาลโนวาเลีย
                 </p>
               </div>
 
-              {/* FILTER BUTTONS (แนวนอน ให้เลือกหมวดหมู่ได้เร็ว) */}
-              <div className="flex flex-wrap gap-1.5 pt-2 md:pt-0">
+              {/* FILTER BUTTONS */}
+              <div className="flex flex-wrap gap-1.5">
                 {categoriesList.map((cat) => (
                   <button
                     key={cat}
                     onClick={() => setSelectedCategory(cat)}
-                    className={`px-3 py-1 rounded-full text-xs font-medium transition cursor-pointer ${
+                    className={`px-3 py-1.5 rounded-full text-xs font-medium transition cursor-pointer ${
                       selectedCategory === cat
                         ? 'bg-[#1a2b6d] text-white shadow-sm'
                         : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
@@ -274,7 +277,8 @@ export default function NewsPage() {
                 ))}
               </div>
             </div>
-          </div>
+          </div> 
+
         </div>
       </section>
 
@@ -366,7 +370,7 @@ export default function NewsPage() {
         </div>
       )}
 
-      {/* MAIN CONTENT GRID (GRID 3-4 COLS แบบการ์ดขนาดกลางลงมา) */}
+      {/* MAIN CONTENT GRID */}
       <main className="max-w-7xl mx-auto px-4 md:px-8 space-y-4">
         
         <div className="flex justify-between items-center text-xs text-slate-500 font-medium px-1">
@@ -380,7 +384,6 @@ export default function NewsPage() {
             <p className="text-xs text-slate-400 mt-2">กำลังโหลดข่าวสาร...</p>
           </div>
         ) : filteredNews.length > 0 ? (
-          /* GRID LAYOUT: 1 Col (Mobile), 2 Cols (Tablet), 3-4 Cols (Desktop) */
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
             {filteredNews.map((article) => (
               <article 
@@ -388,7 +391,6 @@ export default function NewsPage() {
                 className="bg-white rounded-xl border border-slate-200/80 overflow-hidden shadow-sm hover:shadow-md hover:border-slate-300 transition duration-300 flex flex-col justify-between group"
               >
                 <div>
-                  {/* Compact Image Container (อัตราส่วน 16:9 ขนาดพอดี) */}
                   <div className="w-full h-40 bg-slate-100 overflow-hidden relative">
                     {article.imageUrl ? (
                       <img 
@@ -406,7 +408,6 @@ export default function NewsPage() {
                     </span>
                   </div>
 
-                  {/* Body Content */}
                   <div className="p-3.5 space-y-2">
                     <p className="text-[10px] text-slate-400 font-medium flex items-center gap-1">
                       <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
@@ -425,7 +426,6 @@ export default function NewsPage() {
                   </div>
                 </div>
 
-                {/* Footer Action */}
                 <div className="p-3.5 pt-0 border-t border-slate-50 mt-2 flex items-center justify-between">
                   {isAdmin && (
                     <div className="flex gap-1.5">

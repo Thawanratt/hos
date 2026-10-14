@@ -2,6 +2,7 @@
 
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import bcrypt from 'bcryptjs'; // เพิ่มตัวถอดรหัสผ่าน
 
 export async function POST(request: Request) {
   try {
@@ -21,19 +22,21 @@ export async function POST(request: Request) {
       );
     }
 
-    // 3. เช็กรหัสผ่านว่าตรงกันไหม (หากใช้ bcrypt ให้เปลี่ยนเป็น bcrypt.compare)
-    if (user.password !== password) {
+    // 3.  เช็กรหัสผ่านด้วย bcrypt.compare (เทียบรหัสที่พิมพ์มา กับรหัสที่เข้ารหัสไว้ใน Database)
+    const isPasswordMatch = await bcrypt.compare(password, user.password);
+
+    if (!isPasswordMatch) {
       return NextResponse.json(
         { message: 'รหัสผ่านไม่ถูกต้อง' },
         { status: 401 }
       );
     }
 
-    // 4. ส่งข้อมูลผู้ใช้กลับไปเมื่อเข้าสู่ระบบสำเร็จ
+    // 4. ส่งข้อมูลผู้ใช้กลับไปเมื่อเข้าสู่ระบบสำเร็จ (ตัดฟิลด์ password ออกก่อนส่ง)
     const { password: _, ...userWithoutPassword } = user;
     return NextResponse.json(
       { 
-        success: true, // 👈 เพิ่มบรรทัดนี้
+        success: true, 
         message: 'เข้าสู่ระบบสำเร็จ', 
         user: userWithoutPassword 
       },
@@ -41,8 +44,9 @@ export async function POST(request: Request) {
     );
 
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
     return NextResponse.json(
-      { message: 'เกิดข้อผิดพลาดในการเข้าสู่ระบบ', error },
+      { message: 'เกิดข้อผิดพลาดในการเข้าสู่ระบบ', error: errorMessage },
       { status: 500 }
     );
   }
