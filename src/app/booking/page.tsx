@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { BRANCHES_DATA } from '@/app/api/branches/branches';
 
@@ -221,10 +221,10 @@ function StepOneCheckupSelection({ bookingData, setBookingData }: { readonly boo
 }
 
 // ----------------------------------------------------
-// Main Page Component
+// Inner Component (ใช้ useSearchParams)
 // ----------------------------------------------------
 
-export default function BookingPage() {
+function BookingContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const preSelectedDoctorId = searchParams.get('doctorId');
@@ -602,5 +602,17 @@ export default function BookingPage() {
         </div>
       )}
     </div>
+  );
+}
+
+// ----------------------------------------------------
+// Main Export Page Component (ห่อหุ้มด้วย Suspense)
+// ----------------------------------------------------
+
+export default function BookingPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center text-slate-500 text-xs">กำลังโหลด...</div>}>
+      <BookingContent />
+    </Suspense>
   );
 }
