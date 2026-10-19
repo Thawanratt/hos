@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import BranchSelectorModal from '@/components/BranchSelectorModal';
 import { BRANCHES_DATA, Branch } from '@/app/api/branches/branches';
 
+
 export default function HomePage() {
   const router = useRouter();
 
@@ -625,7 +626,7 @@ export default function HomePage() {
                 <span className="font-bold text-xs text-slate-800 group-hover:text-[#1a2b6d] transition-colors">ห้องพักผู้ป่วย</span>
               </Link>
 
-              <Link href="/branches" className="bg-white p-6 rounded-2xl border border-slate-200/80 hover:shadow-lg hover:border-[#1a2b6d] transition-all duration-300 text-center flex flex-col items-center justify-center space-y-3 group">
+              <Link href="/map" className="bg-white p-6 rounded-2xl border border-slate-200/80 hover:shadow-lg hover:border-[#1a2b6d] transition-all duration-300 text-center flex flex-col items-center justify-center space-y-3 group">
                 <div className="w-12 h-12 rounded-xl bg-sky-50 text-[#1a2b6d] group-hover:bg-[#1a2b6d] group-hover:text-white flex items-center justify-center transition-colors">
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />

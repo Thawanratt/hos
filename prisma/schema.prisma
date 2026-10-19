@@ -143,9 +143,8 @@ model MentalHealthAssessment {
   id           String   @id @default(uuid())
   refId        String   @unique
   gender       String?
-  ageGroup     String?  @map("age_group") // รองรับช่วงอายุจาก Step 1
-  riskFactor   String?  @map("risk_factor") // รองรับปัจจัยเสี่ยงจาก Step 1
-  province     String?  @default("นครปฐม")
+  ageGroup     String?  @map("age_group")
+  riskFactor   String?  @map("risk_factor") // เก็บรายการปัจจัยเสี่ยง 
   
   // คะแนนแต่ละส่วน
   happiness    Int      @default(0)
@@ -157,7 +156,6 @@ model MentalHealthAssessment {
   suicideScore Int      @default(0)
   
   overallRisk  String   @map("overall_risk") // ระดับความเสี่ยงโดยรวม
-  isConsent    Boolean  @default(false) @map("is_consent")
 
   createdAt    DateTime @default(now()) @map("created_at")
 

@@ -33,7 +33,7 @@ export default function InsurancePage() {
       {/* MAIN CONTENT AREA */}
       <main className="max-w-4xl mx-auto px-4 md:px-8 mt-12 space-y-12 text-sm leading-relaxed text-slate-800">
         
-        {/* หัวข้อ "ประกัน" ตรงกลางหน้า ใส่ลูกเล่นความพรีเมียมและเส้นตกแต่งสไตล์โรงพยาบาล */}
+        {/* หัวข้อ "ประกัน และสิทธิการรักษา" */}
         <div className="text-center space-y-3 pt-2 pb-2">
           <div className="inline-flex items-center justify-center gap-3">
             <span className="h-px w-12 bg-gradient-to-r from-transparent to-blue-400"></span>
@@ -41,24 +41,108 @@ export default function InsurancePage() {
             <span className="h-px w-12 bg-gradient-to-l from-transparent to-blue-400"></span>
           </div>
           <h2 className="text-3xl md:text-4xl font-extrabold text-[#1a2b6d] tracking-tight drop-shadow-2xs">
-            ประกัน
+            ประกัน และสิทธิการรักษา
           </h2>
           <p className="text-xs text-slate-400 font-medium tracking-wide uppercase">
             Hospital Insurance & Coverage Guidelines
           </p>
         </div>
 
-        {/* 3 หัวข้อหลักด้านบน (Anchor Links) */}
+        {/* 4 หัวข้อหลักด้านบน (Anchor Links) */}
         <div className="bg-sky-50/60 border border-sky-100 rounded-2xl p-6 shadow-2xs space-y-2.5">
           <p>
-            • <Link href="#emergency-section" className="text-[#1a2b6d] font-semibold hover:underline">บริการอุบัติเหตุฉุกเฉินผู้ป่วยในสิทธิสวัสดิการข้าราชการ/รัฐวิสาหกิจ</Link>
+            - <Link href="#universal-coverage-section" className="text-[#1a2b6d] font-semibold hover:underline">สิทธิหลักประกันสุขภาพแห่งชาติ (สิทธิ 30 บาท / บัตรทอง)</Link>
           </p>
           <p>
-            • <Link href="#life-insurance-section" className="text-[#1a2b6d] font-semibold hover:underline">รายชื่อสิทธิประกันชีวิต</Link>
+            - <Link href="#emergency-section" className="text-[#1a2b6d] font-semibold hover:underline">บริการอุบัติเหตุฉุกเฉินผู้ป่วยในสิทธิสวัสดิการข้าราชการ/รัฐวิสาหกิจ</Link>
           </p>
           <p>
-            • <Link href="#partners-section" className="text-[#1a2b6d] font-semibold hover:underline">รายชื่อบริษัทประกันภัย</Link>
+            - <Link href="#life-insurance-section" className="text-[#1a2b6d] font-semibold hover:underline">รายชื่อสิทธิประกันชีวิต</Link>
           </p>
+          <p>
+            - <Link href="#partners-section" className="text-[#1a2b6d] font-semibold hover:underline">รายชื่อบริษัทประกันภัย</Link>
+          </p>
+        </div>
+
+        {/* 🩺 ส่วนเพิ่มใหม่: สิทธิหลักประกันสุขภาพแห่งชาติ (สิทธิ 30 บาท / บัตรทอง) */}
+        <div id="universal-coverage-section" className="space-y-6 pt-4 border-b border-slate-200 pb-10">
+          <div className="flex items-center gap-3 border-b border-slate-100 pb-3">
+            <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-[#1a2b6d] shrink-0">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751A11.959 11.959 0 0112 2.714z" />
+              </svg>
+            </div>
+            <div>
+              <h3 className="text-xl font-bold text-[#1a2b6d]">
+                สิทธิหลักประกันสุขภาพแห่งชาติ (สิทธิ 30 บาท / บัตรทอง)
+              </h3>
+              <p className="text-xs text-slate-500">
+                การเข้ารับบริการภายใต้กองทุนหลักประกันสุขภาพแห่งชาติ (สปสช.) ณ โรงพยาบาลโนวาเลีย
+              </p>
+            </div>
+          </div>
+
+          {/* รายละเอียดสิทธิประโยชน์ */}
+          <div className="bg-slate-50/70 border border-slate-100 rounded-2xl p-6 space-y-4">
+            <p className="font-bold text-[#1a2b6d] text-base">ขอบเขตความคุ้มครองและสิทธิประโยชน์</p>
+            <ul className="grid grid-cols-1 md:grid-cols-2 gap-3 text-slate-700">
+              <li className="flex items-start gap-2">
+                <span className="text-[#1a2b6d] font-bold">✓</span>
+                <span>การตรวจ วินิจฉัย และรักษาโรคทั่วไป ตลอดจนโรคเรื้อรัง</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-[#1a2b6d] font-bold">✓</span>
+                <span>บริการผู้ป่วยนอก (OPD) และผู้ป่วยใน (IPD) ตามข้อกำหนด สปสช.</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-[#1a2b6d] font-bold">✓</span>
+                <span>ค่ายา เวชภัณฑ์ และอุปกรณ์ทางการแพทย์ตาม บัญชียาหลักแห่งชาติ</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-[#1a2b6d] font-bold">✓</span>
+                <span>บริการตรวจคัดกรองสุขภาพ และการส่งเสริมสุขภาพป้องกันโรค</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-[#1a2b6d] font-bold">✓</span>
+                <span>สิทธิเจ็บป่วยฉุกเฉินวิกฤต มีสิทธิทุกที่ (USEP) เข้ารักษาได้ทันทีภายใน 72 ชม. แรก</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-[#1a2b6d] font-bold">✓</span>
+                <span>การย้ายหน่วยบริการและการนัดหมายผ่านระบบ สปสช. / 30 บาทรักษาทุกที่</span>
+              </li>
+            </ul>
+          </div>
+
+          {/* เอกสารและเงื่อนไขการใช้สิทธิ */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="border border-slate-200/80 rounded-2xl p-5 space-y-3 bg-white shadow-2xs">
+              <div className="flex items-center gap-2 font-bold text-[#1a2b6d]">
+                <svg className="w-5 h-5 text-[#1a2b6d]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 9h3.75M15 12h3.75M15 15h3.75M4.5 19.5h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5zm6-10.5a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-6 7.5c0-1.657 1.343-3 3-3h3c1.657 0 3 1.343 3 3v.75H4.5v-.75z" />
+                </svg>
+                <span>เอกสารที่ต้องนำมาแสดง</span>
+              </div>
+              <ul className="pl-5 space-y-1.5 list-disc text-xs text-slate-700">
+                <li>บัตรประจำตัวประชาชนตัวจริง (หรือสูติบัตรกรณีผู้ป่วยเด็ก)</li>
+                <li>หนังสือส่งตัวจากสถานพยาบาลต้นสังกัดสิทธิ (กรณีรับการส่งต่อ)</li>
+                <li>แอปพลิเคชัน "ทางรัฐ" หรือ "สปสช." บนมือถือสำหรับแสดงสิทธิดิจิทัล</li>
+              </ul>
+            </div>
+
+            <div className="border border-slate-200/80 rounded-2xl p-5 space-y-3 bg-white shadow-2xs">
+              <div className="flex items-center gap-2 font-bold text-[#1a2b6d]">
+                <svg className="w-5 h-5 text-[#1a2b6d]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
+                </svg>
+                <span>ข้อควรทราบและการรับบริการ</span>
+              </div>
+              <ul className="pl-5 space-y-1.5 list-disc text-xs text-slate-700">
+                <li>กรณีผู้ป่วยนอกทั่วไป กรุณาติดต่อยื่นสิทธิ ณ แผนกเวชระเบียน ชั้น 1</li>
+                <li>กรณีมีค่าบริการนอกเหนือขอบเขตสิทธิ (เช่น ห้องพักพิเศษ/ยานอกบัญชี) เจ้าหน้าที่จะแจ้งให้ทราบล่วงหน้า</li>
+                <li>สอบถามข้อมูลสิทธิ สปสช. เพิ่มเติมได้ที่ สายด่วน สปสช. 1330 หรือ ศูนย์บริการลูกค้าโนวาเลีย</li>
+              </ul>
+            </div>
+          </div>
         </div>
 
         {/* ส่วนที่ 1: ขั้นตอนการบริการ */}
@@ -73,8 +157,8 @@ export default function InsurancePage() {
               สำหรับผู้ที่มีประกันสุขภาพประเภทค่ารักษาพยาบาลและค่ารักษาพยาบาลกรณีผู้ป่วยในมีความคุ้มครองในการรักษาพยาบาลชีวิตตัวแทนของบริษัทประกันภัยหรือตัวแทนประกันภัยที่มีการติดต่อกับโรงพยาบาลผ่านช่องทางสิทธิ์ค่ารักษาพยาบาลตามต้องการของบริษัทประกันภัยหรือตัวแทนบริษัทประกันภัย
             </p>
             <div className="text-slate-600 text-xs pt-1 space-y-0.5 font-medium">
-              <p>Contact Center 1719 หรือ โทร. 02-310-3000</p>
-              <p>อีเมล: info@bangkokhospital.com</p>
+              <p>Contact Center 1719 หรือ โทร. 02-165-5555</p>
+              <p>อีเมล: info@novaria.com</p>
             </div>
           </div>
 
@@ -121,12 +205,12 @@ export default function InsurancePage() {
           </ul>
         </div>
 
-        {/* ขั้นตอนผู้ป่วยในวางแผนไว้ก่อน (เพิ่มรายละเอียดให้ครบถ้วนตามเรฟ) */}
+        {/* ขั้นตอนผู้ป่วยในวางแผนไว้ก่อน */}
         <div className="space-y-4 pt-4">
           <p className="font-bold text-[#1a2b6d] text-base">3. บริการผู้ป่วยในที่ได้มีการวางแผนไว้ก่อน</p>
         </div>
 
-        {/* ไอคอนชุดที่ 3: มือถือ (ขนาดใหญ่ขึ้น) พร้อมรายละเอียดครบถ้วน */}
+        {/* ไอคอนชุดที่ 3: มือถือ */}
         <div className="space-y-4 py-4 bg-slate-50/50 rounded-2xl border border-slate-100 p-6">
           <div className="flex justify-center py-2">
             <svg className="w-20 h-20 text-[#1a2b6d] stroke-[1.2]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -146,7 +230,7 @@ export default function InsurancePage() {
         {/* ส่วนที่ 2: รายชื่อสิทธิประกันชีวิต (Anchor Target) */}
         <div id="life-insurance-section" className="pt-4"></div>
 
-        {/* ส่วนที่ 3: รายชื่อบริษัทประกันชีวิต (จัดเต็มครบถ้วนทั้ง 2 หมวดตามเรฟ) */}
+        {/* ส่วนที่ 3: รายชื่อบริษัทประกันชีวิต & บริษัทประกันภัย */}
         <div className="space-y-6 pt-8 border-t border-slate-200" id="partners-section">
           
           {/* หมวดที่ 1 */}
@@ -174,7 +258,7 @@ export default function InsurancePage() {
             </ul>
           </div>
 
-          {/* หมวดที่ 2 (เพิ่มเติมนอกเหนือจากภาพต้นฉบับให้ครบถ้วนตามที่ขอ) */}
+          {/* หมวดที่ 2 */}
           <div className="space-y-3 pt-6 border-t border-slate-100">
             <p className="font-bold text-slate-900 text-base">
               รายชื่อบริษัทประกันภัย
@@ -189,7 +273,7 @@ export default function InsurancePage() {
               <li>บมจ. อาคเนย์ประกันภัย</li>
               <li>บมจ. เมืองไทยประกันภัย</li>
               <li>บมจ. ประกันภัยไทยวิวัฒน์</li>
-              <li>บมจ. เค에스아이 ประกันภัย</li>
+              <li>บมจ. เคเอสไอ ประกันภัย</li>
             </ul>
           </div>
 

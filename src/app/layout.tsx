@@ -1,6 +1,5 @@
-//โครงสร้างหลักของ Layout ของแอปพลิเคชัน React ที่ใช้ TypeScript และ Next.js โดยมีการนำเข้าโมดูลและคอมโพเนนต์ที่จำเป็นสำหรับการสร้าง Layout ของหน้าเว็บ
-
 import type { Metadata } from 'next';
+import Script from 'next/script';
 import './globals.css';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
@@ -23,6 +22,12 @@ export default function RootLayout({
           <main>{children}</main>
         </div>
         <Footer />
+
+        {/* โหลดสคริปต์ Google Translate */}
+        <Script
+          src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"
+          strategy="afterInteractive"
+        />
       </body>
     </html>
   );

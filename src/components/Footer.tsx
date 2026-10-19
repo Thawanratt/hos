@@ -18,7 +18,7 @@ export default function Footer() {
               <li><Link href="/doctors" className="hover:text-white transition-colors">ค้นหาแพทย์</Link></li>
               <li><Link href="/booking" className="hover:text-white transition-colors">ทำนัดหมายออนไลน์</Link></li>
               <li><Link href="/packages" className="hover:text-white transition-colors">แพ็กเกจและโปรโมชั่น</Link></li>
-              <li><Link href="/services" className="hover:text-white transition-colors">เทคโนโลยีการรักษา</Link></li>
+             
             </ul>
           </div>
 
@@ -29,7 +29,7 @@ export default function Footer() {
               <li><Link href="/rooms" className="hover:text-white transition-colors">ห้องพักผู้ป่วย</Link></li>
               <li><Link href="/branches" className="hover:text-white transition-colors">แผนที่และการเดินทาง</Link></li>
               <li><Link href="/insurance" className="hover:text-white transition-colors">ประกัน และสิทธิการรักษา</Link></li>
-              <li><Link href="/contact" className="hover:text-white transition-colors">สิ่งอำนวยความสะดวก</Link></li>
+              
             </ul>
           </div>
 
@@ -37,9 +37,8 @@ export default function Footer() {
           <div className="space-y-3">
             <h4 className="font-bold text-sm text-sky-400">ข้อมูลสุขภาพ</h4>
             <ul className="space-y-2 text-slate-300">
-              <li><Link href="/news" className="hover:text-white transition-colors">โรคและการรักษา</Link></li>
-              <li><Link href="/news" className="hover:text-white transition-colors">บทความทางการแพทย์</Link></li>
-              <li><Link href="/health-check" className="hover:text-white transition-colors">แบบประเมินสุขภาพเบื้องต้น</Link></li>
+              <li><Link href="/health" className="hover:text-white transition-colors">บทความทางการแพทย์</Link></li>
+              <li><Link href="/mental-health" className="hover:text-white transition-colors">แบบประเมินสุขภาพใจ</Link></li>
             </ul>
           </div>
 
@@ -49,7 +48,6 @@ export default function Footer() {
             <ul className="space-y-2 text-slate-300">
               <li><Link href="/about" className="hover:text-white transition-colors">ประวัติโรงพยาบาล</Link></li>
               <li><Link href="/news" className="hover:text-white transition-colors">ข่าวสารและกิจกรรม</Link></li>
-              <li><Link href="/about" className="hover:text-white transition-colors">รางวัลและการรับรองมาตรฐาน</Link></li>
               <li><Link href="/contact" className="hover:text-white transition-colors">ติดต่อสอบถาม</Link></li>
             </ul>
           </div>
@@ -72,7 +70,7 @@ export default function Footer() {
               </div>
             </div>
             <div className="pt-1">
-              <Link href="/branches" className="text-xs text-sky-300 hover:underline inline-flex items-center gap-1 font-semibold">
+              <Link href="/map" className="text-xs text-sky-300 hover:underline inline-flex items-center gap-1 font-semibold">
                 ดูแผนที่ Google Maps ➔
               </Link>
             </div>

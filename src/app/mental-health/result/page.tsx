@@ -1,15 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { 
   CheckCircle2, 
   ShieldAlert, 
   HeartPulse, 
   ArrowRight, 
-  Sparkles,
   AlertTriangle,
-  Info,
   X,
   Smile,
   Frown,
@@ -17,41 +15,41 @@ import {
   Flame,
   AlertCircle,
   Siren,
-  Hourglass
+  Hourglass,
+  FileText
 } from 'lucide-react';
 
 export default function AssessmentResultPage() {
   const [isMounted, setIsMounted] = useState(false);
   const [showAlertModal, setShowAlertModal] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubmittingContact, setIsSubmittingContact] = useState(false);
+  const hasSubmittedRef = useRef(false);
   
-  // เก็บข้อมูลผู้ใช้
+  const [contactForm, setContactForm] = useState({ name: '', phone: '' });
+
   const [userInfo, setUserInfo] = useState({
     gender: 'ไม่ระบุ',
     ageGroup: 'ไม่ระบุ',
     province: 'ไม่ระบุ',
-    refId: ''
+    refId: 'กำลังประมวลผล...'
   });
 
-  // สถานะและคะแนนทั้งหมด (เปลี่ยนจาก emoji เป็น component ของ lucide-react)
   const [results, setResults] = useState({
-    happiness: { score: 0, label: 'รอประมวลผล', color: 'slate', icon: <Hourglass className="w-3.5 h-3.5" /> },
-    rq: { score: 0, label: 'รอประมวลผล', color: 'slate', icon: <Hourglass className="w-3.5 h-3.5" /> },
-    burnout: { score: 0, label: 'รอประมวลผล', color: 'slate', icon: <Hourglass className="w-3.5 h-3.5" /> },
-    st5: { score: 0, label: 'รอประมวลผล', color: 'slate', icon: <Hourglass className="w-3.5 h-3.5" /> },
-    q2: { score: 0, label: 'รอประมวลผล', color: 'slate', icon: <Hourglass className="w-3.5 h-3.5" /> },
-    q9: { score: 0, label: 'รอประมวลผล', color: 'slate', icon: <Hourglass className="w-3.5 h-3.5" /> },
-    q8: { score: 0, label: 'รอประมวลผล', color: 'slate', icon: <Hourglass className="w-3.5 h-3.5" /> },
+    happiness: { score: 0, label: 'รอประมวลผล', color: 'slate', icon: <Hourglass className="w-4 h-4" /> },
+    rq: { score: 0, label: 'รอประมวลผล', color: 'slate', icon: <Hourglass className="w-4 h-4" /> },
+    burnout: { score: 0, label: 'รอประมวลผล', color: 'slate', icon: <Hourglass className="w-4 h-4" /> },
+    st5: { score: 0, label: 'รอประมวลผล', color: 'slate', icon: <Hourglass className="w-4 h-4" /> },
+    q2: { score: 0, label: 'รอประมวลผล', color: 'slate', icon: <Hourglass className="w-4 h-4" /> },
+    q9: { score: 0, label: 'รอประมวลผล', color: 'slate', icon: <Hourglass className="w-4 h-4" /> },
+    q8: { score: 0, label: 'รอประมวลผล', color: 'slate', icon: <Hourglass className="w-4 h-4" /> },
     overall: { label: 'ปกติ', isRisk: false }
   });
 
-  // ฟังก์ชันช่วยรวมคะแนน
   const sumScores = (stepData: any) => {
     if (!stepData) return 0;
     return Object.values(stepData).reduce((sum: any, val: any) => sum + Number(val), 0) as number;
   };
 
-  // ฟังก์ชันคำนวณน้ำหนักคะแนน 8Q ของกรมสุขภาพจิต
   const calculate8Q = (step8Data: any) => {
     if (!step8Data) return 0;
     const weights: { [key: number]: number } = { 1: 1, 2: 2, 3: 6, 4: 8, 5: 9, 6: 4, 7: 10, 8: 4 };
@@ -65,6 +63,9 @@ export default function AssessmentResultPage() {
 
   useEffect(() => {
     setIsMounted(true);
+    if (hasSubmittedRef.current) return;
+    hasSubmittedRef.current = true;
+
     const savedData = JSON.parse(localStorage.getItem('mentalHealthAssessment') || '{}');
 
     const rawHappiness = savedData.step2?.happinessScore || 0;
@@ -75,42 +76,27 @@ export default function AssessmentResultPage() {
     const rawQ9 = sumScores(savedData.step7);
     const rawQ8 = calculate8Q(savedData.step8);
 
-    // 2. แปลผลตามเกณฑ์กรมสุขภาพจิต พร้อมใส่ Icon Lucide
-    const getHappiness = (s: number) => s >= 5 
-      ? { score: s, label: 'มีความสุขปกติ', color: 'emerald', icon: <Smile className="w-3.5 h-3.5" /> } 
-      : { score: s, label: 'มีความสุขน้อย', color: 'amber', icon: <Frown className="w-3.5 h-3.5" /> };
-      
-    const getRq = (s: number) => s >= 20 
-      ? { score: s, label: 'พลังใจปกติ', color: 'emerald', icon: <ShieldCheck className="w-3.5 h-3.5" /> } 
-      : { score: s, label: 'พลังใจน้อย (เสี่ยง)', color: 'rose', icon: <AlertTriangle className="w-3.5 h-3.5" /> };
-      
-    const getBurnout = (s: number) => s < 5 
-      ? { score: s, label: 'ไม่มีภาวะหมดไฟ', color: 'emerald', icon: <CheckCircle2 className="w-3.5 h-3.5" /> } 
-      : { score: s, label: 'มีภาวะหมดไฟ', color: 'amber', icon: <Flame className="w-3.5 h-3.5" /> };
-      
+    const getHappiness = (s: number) => s >= 5 ? { score: s, label: 'มีความสุขปกติ', color: 'emerald', icon: <Smile className="w-4 h-4" /> } : { score: s, label: 'มีความสุขน้อย', color: 'amber', icon: <Frown className="w-4 h-4" /> };
+    const getRq = (s: number) => s >= 20 ? { score: s, label: 'พลังใจปกติ', color: 'emerald', icon: <ShieldCheck className="w-4 h-4" /> } : { score: s, label: 'พลังใจน้อย (เสี่ยง)', color: 'rose', icon: <AlertTriangle className="w-4 h-4" /> };
+    const getBurnout = (s: number) => s < 5 ? { score: s, label: 'ไม่มีภาวะหมดไฟ', color: 'emerald', icon: <CheckCircle2 className="w-4 h-4" /> } : { score: s, label: 'มีภาวะหมดไฟ', color: 'amber', icon: <Flame className="w-4 h-4" /> };
     const getSt5 = (s: number) => {
-      if(s <= 4) return { score: s, label: 'เครียดน้อย', color: 'emerald', icon: <CheckCircle2 className="w-3.5 h-3.5" /> };
-      if(s <= 7) return { score: s, label: 'เครียดปานกลาง', color: 'amber', icon: <AlertCircle className="w-3.5 h-3.5" /> };
-      if(s <= 9) return { score: s, label: 'เครียดมาก', color: 'rose', icon: <AlertTriangle className="w-3.5 h-3.5" /> };
-      return { score: s, label: 'เครียดมากที่สุด', color: 'rose', icon: <Siren className="w-3.5 h-3.5" /> };
+      if(s <= 4) return { score: s, label: 'เครียดน้อย', color: 'emerald', icon: <CheckCircle2 className="w-4 h-4" /> };
+      if(s <= 7) return { score: s, label: 'เครียดปานกลาง', color: 'amber', icon: <AlertCircle className="w-4 h-4" /> };
+      if(s <= 9) return { score: s, label: 'เครียดมาก', color: 'rose', icon: <AlertTriangle className="w-4 h-4" /> };
+      return { score: s, label: 'เครียดมากที่สุด', color: 'rose', icon: <Siren className="w-4 h-4" /> };
     };
-    
-    const getQ2 = (s: number) => s === 0 
-      ? { score: s, label: 'ไม่มีความเสี่ยง', color: 'emerald', icon: <CheckCircle2 className="w-3.5 h-3.5" /> } 
-      : { score: s, label: 'มีภาวะเสี่ยง', color: 'amber', icon: <AlertTriangle className="w-3.5 h-3.5" /> };
-      
+    const getQ2 = (s: number) => s === 0 ? { score: s, label: 'ไม่มีความเสี่ยง', color: 'emerald', icon: <CheckCircle2 className="w-4 h-4" /> } : { score: s, label: 'มีภาวะเสี่ยง', color: 'amber', icon: <AlertTriangle className="w-4 h-4" /> };
     const getQ9 = (s: number) => {
-      if(s <= 6) return { score: s, label: 'ไม่มีอาการซึมเศร้า', color: 'emerald', icon: <CheckCircle2 className="w-3.5 h-3.5" /> };
-      if(s <= 12) return { score: s, label: 'ซึมเศร้าระดับน้อย', color: 'amber', icon: <AlertCircle className="w-3.5 h-3.5" /> };
-      if(s <= 18) return { score: s, label: 'ซึมเศร้าระดับปานกลาง', color: 'rose', icon: <AlertTriangle className="w-3.5 h-3.5" /> };
-      return { score: s, label: 'ซึมเศร้าระดับรุนแรง', color: 'rose', icon: <Siren className="w-3.5 h-3.5" /> };
+      if(s <= 6) return { score: s, label: 'ไม่มีอาการซึมเศร้า', color: 'emerald', icon: <CheckCircle2 className="w-4 h-4" /> };
+      if(s <= 12) return { score: s, label: 'ซึมเศร้าระดับน้อย', color: 'amber', icon: <AlertCircle className="w-4 h-4" /> };
+      if(s <= 18) return { score: s, label: 'ซึมเศร้าระดับปานกลาง', color: 'rose', icon: <AlertTriangle className="w-4 h-4" /> };
+      return { score: s, label: 'ซึมเศร้าระดับรุนแรง', color: 'rose', icon: <Siren className="w-4 h-4" /> };
     };
-    
     const getQ8 = (s: number) => {
-      if(s === 0) return { score: s, label: 'ไม่มีแนวโน้ม', color: 'emerald', icon: <CheckCircle2 className="w-3.5 h-3.5" /> };
-      if(s <= 8) return { score: s, label: 'เสี่ยงระดับน้อย', color: 'amber', icon: <AlertCircle className="w-3.5 h-3.5" /> };
-      if(s <= 16) return { score: s, label: 'เสี่ยงระดับปานกลาง', color: 'rose', icon: <AlertTriangle className="w-3.5 h-3.5" /> };
-      return { score: s, label: 'เสี่ยงระดับรุนแรง', color: 'rose', icon: <Siren className="w-3.5 h-3.5" /> };
+      if(s === 0) return { score: s, label: 'ไม่มีแนวโน้ม', color: 'emerald', icon: <CheckCircle2 className="w-4 h-4" /> };
+      if(s <= 8) return { score: s, label: 'เสี่ยงระดับน้อย', color: 'amber', icon: <AlertCircle className="w-4 h-4" /> };
+      if(s <= 16) return { score: s, label: 'เสี่ยงระดับปานกลาง', color: 'rose', icon: <AlertTriangle className="w-4 h-4" /> };
+      return { score: s, label: 'เสี่ยงระดับรุนแรง', color: 'rose', icon: <Siren className="w-4 h-4" /> };
     };
 
     const finalResults = {
@@ -124,12 +110,11 @@ export default function AssessmentResultPage() {
       overall: { label: 'ปกติ', isRisk: false }
     };
 
-    // 3. ประเมินความเสี่ยงโดยรวมเพื่อโชว์ Popup
     let isRisk = false;
     let overallLabel = 'ปกติ';
     if (rawQ8 >= 17 || rawQ9 >= 19 || rawSt5 >= 10) {
       isRisk = true;
-      overallLabel = 'เสี่ยงสูง / วิกฤต (ต้องพบแพทย์เร่งด่วน)';
+      overallLabel = 'เสี่ยงสูง / วิกฤต (ควรพบแพทย์เร่งด่วน)';
       setShowAlertModal(true);
     } else if (rawQ8 >= 1 || rawQ9 >= 7 || rawSt5 >= 5 || rawBurnout >= 5 || rawHappiness < 5) {
       isRisk = true;
@@ -140,16 +125,7 @@ export default function AssessmentResultPage() {
     finalResults.overall = { label: overallLabel, isRisk };
     setResults(finalResults);
     
-    // อัปเดตข้อมูลผู้ใช้
-    setUserInfo({
-      gender: savedData.step1?.gender || 'ไม่ระบุ',
-      ageGroup: savedData.step1?.ageGroup || 'ไม่ระบุ',
-      province: savedData.step1?.province || 'ไม่ระบุ',
-      refId: Math.floor(10000000 + Math.random() * 90000000).toString()
-    });
-
-    // 4. API Submit (เอาคอมเมนต์ออกเมื่อพร้อม)
-    /*
+    // บันทึกสถิติแบบนิรนาม
     fetch('/api/mental-health/submit', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -161,261 +137,316 @@ export default function AssessmentResultPage() {
         st5Score: rawSt5,
         q2Score: rawQ2,
         q9Score: rawQ9,
-        suicideScore: rawQ8,
-        isConsent: true
+        suicideScore: rawQ8
       })
-    }).catch(err => console.error("API Submit Error:", err));
-    */
+    })
+    .then(res => res.json())
+    .then(data => {
+      if(data.success && data.data) {
+        setUserInfo({
+          gender: savedData.step1?.gender || 'ไม่ระบุ',
+          ageGroup: savedData.step1?.ageGroup || 'ไม่ระบุ',
+          province: savedData.step1?.province || 'ไม่ระบุ',
+          refId: data.data.refId
+        });
+      }
+    })
+    .catch(err => console.error("API Submit Error:", err));
 
   }, []);
 
-  const getColorClasses = (color: string) => {
-    switch (color) {
-      case 'emerald': return 'bg-emerald-50 text-emerald-700 border-emerald-200';
-      case 'amber': return 'bg-amber-50 text-amber-800 border-amber-200';
-      case 'rose': return 'bg-rose-50 text-rose-700 border-rose-200';
-      default: return 'bg-slate-50 text-slate-700 border-slate-200';
+  const handleContactSubmit = () => {
+    if (!contactForm.name || !contactForm.phone) {
+      alert("กรุณากรอกชื่อและเบอร์โทรศัพท์ให้ครบถ้วน");
+      return;
     }
+    
+    setIsSubmittingContact(true);
+    setTimeout(() => {
+      alert(`บันทึกข้อมูลเรียบร้อยแล้ว\nหมายเลขอ้างอิงของคุณ: ${userInfo.refId}\nเจ้าหน้าที่โรงพยาบาลจะติดต่อกลับโดยเร็วที่สุด`);
+      setIsSubmittingContact(false);
+      setContactForm({ name: '', phone: '' });
+    }, 1000);
   };
 
-  const getBgIconClasses = (color: string) => {
+  const getStatusBadge = (color: string) => {
     switch (color) {
-      case 'emerald': return 'bg-emerald-50 text-emerald-600';
-      case 'amber': return 'bg-amber-50 text-amber-600';
-      case 'rose': return 'bg-rose-50 text-rose-600';
-      default: return 'bg-slate-50 text-slate-600';
+      case 'emerald': return 'bg-emerald-50 text-emerald-800 border-emerald-300';
+      case 'amber': return 'bg-amber-50 text-amber-800 border-amber-300';
+      case 'rose': return 'bg-rose-50 text-rose-800 border-rose-300';
+      default: return 'bg-slate-50 text-slate-800 border-slate-300';
     }
   };
 
   if (!isMounted) return null;
 
   return (
-    <div className="min-h-screen bg-slate-50/50 text-slate-950 font-sans pb-24 relative">
+    <div className="min-h-screen bg-[#f8fafc] text-slate-900 font-sans pb-24">
       
-      {/* 🚨 POPUP ALERT MODAL */}
+      {/* 🚨 POPUP ALERT MODAL (สรุปผลแบบเป็นทางการ) */}
       {showAlertModal && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white border border-slate-200 rounded-3xl max-w-lg w-full p-6 md:p-8 shadow-2xl space-y-6 text-center relative animate-in fade-in zoom-in duration-200">
-            <button 
-              onClick={() => setShowAlertModal(false)}
-              className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 p-1 cursor-pointer"
-            >
-              <X className="w-5 h-5" />
-            </button>
-
-            <div className="w-14 h-14 bg-rose-50 text-rose-600 rounded-2xl mx-auto flex items-center justify-center">
-              <AlertTriangle className="w-7 h-7" />
-            </div>
-
-            <div className="space-y-3">
-              <h3 className="text-lg md:text-xl font-extrabold text-rose-600">
-                ท่านมีความเสี่ยงต่อปัญหาสุขภาพจิต
-              </h3>
-              
-              <div className="text-xs text-slate-600 space-y-1.5 text-left bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                <p>พลังใจ (RQ) : <span className={`font-semibold text-${results.rq.color}-600 flex items-center gap-1 inline-flex`}>{results.rq.icon} {results.rq.label}</span></p>
-                <p>ภาวะหมดไฟ (Burnout) : <span className={`font-semibold text-${results.burnout.color}-600 flex items-center gap-1 inline-flex`}>{results.burnout.icon} {results.burnout.label}</span></p>
-                <p>ความเครียด (ST-5) : <span className={`font-semibold text-${results.st5.color}-600 flex items-center gap-1 inline-flex`}>{results.st5.icon} {results.st5.label}</span></p>
-                <p>ภาวะซึมเศร้า (2Q+) : <span className={`font-semibold text-${results.q2.color}-600 flex items-center gap-1 inline-flex`}>{results.q2.icon} {results.q2.label}</span></p>
-                <p>โรคซึมเศร้า (9Q) : <span className={`font-semibold text-${results.q9.color}-600 flex items-center gap-1 inline-flex`}>{results.q9.icon} {results.q9.label}</span></p>
-                <p>แนวโน้มฆ่าตัวตาย (8Q) : <span className={`font-semibold text-${results.q8.color}-600 flex items-center gap-1 inline-flex`}>{results.q8.icon} {results.q8.label}</span></p>
-                <p>ความสุข (Happiness) : <span className={`font-semibold text-${results.happiness.color}-600 flex items-center gap-1 inline-flex`}>{results.happiness.icon} {results.happiness.label}</span></p>
+          <div className="bg-white border border-slate-300 rounded-lg max-w-lg w-full p-6 shadow-xl space-y-5 relative">
+            
+            <div className="flex items-start justify-between border-b border-slate-200 pb-4">
+              <div className="flex items-center gap-2.5 text-rose-700">
+                <AlertTriangle className="w-6 h-6 shrink-0" />
+                <h3 className="text-base font-bold">
+                  แจ้งเตือน: พบความเสี่ยงด้านสุขภาพจิต
+                </h3>
               </div>
-
-              <p className="text-[11px] text-slate-500 leading-relaxed">
-                ควรได้รับคำแนะนำและการดูแลช่วยเหลือเพิ่มเติมจากเจ้าหน้าที่สาธารณสุข ซึ่งต้องขอทราบข้อมูลเพิ่มเติมจากท่าน
-              </p>
+              <button 
+                onClick={() => setShowAlertModal(false)} 
+                className="text-slate-400 hover:text-slate-600 cursor-pointer p-1"
+              >
+                <X className="w-5 h-5" />
+              </button>
             </div>
 
-            <button
-              onClick={() => setShowAlertModal(false)}
-              className="w-full py-3 bg-[#1a2b6d] hover:bg-blue-900 text-white font-bold text-xs md:text-sm rounded-xl transition shadow-md cursor-pointer"
-            >
-              รับทราบผลประเมิน
-            </button>
+            <p className="text-xs text-slate-600 leading-relaxed">
+              จากการประเมินเบื้องต้น ระบบพบว่าท่านมีสภาวะความเสี่ยงในหัวข้อดังต่อไปนี้ ควรได้รับคำแนะนำเพิ่มเติมจากบุคลากรทางการแพทย์:
+            </p>
+
+            {/* รายละเอียดสรุปผล 7 ด้าน สไตล์ตารางทางการ */}
+            <div className="divide-y divide-slate-200 border border-slate-200 rounded-md text-xs bg-slate-50">
+              <div className="p-2.5 flex items-center justify-between">
+                <span className="text-slate-600 font-medium">1. ความสุข (Happiness)</span>
+                <span className={`font-bold flex items-center gap-1 ${results.happiness.color === 'emerald' ? 'text-emerald-700' : 'text-amber-700'}`}>
+                  {results.happiness.icon} {results.happiness.label}
+                </span>
+              </div>
+              <div className="p-2.5 flex items-center justify-between">
+                <span className="text-slate-600 font-medium">2. พลังใจ (RQ)</span>
+                <span className={`font-bold flex items-center gap-1 ${results.rq.color === 'emerald' ? 'text-emerald-700' : 'text-rose-700'}`}>
+                  {results.rq.icon} {results.rq.label}
+                </span>
+              </div>
+              <div className="p-2.5 flex items-center justify-between">
+                <span className="text-slate-600 font-medium">3. ภาวะหมดไฟ (Burnout)</span>
+                <span className={`font-bold flex items-center gap-1 ${results.burnout.color === 'emerald' ? 'text-emerald-700' : 'text-amber-700'}`}>
+                  {results.burnout.icon} {results.burnout.label}
+                </span>
+              </div>
+              <div className="p-2.5 flex items-center justify-between">
+                <span className="text-slate-600 font-medium">4. ความเครียด (ST-5)</span>
+                <span className={`font-bold flex items-center gap-1 ${results.st5.color === 'emerald' ? 'text-emerald-700' : 'text-rose-700'}`}>
+                  {results.st5.icon} {results.st5.label}
+                </span>
+              </div>
+              <div className="p-2.5 flex items-center justify-between">
+                <span className="text-slate-600 font-medium">5. ภาวะเสี่ยงซึมเศร้า (2Q)</span>
+                <span className={`font-bold flex items-center gap-1 ${results.q2.color === 'emerald' ? 'text-emerald-700' : 'text-amber-700'}`}>
+                  {results.q2.icon} {results.q2.label}
+                </span>
+              </div>
+              <div className="p-2.5 flex items-center justify-between">
+                <span className="text-slate-600 font-medium">6. โรคซึมเศร้า (9Q)</span>
+                <span className={`font-bold flex items-center gap-1 ${results.q9.color === 'emerald' ? 'text-emerald-700' : 'text-rose-700'}`}>
+                  {results.q9.icon} {results.q9.label}
+                </span>
+              </div>
+              <div className="p-2.5 flex items-center justify-between">
+                <span className="text-slate-600 font-medium">7. แนวโน้มการทำร้ายตนเอง (8Q)</span>
+                <span className={`font-bold flex items-center gap-1 ${results.q8.color === 'emerald' ? 'text-emerald-700' : 'text-rose-700'}`}>
+                  {results.q8.icon} {results.q8.label}
+                </span>
+              </div>
+            </div>
+
+            <div className="pt-2">
+              <button 
+                onClick={() => setShowAlertModal(false)} 
+                className="w-full py-3 bg-[#1a2b6d] hover:bg-blue-900 text-white font-bold text-xs rounded-md transition shadow-sm cursor-pointer"
+              >
+                รับทราบ และรับคำปรึกษา
+              </button>
+            </div>
+
           </div>
         </div>
       )}
 
-      {/* 🏥 HEADER BANNER */}
-      <section className="bg-white border-b border-slate-200/80 shadow-xs">
-        <div className="max-w-7xl mx-auto px-4 md:px-8 py-6">
-          <nav className="text-[11px] text-slate-400 font-medium tracking-wider uppercase flex items-center gap-1.5">
+      {/* HEADER BANNER */}
+      <section className="bg-white border-b border-slate-200 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 md:px-8 py-5">
+          <nav className="text-[11px] text-slate-500 font-medium tracking-wider uppercase flex items-center gap-1.5">
             <Link href="/" className="hover:text-[#1a2b6d] transition-colors">หน้าแรก</Link>
             <span className="text-slate-300">/</span>
             <Link href="/mental-health" className="hover:text-[#1a2b6d] transition-colors">ตรวจสุขภาพใจออนไลน์</Link>
             <span className="text-slate-300">/</span>
-            <span className="text-slate-600 font-semibold">ผลตรวจเช็คสุขภาพใจ</span>
+            <span className="text-[#1a2b6d] font-bold">สรุปผลการประเมิน</span>
           </nav>
         </div>
       </section>
 
-      {/* 🌟 TITLE SECTION */}
-      <section className="bg-gradient-to-b from-white via-sky-50/20 to-slate-50/50 py-10 border-b border-slate-200/60 text-center">
-        <div className="max-w-4xl mx-auto px-4 space-y-2">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-sky-100/80 text-[#1a2b6d] text-xs font-semibold">
-            <Sparkles className="w-4 h-4 text-[#1a2b6d]" />
-            <span>ผลตรวจเช็คสุขภาพใจ</span>
+      {/* TITLE SECTION */}
+      <section className="bg-white py-10 border-b border-slate-200 text-center">
+        <div className="max-w-4xl mx-auto px-4 space-y-3">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-md bg-slate-100 border border-slate-200 text-[#1a2b6d] text-xs font-bold uppercase tracking-widest">
+            <FileText className="w-4 h-4 text-[#1a2b6d]" />
+            <span>รายงานผลการประเมินสุขภาพจิต</span>
           </div>
-          <h1 className="text-2xl md:text-3xl font-extrabold text-[#1a2b6d]">
-            ผลการประเมินสุขภาพจิต (Evaluation Summary)
+          <h1 className="text-2xl md:text-3xl font-extrabold text-[#1a2b6d] tracking-tight">
+            สรุปผลการประเมินสุขภาพจิต (Evaluation Report)
           </h1>
         </div>
       </section>
 
-      {/* 📝 MAIN CONTENT GRID */}
-      <main className="max-w-5xl mx-auto px-4 md:px-8 mt-10 space-y-8">
+      <main className="max-w-5xl mx-auto px-4 md:px-8 mt-8 space-y-6">
         
-        {/* Top Summary Split Grid */}
+        {/* SUMMARY TOP CARDS */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           
-          {/* User Profile / Ref Card */}
-          <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-xs space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-sky-50 text-[#1a2b6d] rounded-xl flex items-center justify-center">
+          {/* Ref ID & Demographics Box */}
+          <div className="bg-white border border-slate-300 rounded-lg p-6 shadow-sm space-y-4">
+            <div className="flex items-center gap-3 border-b border-slate-100 pb-3">
+              <div className="w-9 h-9 bg-slate-100 text-[#1a2b6d] rounded-md flex items-center justify-center border border-slate-200">
                 <HeartPulse className="w-5 h-5" />
               </div>
               <div>
-                <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Ref. ID : {userInfo.refId}</h3>
-                <p className="text-sm font-bold text-slate-800">การประเมิน : ประเมินตนเอง</p>
+                <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider">หมายเลขอ้างอิง: {userInfo.refId}</h3>
+                <p className="text-sm font-bold text-slate-800">การประเมินตนเอง (Anonymous Assessment)</p>
               </div>
             </div>
             
-            <div className="text-xs text-slate-600 space-y-1.5 border-t border-slate-100 pt-3">
-              <p>เพศ / ช่วงอายุ : <span className="font-semibold text-slate-800">{userInfo.gender} | {userInfo.ageGroup}</span></p>
-              <p>ประเภท : <span className="font-semibold text-slate-800">ประชาชน</span></p>
-              <p>จังหวัดที่พักอาศัย : <span className="font-semibold text-slate-800">{userInfo.province}</span></p>
-              <p>ยินยอมเปิดเผยข้อมูล : <span className="font-semibold text-emerald-600">ยินยอมตาม PDPA</span></p>
-            </div>
-
-            {results.overall.isRisk && (
-              <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 flex items-center gap-2 text-xs text-amber-800 font-medium">
-                <AlertTriangle className="w-4 h-4 shrink-0 text-amber-600" />
-                <span>เนื่องจากท่านมีความเสี่ยงด้านสุขภาพจิต กรุณากรอกแบบฟอร์มด้านล่างเพื่อรับการช่วยเหลือ</span>
+            <div className="text-xs text-slate-600 space-y-2">
+              <div className="flex justify-between py-1 border-b border-slate-100">
+                <span className="text-slate-500">เพศ / ช่วงอายุ:</span>
+                <span className="font-semibold text-slate-800">{userInfo.gender} | {userInfo.ageGroup}</span>
               </div>
-            )}
+             
+              <div className="flex justify-between py-1">
+                <span className="text-slate-500">นโยบายความเป็นส่วนตัว:</span>
+                <span className="font-semibold text-emerald-700">จัดเก็บข้อมูลเป็นสถิติภาพรวม</span>
+              </div>
+            </div>
           </div>
 
-          {/* Overall Status Card */}
-          <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-xs flex flex-col items-center justify-center text-center space-y-3">
-            <div className={`w-20 h-20 rounded-full flex items-center justify-center shadow-inner ${results.overall.isRisk ? 'bg-rose-50 text-rose-600' : 'bg-emerald-50 text-emerald-600'}`}>
-              {results.overall.isRisk ? <ShieldAlert className="w-10 h-10" /> : <CheckCircle2 className="w-10 h-10" />}
+          {/* Overall Health Status Card */}
+          <div className="bg-white border border-slate-300 rounded-lg p-6 shadow-sm flex flex-col items-center justify-center text-center space-y-3">
+            <div className={`w-16 h-16 rounded-full flex items-center justify-center border ${results.overall.isRisk ? 'bg-rose-50 text-rose-600 border-rose-200' : 'bg-emerald-50 text-emerald-600 border-emerald-200'}`}>
+              {results.overall.isRisk ? <ShieldAlert className="w-8 h-8" /> : <CheckCircle2 className="w-8 h-8" />}
             </div>
             <div className="space-y-1">
-              <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">สุขภาพจิตโดยรวม</h4>
-              <h2 className={`text-xl font-extrabold ${results.overall.isRisk ? 'text-rose-600' : 'text-emerald-600'}`}>
+              <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">ผลการประเมินภาพรวม</span>
+              <h2 className={`text-xl font-extrabold ${results.overall.isRisk ? 'text-rose-700' : 'text-emerald-700'}`}>
                 {results.overall.label}
               </h2>
             </div>
           </div>
-
         </div>
 
-        {/* 📊 SCORE CARDS GRID */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-          
+        {/* DETAILED SCORE CARDS GRID */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
           {[
             { key: 'happiness', title: 'ความสุข (Happiness)' },
             { key: 'rq', title: 'พลังใจ (RQ)' },
             { key: 'burnout', title: 'ภาวะหมดไฟ (Burnout)' },
             { key: 'st5', title: 'ความเครียด (ST-5)' },
-            { key: 'q2', title: 'ภาวะซึมเศร้า (2Q+)' },
+            { key: 'q2', title: 'ภาวะซึมเศร้า (2Q)' },
             { key: 'q9', title: 'โรคซึมเศร้า (9Q)' }
           ].map((item) => {
             const data = results[item.key as keyof typeof results] as any;
             return (
-              <div key={item.key} className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-xs text-center space-y-3">
-                <p className="text-xs font-bold text-slate-500">{item.title}</p>
-                <div className={`w-14 h-14 rounded-2xl mx-auto flex items-center justify-center font-extrabold text-2xl ${getBgIconClasses(data.color)}`}>
-                  {data.score}
+              <div key={item.key} className="bg-white border border-slate-300 rounded-lg p-5 shadow-sm text-center space-y-3">
+                <h4 className="text-xs font-bold text-slate-700 border-b border-slate-100 pb-2">{item.title}</h4>
+                <div className="text-2xl font-black text-slate-800">
+                  {data.score} <span className="text-xs font-normal text-slate-400">คะแนน</span>
                 </div>
-                <p className="text-[11px] text-slate-400">คะแนนรวม</p>
-                <div className="pt-2">
-                  <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border ${getColorClasses(data.color)}`}>
+                <div>
+                  <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-bold border ${getStatusBadge(data.color)}`}>
                     {data.icon} <span>{data.label}</span>
                   </span>
                 </div>
               </div>
             );
           })}
-
         </div>
 
-        {/* Card 7: Suicide Risk (8Q) Centered */}
-        <div className="max-w-md mx-auto bg-white border border-slate-200/80 rounded-2xl p-6 shadow-xs text-center space-y-3">
-          <p className="text-xs font-bold text-slate-500">แนวโน้มฆ่าตัวตาย (8Q)</p>
-          <div className={`w-14 h-14 rounded-2xl mx-auto flex items-center justify-center font-extrabold text-2xl ${getBgIconClasses(results.q8.color)}`}>
-            {results.q8.score}
+        {/* 8Q Card (Center Aligned) */}
+        <div className="max-w-md mx-auto bg-white border border-slate-300 rounded-lg p-5 shadow-sm text-center space-y-3">
+          <h4 className="text-xs font-bold text-slate-700 border-b border-slate-100 pb-2">แนวโน้มการทำร้ายตนเอง (8Q)</h4>
+          <div className="text-2xl font-black text-slate-800">
+            {results.q8.score} <span className="text-xs font-normal text-slate-400">คะแนน</span>
           </div>
-          <p className="text-[11px] text-slate-400">คะแนนประเมิน</p>
-          <div className="pt-2">
-            <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border ${getColorClasses(results.q8.color)}`}>
+          <div>
+            <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-bold border ${getStatusBadge(results.q8.color)}`}>
               {results.q8.icon} <span>{results.q8.label}</span>
             </span>
           </div>
         </div>
 
-        {/* 📋 CONTACT FORM SECTION */}
-        <div className="bg-white border border-slate-200/80 rounded-2xl p-6 md:p-8 shadow-xs space-y-6">
-          <div className="text-center space-y-1">
-            <h3 className="text-base md:text-lg font-bold text-[#1a2b6d]">
-              รับความช่วยเหลือและคำปรึกษาเพิ่มเติม
-            </h3>
-            <p className="text-xs text-slate-500">กรอกข้อมูลเพื่อให้เจ้าหน้าที่โรงพยาบาลโนวาเลียติดต่อกลับเพื่อประเมินและดูแลเพิ่มเติมอย่างปลอดภัย</p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-            <div className="space-y-1">
-              <label className="font-semibold text-slate-700">ชื่อ</label>
-              <input type="text" placeholder="ระบุชื่อของคุณ" className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-[#1a2b6d]/30" />
+        {/* CONTACT FORM SECTION (แสดงเมื่อพบความเสี่ยง) */}
+        {results.overall.isRisk && (
+          <div className="bg-rose-50/60 border border-rose-300 rounded-lg p-6 md:p-8 shadow-sm space-y-5">
+            <div className="text-center space-y-1">
+              <h3 className="text-base font-bold text-rose-800">
+                ฟอร์มขอรับคำปรึกษาจากบุคลากรทางการแพทย์
+              </h3>
+              <p className="text-xs text-rose-700">
+                เนื่องจากท่านมีความเสี่ยง สามารถกรอกข้อมูลเพื่อให้เจ้าหน้าที่โรงพยาบาลติดต่อกลับเพื่อดูแลอย่างปลอดภัย
+              </p>
             </div>
-            <div className="space-y-1">
-              <label className="font-semibold text-slate-700">เบอร์โทรศัพท์ติดต่อ</label>
-              <input type="tel" placeholder="ระบุเบอร์โทรศัพท์" className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-[#1a2b6d]/30" />
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs max-w-2xl mx-auto">
+              <div className="space-y-1.5">
+                <label className="font-bold text-slate-800">ชื่อ - นามสกุล <span className="text-rose-600">*</span></label>
+                <input 
+                  type="text" 
+                  value={contactForm.name}
+                  onChange={(e) => setContactForm({...contactForm, name: e.target.value})}
+                  placeholder="ระบุชื่อ-นามสกุล" 
+                  className="w-full p-3 bg-white border border-slate-300 rounded-md outline-none focus:border-[#1a2b6d]" 
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="font-bold text-slate-800">เบอร์โทรศัพท์ติดต่อ <span className="text-rose-600">*</span></label>
+                <input 
+                  type="tel" 
+                  value={contactForm.phone}
+                  onChange={(e) => setContactForm({...contactForm, phone: e.target.value})}
+                  placeholder="ระบุเบอร์โทรศัพท์ 10 หลัก" 
+                  className="w-full p-3 bg-white border border-slate-300 rounded-md outline-none focus:border-[#1a2b6d]" 
+                />
+              </div>
+            </div>
+
+            <div className="pt-2 flex items-center justify-center">
+              <button 
+                type="button" 
+                onClick={handleContactSubmit}
+                className="px-8 py-3.5 bg-rose-700 hover:bg-rose-800 text-white font-bold text-xs rounded-md shadow-sm transition cursor-pointer disabled:opacity-50"
+                disabled={isSubmittingContact}
+              >
+                {isSubmittingContact ? 'กำลังส่งข้อมูล...' : 'ส่งข้อมูลเพื่อขอรับการติดต่อกลับ'}
+              </button>
             </div>
           </div>
+        )}
 
-          <div className="pt-2 flex items-center justify-center">
-            <button 
-              type="button" 
-              onClick={() => {
-                setIsSubmitting(true);
-                setTimeout(() => {
-                  alert('บันทึกข้อมูลและส่งเรื่องให้เจ้าหน้าที่เรียบร้อยแล้ว ทีมงานจะติดต่อกลับโดยเร็วที่สุด');
-                  setIsSubmitting(false);
-                }, 1000);
-              }}
-              className="px-8 py-3 bg-[#1a2b6d] hover:bg-blue-900 text-white font-bold text-xs rounded-xl shadow-xs transition cursor-pointer"
-            >
-              {isSubmitting ? 'กำลังส่งข้อมูล...' : 'ส่งข้อมูลติดต่อกลับ'}
-            </button>
-          </div>
+        {/* BOTTOM ACTION BUTTONS */}
+        <div className="pt-6 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-slate-200">
+          <button
+            onClick={() => {
+              localStorage.removeItem('mentalHealthAssessment');
+              window.location.href = '/mental-health'; 
+            }}
+            className="w-full sm:w-auto px-6 py-3.5 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-bold text-xs rounded-md transition shadow-sm cursor-pointer"
+          >
+            ทำแบบประเมินใหม่
+          </button>
+          
+          <button
+            onClick={() => {
+              localStorage.removeItem('mentalHealthAssessment');
+              window.location.href = '/';
+            }}
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-3.5 bg-[#1a2b6d] hover:bg-blue-900 text-white font-bold text-sm rounded-md shadow-md transition cursor-pointer"
+          >
+            <span>กลับสู่หน้าแรกโรงพยาบาล</span>
+            <ArrowRight className="w-4 h-4" />
+          </button>
         </div>
-
-        {/* 🔘 BOTTOM ACTION BUTTONS */}
-        <div className="pt-4 flex items-center justify-between gap-4">
-  <button
-    onClick={() => {
-      localStorage.removeItem('mentalHealthAssessment');
-      window.location.href = '/mental-health'; // ไปหน้าแรกของการประเมิน
-    }}
-    className="px-6 py-3.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold text-xs rounded-2xl transition shadow-xs cursor-pointer"
-  >
-    ทำแบบประเมินใหม่
-  </button>
-  
-  {/* เปลี่ยน Link เป็น button เพื่อล้างข้อมูลก่อนกลับหน้าแรกโรงพยาบาล */}
-  <button
-    onClick={() => {
-      localStorage.removeItem('mentalHealthAssessment');
-      window.location.href = '/'; // กลับหน้าแรกหลัก
-    }}
-    className="inline-flex items-center justify-center gap-2 px-8 py-3.5 bg-[#1a2b6d] hover:bg-blue-900 text-white font-bold text-sm rounded-2xl shadow-md transition cursor-pointer"
-  >
-    <span>กลับสู่หน้าแรก</span>
-    <ArrowRight className="w-4 h-4" />
-  </button>
-</div>
 
       </main>
 

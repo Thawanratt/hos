@@ -1,6 +1,13 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
+// Helper สร้าง Ref ID สุ่ม 8 หลักด้วย Web Crypto API
+function generateRefId(): string {
+  const array = new Uint32Array(1);
+  crypto.getRandomValues(array);
+  const randomNumber = 10000000 + (array[0] % 90000000);
+  return randomNumber.toString();
+}
 
 export async function POST(request: Request) {
   try {
@@ -8,46 +15,59 @@ export async function POST(request: Request) {
     const {
       gender,
       ageGroup,
+      riskFactors, // รับแบบ Array จาก Step 1
       riskFactor,
-      province,
       happiness,
       rqScore,
       burnoutScore,
       st5Score,
       q2Score,
       q9Score,
-      suicideScore,
-      isConsent
+      suicideScore
     } = body;
 
-    // สร้าง Ref ID สุ่ม 8 หลักไม่ซ้ำกัน
-    const refId = Math.floor(10000000 + Math.random() * 90000000).toString();
-
-    // ประเมินความเสี่ยงโดยรวมตามหลักการแพทย์เบื้องต้น
-    let overallRisk = 'ปกติ';
-    if (suicideScore > 0 || q9Score >= 19 || st5Score >= 13) {
-      overallRisk = 'เสี่ยงสูง / วิกฤต';
-    } else if (q9Score >= 13 || st5Score >= 10 || rqScore < 10) {
-      overallRisk = 'ปานกลางถึงสูง';
+    // แปลง Array ปัจจัยเสี่ยงให้เป็น String เพื่อเซฟลง DB
+    let formattedRiskFactor = 'ไม่อยู่ในกลุ่มข้างต้น';
+    if (Array.isArray(riskFactors) && riskFactors.length > 0) {
+      formattedRiskFactor = riskFactors.join(', ');
+    } else if (typeof riskFactor === 'string') {
+      formattedRiskFactor = riskFactor;
     }
 
-    // บันทึกลงฐานข้อมูล PostgreSQL ผ่าน Prisma (แมตช์ฟิลด์กับ Step 1)
+    const rawHappiness = Number(happiness || 0);
+    const rawRq = Number(rqScore || 0);
+    const rawBurnout = Number(burnoutScore || 0);
+    const rawSt5 = Number(st5Score || 0);
+    const rawQ2 = Number(q2Score || 0);
+    const rawQ9 = Number(q9Score || 0);
+    const rawSuicide = Number(suicideScore || 0);
+
+    // ปรับเกณฑ์ประเมินความเสี่ยงให้ตรงกับหน้าเว็บและกรมสุขภาพจิต
+    let overallRisk = 'ปกติ';
+    if (rawSuicide >= 17 || rawQ9 >= 19 || rawSt5 >= 10) {
+      overallRisk = 'เสี่ยงสูง / วิกฤต (ต้องพบแพทย์เร่งด่วน)';
+    } else if (rawSuicide >= 1 || rawQ9 >= 7 || rawSt5 >= 5 || rawBurnout >= 5 || rawHappiness < 5) {
+      overallRisk = 'มีความเสี่ยงด้านสุขภาพจิต';
+    }
+
+    // สร้าง Ref ID สุ่ม 8 หลักอย่างปลอดภัย
+    const refId = generateRefId();
+
+    // บันทึกลงฐานข้อมูล
     const newAssessment = await prisma.mentalHealthAssessment.create({
       data: {
         refId,
         gender: gender || 'ไม่ระบุ',
-        ageGroup: ageGroup || '20 - 39 ปี',
-        riskFactor: riskFactor || 'ไม่ระบุ',
-        province: province || 'นครปฐม',
-        happiness: Number(happiness || 0),
-        rqScore: Number(rqScore || 0),
-        burnoutScore: Number(burnoutScore || 0),
-        st5Score: Number(st5Score || 0),
-        q2Score: Number(q2Score || 0),
-        q9Score: Number(q9Score || 0),
-        suicideScore: Number(suicideScore || 0),
-        overallRisk,
-        isConsent: Boolean(isConsent)
+        ageGroup: ageGroup || 'ไม่ระบุ',
+        riskFactor: formattedRiskFactor,
+        happiness: rawHappiness,
+        rqScore: rawRq,
+        burnoutScore: rawBurnout,
+        st5Score: rawSt5,
+        q2Score: rawQ2,
+        q9Score: rawQ9,
+        suicideScore: rawSuicide,
+        overallRisk
       }
     });
 

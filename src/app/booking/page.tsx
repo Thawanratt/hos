@@ -18,6 +18,212 @@ interface Doctor {
   };
 }
 
+// ----------------------------------------------------
+// Helper Components (ลดความซับซ้อนของ Step ต่างๆ)
+// ----------------------------------------------------
+
+function StepProgressIndicator({ step }: { readonly step: number }) {
+  const steps = [
+    { num: 1, label: 'เริ่มต้น' },
+    { num: 2, label: 'วันและเวลา' },
+    { num: 3, label: 'ยืนยันข้อมูล' },
+  ];
+
+  return (
+    <div className="flex items-center justify-center max-w-md mx-auto relative">
+      <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-slate-200 -translate-y-1/2 z-0" />
+      <div className="flex justify-between w-full z-10">
+        {steps.map((s) => (
+          <div key={s.num} className="flex flex-col items-center space-y-1.5 bg-white px-2">
+            <div
+              className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
+                step >= s.num
+                  ? 'bg-[#1a2b6d] text-white ring-4 ring-blue-50'
+                  : 'bg-slate-100 text-slate-400'
+              }`}
+            >
+              {s.num}
+            </div>
+            <span className={`text-[11px] font-medium ${step >= s.num ? 'text-[#1a2b6d]' : 'text-slate-400'}`}>
+              {s.label}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function StepOneDoctorSelection({
+  doctorSelectionType,
+  setDoctorSelectionType,
+  bookingData,
+  setBookingData,
+  doctors,
+  filteredDoctors,
+}: {
+  readonly doctorSelectionType: 'auto' | 'manual';
+  readonly setDoctorSelectionType: (type: 'auto' | 'manual') => void;
+  readonly bookingData: any;
+  readonly setBookingData: React.Dispatch<React.SetStateAction<any>>;
+  readonly doctors: Doctor[];
+  readonly filteredDoctors: Doctor[];
+}) {
+  const departments = [
+    { id: 1, name: 'อายุรแพทย์' },
+    { id: 2, name: 'กุมารแพทย์' },
+    { id: 3, name: 'สูตินรีแพทย์' },
+    { id: 4, name: 'ศัลยแพทย์' },
+  ];
+
+  return (
+    <div className="space-y-6">
+      <div className="space-y-3">
+        <p className="text-xs font-bold text-slate-700 tracking-wide uppercase">
+          รูปแบบการเลือกแพทย์
+        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <button
+            type="button"
+            onClick={() => {
+              setDoctorSelectionType('auto');
+              setBookingData((prev: any) => ({ ...prev, doctorId: 0, doctorName: 'จัดสรรแพทย์ให้อัตโนมัติ' }));
+            }}
+            className={`p-5 rounded-2xl border transition-all cursor-pointer flex items-center justify-between text-left ${
+              doctorSelectionType === 'auto'
+                ? 'border-[#1a2b6d] bg-blue-50/30 shadow-xs ring-1 ring-[#1a2b6d]'
+                : 'border-slate-200 bg-white hover:border-slate-300'
+            }`}
+          >
+            <div className="flex items-center space-x-3.5">
+              <div className={`w-5 h-5 rounded-full border flex items-center justify-center ${doctorSelectionType === 'auto' ? 'border-[#1a2b6d] bg-[#1a2b6d]' : 'border-slate-300'}`}>
+                {doctorSelectionType === 'auto' && <div className="w-2 h-2 rounded-full bg-white" />}
+              </div>
+              <span className="text-xs font-semibold text-slate-800">เลือกแพทย์ให้ฉัน</span>
+            </div>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setDoctorSelectionType('manual')}
+            className={`p-5 rounded-2xl border transition-all cursor-pointer flex items-center justify-between text-left ${
+              doctorSelectionType === 'manual'
+                ? 'border-[#1a2b6d] bg-blue-50/30 shadow-xs ring-1 ring-[#1a2b6d]'
+                : 'border-slate-200 bg-white hover:border-slate-300'
+            }`}
+          >
+            <div className="flex items-center space-x-3.5">
+              <div className={`w-5 h-5 rounded-full border flex items-center justify-center ${doctorSelectionType === 'manual' ? 'border-[#1a2b6d] bg-[#1a2b6d]' : 'border-slate-300'}`}>
+                {doctorSelectionType === 'manual' && <div className="w-2 h-2 rounded-full bg-white" />}
+              </div>
+              <span className="text-xs font-semibold text-slate-800">ฉันต้องการเลือกแพทย์เอง</span>
+            </div>
+          </button>
+        </div>
+      </div>
+
+      <div className="space-y-3 pt-2">
+        <p className="text-xs font-bold text-slate-700 tracking-wide uppercase">
+          เลือกแผนกรักษา
+        </p>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {departments.map((dept) => (
+            <button
+              key={dept.id}
+              type="button"
+              onClick={() =>
+                setBookingData((prev: any) => ({
+                  ...prev,
+                  departmentId: dept.id,
+                  departmentName: dept.name,
+                  doctorId: 0,
+                  doctorName: ''
+                }))
+              }
+              className={`p-4 rounded-2xl border text-center text-xs font-semibold transition-all cursor-pointer ${
+                bookingData.departmentId === dept.id
+                  ? 'border-[#1a2b6d] bg-[#1a2b6d] text-white shadow-xs'
+                  : 'border-slate-200 hover:border-slate-300 text-slate-700 bg-white'
+              }`}
+            >
+              {dept.name}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {doctorSelectionType === 'manual' && (
+        <div className="space-y-3 pt-2">
+          <label htmlFor="doctor-select" className="block text-xs font-bold text-slate-700 tracking-wide uppercase">
+            เลือกแพทย์เฉพาะทาง
+          </label>
+          <select
+            id="doctor-select"
+            value={bookingData.doctorId}
+            onChange={(e) => {
+              const selectedId = Number(e.target.value);
+              const doc = doctors.find((d) => d.id === selectedId);
+              setBookingData({
+                ...bookingData,
+                doctorId: selectedId,
+                doctorName: doc ? `นพ./พญ. ${doc.user.firstName} ${doc.user.lastName}` : 'แพทย์ท่านใดก็ได้'
+              });
+            }}
+            className="w-full p-3.5 rounded-2xl border border-slate-200 text-xs text-slate-700 bg-white outline-none focus:border-[#1a2b6d]"
+          >
+            <option value={0}>-- โปรดเลือกแพทย์ผู้ตรวจ --</option>
+            {filteredDoctors.map((doc) => (
+              <option key={doc.id} value={doc.id}>
+                นพ./พญ. {doc.user.firstName} {doc.user.lastName} ({doc.specialization})
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function StepOneCheckupSelection({ bookingData, setBookingData }: { readonly bookingData: any; readonly setBookingData: any }) {
+  const packages = [
+    { title: 'โปรแกรมตรวจสุขภาพประจำปี (Standard Checkup)', price: '3,500 บาท', desc: 'ตรวจร่างกายพื้นฐาน ตรวจเลือด เอกซเรย์ปอด' },
+    { title: 'ชุดตรวจวิตามินและสารอาหาร (Vita-Beauty Checkup)', price: '5,200 บาท', desc: 'วิเคราะห์ระดับวิตามิน และสารต้านอนุมูลอิสระ' },
+    { title: 'ชุดตรวจสมดุลแร่ธาตุและสารต้านอนุมูลอิสระ', price: '6,800 บาท', desc: 'ตรวจเชิงลึกสำหรับผู้ที่ต้องการดูแลสุขภาพพิเศษ' },
+  ];
+
+  return (
+    <div className="space-y-4">
+      <p className="text-xs font-bold text-slate-700 tracking-wide uppercase">
+        เลือกโปรแกรมตรวจสุขภาพ
+      </p>
+      <div className="space-y-3">
+        {packages.map((pkg, idx) => (
+          <button
+            key={idx}
+            type="button"
+            onClick={() => setBookingData({ ...bookingData, packageType: pkg.title })}
+            className={`w-full p-5 rounded-2xl border cursor-pointer transition-all flex justify-between items-center text-left ${
+              bookingData.packageType === pkg.title
+                ? 'border-[#1a2b6d] bg-blue-50/30 shadow-xs ring-1 ring-[#1a2b6d]'
+                : 'border-slate-200 hover:border-slate-300 bg-white'
+            }`}
+          >
+            <div className="space-y-1">
+              <h3 className="font-bold text-xs text-slate-900">{pkg.title}</h3>
+              <p className="text-[11px] text-slate-500">{pkg.desc}</p>
+            </div>
+            <span className="text-xs font-bold text-[#1a2b6d] whitespace-nowrap ml-4">{pkg.price}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ----------------------------------------------------
+// Main Page Component
+// ----------------------------------------------------
+
 export default function BookingPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -31,7 +237,6 @@ export default function BookingPage() {
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
-
   const [doctorSelectionType, setDoctorSelectionType] = useState<'auto' | 'manual'>('auto');
 
   const [bookingData, setBookingData] = useState({
@@ -146,9 +351,7 @@ export default function BookingPage() {
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] font-sans pb-24 text-slate-800">
-
-      {/* HEADER BANNER */}
-      <div className="bg-[#1a2b6d] text-white py-12 px-6 shadow-sm">
+      <div className="bg-[#1a2b6d] text-white py-12 px-6 shadow-xs">
         <div className="max-w-4xl mx-auto text-center space-y-3">
           <span className="inline-block px-4 py-1 rounded-full bg-white/10 text-blue-200 text-xs font-medium tracking-wide">
             {currentBranch.name}
@@ -162,190 +365,34 @@ export default function BookingPage() {
         </div>
       </div>
 
-      {/* MAIN CONTENT CONTAINER */}
       <main className="max-w-4xl mx-auto px-6 mt-8">
-        <div className="bg-white rounded-3xl shadow-sm border border-slate-200/80 p-6 md:p-12 space-y-10">
+        <div className="bg-white rounded-3xl shadow-xs border border-slate-200/80 p-6 md:p-12 space-y-10">
 
-          {/* STEP PROGRESS INDICATOR */}
-          <div className="flex items-center justify-center max-w-md mx-auto relative">
-            <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-slate-200 -translate-y-1/2 z-0" />
-            
-            <div className="flex justify-between w-full z-10">
-              {[
-                { num: 1, label: 'เริ่มต้น' },
-                { num: 2, label: 'วันและเวลา' },
-                { num: 3, label: 'ยืนยันข้อมูล' },
-              ].map((s) => (
-                <div key={s.num} className="flex flex-col items-center space-y-1.5 bg-white px-2">
-                  <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
-                      step >= s.num
-                        ? 'bg-[#1a2b6d] text-white ring-4 ring-blue-50'
-                        : 'bg-slate-100 text-slate-400'
-                    }`}
-                  >
-                    {s.num}
-                  </div>
-                  <span className={`text-[11px] font-medium ${step >= s.num ? 'text-[#1a2b6d]' : 'text-slate-400'}`}>
-                    {s.label}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
+          <StepProgressIndicator step={step} />
 
-          {/* STEP 1: SELECT OPTIONS */}
+          {/* STEP 1 */}
           {step === 1 && (
             <div className="space-y-8 max-w-2xl mx-auto">
               {serviceType === 'doctor' && (
-                <div className="space-y-6">
-                  {/* รูปแบบการเลือกแพทย์ */}
-                  <div className="space-y-3">
-                    <label className="text-xs font-bold text-slate-700 tracking-wide uppercase">
-                      รูปแบบการเลือกแพทย์
-                    </label>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div
-                        onClick={() => {
-                          setDoctorSelectionType('auto');
-                          setBookingData((prev) => ({ ...prev, doctorId: 0, doctorName: 'จัดสรรแพทย์ให้อัตโนมัติ' }));
-                        }}
-                        className={`p-5 rounded-2xl border transition-all cursor-pointer flex items-center justify-between ${
-                          doctorSelectionType === 'auto'
-                            ? 'border-[#1a2b6d] bg-blue-50/30 shadow-sm ring-1 ring-[#1a2b6d]'
-                            : 'border-slate-200 bg-white hover:border-slate-300'
-                        }`}
-                      >
-                        <div className="flex items-center space-x-3.5">
-                          <div className={`w-5 h-5 rounded-full border flex items-center justify-center ${doctorSelectionType === 'auto' ? 'border-[#1a2b6d] bg-[#1a2b6d]' : 'border-slate-300'}`}>
-                            {doctorSelectionType === 'auto' && <div className="w-2 h-2 rounded-full bg-white" />}
-                          </div>
-                          <span className="text-xs font-semibold text-slate-800">เลือกแพทย์ให้ฉัน</span>
-                        </div>
-                      </div>
-
-                      <div
-                        onClick={() => setDoctorSelectionType('manual')}
-                        className={`p-5 rounded-2xl border transition-all cursor-pointer flex items-center justify-between ${
-                          doctorSelectionType === 'manual'
-                            ? 'border-[#1a2b6d] bg-blue-50/30 shadow-sm ring-1 ring-[#1a2b6d]'
-                            : 'border-slate-200 bg-white hover:border-slate-300'
-                        }`}
-                      >
-                        <div className="flex items-center space-x-3.5">
-                          <div className={`w-5 h-5 rounded-full border flex items-center justify-center ${doctorSelectionType === 'manual' ? 'border-[#1a2b6d] bg-[#1a2b6d]' : 'border-slate-300'}`}>
-                            {doctorSelectionType === 'manual' && <div className="w-2 h-2 rounded-full bg-white" />}
-                          </div>
-                          <span className="text-xs font-semibold text-slate-800">ฉันต้องการเลือกแพทย์เอง</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* แผนก */}
-                  <div className="space-y-3 pt-2">
-                    <label className="text-xs font-bold text-slate-700 tracking-wide uppercase">
-                      เลือกแผนกรักษา
-                    </label>
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                      {[
-                        { id: 1, name: 'อายุรแพทย์' },
-                        { id: 2, name: 'กุมารแพทย์' },
-                        { id: 3, name: 'สูตินรีแพทย์' },
-                        { id: 4, name: 'ศัลยแพทย์' },
-                      ].map((dept) => (
-                        <button
-                          key={dept.id}
-                          type="button"
-                          onClick={() =>
-                            setBookingData((prev) => ({
-                              ...prev,
-                              departmentId: dept.id,
-                              departmentName: dept.name,
-                              doctorId: 0,
-                              doctorName: ''
-                            }))
-                          }
-                          className={`p-4 rounded-2xl border text-center text-xs font-semibold transition-all cursor-pointer ${
-                            bookingData.departmentId === dept.id
-                              ? 'border-[#1a2b6d] bg-[#1a2b6d] text-white shadow-xs'
-                              : 'border-slate-200 hover:border-slate-300 text-slate-700 bg-white'
-                          }`}
-                        >
-                          {dept.name}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {doctorSelectionType === 'manual' && (
-                    <div className="space-y-3 pt-2">
-                      <label className="text-xs font-bold text-slate-700 tracking-wide uppercase">
-                        เลือกแพทย์เฉพาะทาง
-                      </label>
-                      <select
-                        value={bookingData.doctorId}
-                        onChange={(e) => {
-                          const selectedId = Number(e.target.value);
-                          const doc = doctors.find((d) => d.id === selectedId);
-                          setBookingData({
-                            ...bookingData,
-                            doctorId: selectedId,
-                            doctorName: doc ? `นพ./พญ. ${doc.user.firstName} ${doc.user.lastName}` : 'แพทย์ท่านใดก็ได้'
-                          });
-                        }}
-                        className="w-full p-3.5 rounded-2xl border border-slate-200 text-xs text-slate-700 bg-white outline-none focus:border-[#1a2b6d]"
-                      >
-                        <option value={0}>-- โปรดเลือกแพทย์ผู้ตรวจ --</option>
-                        {filteredDoctors.map((doc) => (
-                          <option key={doc.id} value={doc.id}>
-                            นพ./พญ. {doc.user.firstName} {doc.user.lastName} ({doc.specialization})
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  )}
-                </div>
+                <StepOneDoctorSelection
+                  doctorSelectionType={doctorSelectionType}
+                  setDoctorSelectionType={setDoctorSelectionType}
+                  bookingData={bookingData}
+                  setBookingData={setBookingData}
+                  doctors={doctors}
+                  filteredDoctors={filteredDoctors}
+                />
               )}
 
-              {/* โปรแกรมตรวจสุขภาพ */}
               {serviceType === 'checkup' && (
-                <div className="space-y-4">
-                  <label className="text-xs font-bold text-slate-700 tracking-wide uppercase">
-                    เลือกโปรแกรมตรวจสุขภาพ
-                  </label>
-                  <div className="space-y-3">
-                    {[
-                      { title: 'โปรแกรมตรวจสุขภาพประจำปี (Standard Checkup)', price: '3,500 บาท', desc: 'ตรวจร่างกายพื้นฐาน ตรวจเลือด เอกซเรย์ปอด' },
-                      { title: 'ชุดตรวจวิตามินและสารอาหาร (Vita-Beauty Checkup)', price: '5,200 บาท', desc: 'วิเคราะห์ระดับวิตามิน และสารต้านอนุมูลอิสระ' },
-                      { title: 'ชุดตรวจสมดุลแร่ธาตุและสารต้านอนุมูลอิสระ', price: '6,800 บาท', desc: 'ตรวจเชิงลึกสำหรับผู้ที่ต้องการดูแลสุขภาพพิเศษ' },
-                    ].map((pkg, idx) => (
-                      <div
-                        key={idx}
-                        onClick={() => setBookingData({ ...bookingData, packageType: pkg.title })}
-                        className={`p-5 rounded-2xl border cursor-pointer transition-all flex justify-between items-center ${
-                          bookingData.packageType === pkg.title
-                            ? 'border-[#1a2b6d] bg-blue-50/30 shadow-xs ring-1 ring-[#1a2b6d]'
-                            : 'border-slate-200 hover:border-slate-300 bg-white'
-                        }`}
-                      >
-                        <div className="space-y-1">
-                          <h3 className="font-bold text-xs text-slate-900">{pkg.title}</h3>
-                          <p className="text-[11px] text-slate-500">{pkg.desc}</p>
-                        </div>
-                        <span className="text-xs font-bold text-[#1a2b6d] whitespace-nowrap ml-4">{pkg.price}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+                <StepOneCheckupSelection bookingData={bookingData} setBookingData={setBookingData} />
               )}
 
-              {/* วัคซีน */}
               {serviceType === 'vaccine' && (
                 <div className="space-y-4">
-                  <label className="text-xs font-bold text-slate-700 tracking-wide uppercase">
+                  <p className="text-xs font-bold text-slate-700 tracking-wide uppercase">
                     รายการวัคซีน
-                  </label>
+                  </p>
                   <div className="p-5 rounded-2xl border border-[#1a2b6d] bg-blue-50/30 space-y-1">
                     <h3 className="font-bold text-xs text-[#1a2b6d]">วัคซีนป้องกันไข้หวัดใหญ่ 4 สายพันธุ์ (Influenza Vaccine)</h3>
                     <p className="text-[11px] text-slate-500 leading-relaxed">
@@ -357,6 +404,7 @@ export default function BookingPage() {
 
               <div className="flex justify-end pt-6 border-t border-slate-100">
                 <button
+                  type="button"
                   onClick={() => setStep(2)}
                   className="bg-[#1a2b6d] text-white px-8 py-3 rounded-xl text-xs font-semibold hover:bg-[#0f1a42] transition-all shadow-xs cursor-pointer flex items-center space-x-2"
                 >
@@ -366,7 +414,7 @@ export default function BookingPage() {
             </div>
           )}
 
-          {/* STEP 2: DATE & TIME */}
+          {/* STEP 2 */}
           {step === 2 && (
             <div className="space-y-6 max-w-2xl mx-auto">
               <div className="space-y-1">
@@ -376,8 +424,11 @@ export default function BookingPage() {
 
               <div className="space-y-4 pt-2">
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-slate-700">วันที่เข้ารับบริการ</label>
+                  <label htmlFor="appointment-date" className="block text-xs font-semibold text-slate-700">
+                    วันที่เข้ารับบริการ
+                  </label>
                   <input
+                    id="appointment-date"
                     type="date"
                     value={bookingData.date}
                     onChange={(e) => setBookingData({ ...bookingData, date: e.target.value })}
@@ -386,7 +437,7 @@ export default function BookingPage() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-slate-700">เลือกรอบเวลา</label>
+                  <p className="text-xs font-semibold text-slate-700">เลือกรอบเวลา</p>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                     {['09:00 - 10:00', '10:30 - 11:30', '13:00 - 14:00', '14:30 - 15:30'].map((time) => (
                       <button
@@ -406,8 +457,11 @@ export default function BookingPage() {
                 </div>
 
                 <div className="space-y-1.5 pt-2">
-                  <label className="text-xs font-semibold text-slate-700">อาการเบื้องต้น / หมายเหตุ (ถ้ามี)</label>
+                  <label htmlFor="symptoms" className="block text-xs font-semibold text-slate-700">
+                    อาการเบื้องต้น / หมายเหตุ (ถ้ามี)
+                  </label>
                   <textarea
+                    id="symptoms"
                     rows={3}
                     placeholder="ระบุอาการเบื้องต้น หรือประวัติการแพ้ยา..."
                     value={bookingData.symptoms}
@@ -419,12 +473,14 @@ export default function BookingPage() {
 
               <div className="flex justify-between items-center pt-6 border-t border-slate-100">
                 <button
+                  type="button"
                   onClick={() => setStep(1)}
                   className="px-5 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-600 font-semibold hover:bg-slate-50 transition cursor-pointer"
                 >
                   เริ่มใหม่ / ย้อนกลับ
                 </button>
                 <button
+                  type="button"
                   onClick={() => setStep(3)}
                   disabled={!bookingData.date || !bookingData.time}
                   className="bg-[#1a2b6d] text-white px-8 py-3 rounded-xl text-xs font-semibold hover:bg-[#0f1a42] transition shadow-xs cursor-pointer disabled:opacity-50"
@@ -435,7 +491,7 @@ export default function BookingPage() {
             </div>
           )}
 
-          {/* STEP 3: CONFIRMATION SUMMARY */}
+          {/* STEP 3 */}
           {step === 3 && (
             <div className="space-y-6 max-w-xl mx-auto">
               <div className="text-center space-y-1">
@@ -498,12 +554,14 @@ export default function BookingPage() {
 
               <div className="flex justify-between items-center pt-4">
                 <button
+                  type="button"
                   onClick={() => setStep(2)}
                   className="px-5 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-600 font-semibold hover:bg-slate-50 transition cursor-pointer"
                 >
                   ย้อนกลับ
                 </button>
                 <button
+                  type="button"
                   onClick={handleConfirmBooking}
                   disabled={submitting}
                   className="bg-[#1a2b6d] text-white px-8 py-3 rounded-xl text-xs font-semibold hover:bg-[#0f1a42] transition shadow-xs cursor-pointer disabled:opacity-50"
@@ -517,7 +575,6 @@ export default function BookingPage() {
         </div>
       </main>
 
-      {/* SUCCESS MODAL */}
       {showSuccessModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs">
           <div className="bg-white rounded-3xl shadow-2xl p-8 max-w-sm w-full text-center space-y-6 relative border border-slate-100">
@@ -535,6 +592,7 @@ export default function BookingPage() {
             </div>
 
             <button
+              type="button"
               onClick={handleCloseSuccessModal}
               className="w-full py-3 bg-[#1a2b6d] text-white text-xs font-semibold rounded-xl shadow-xs hover:bg-[#0f1a42] transition cursor-pointer"
             >
@@ -543,7 +601,6 @@ export default function BookingPage() {
           </div>
         </div>
       )}
-
     </div>
   );
 }
