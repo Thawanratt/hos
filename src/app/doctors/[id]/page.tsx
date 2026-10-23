@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 
@@ -49,14 +49,27 @@ const doctorImageMap: Record<number, string> = {
   11: '/images/13.jpeg',
 };
 
+// ----------------------------------------------------
+// Helper Function (วันที่ปัจจุบัน YYYY-MM-DD)
+// ----------------------------------------------------
+function getTodayString(): string {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, '0');
+  const day = String(today.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 export default function DoctorDetailPage() {
   const router = useRouter();
   const params = useParams();
   const doctorId = params?.id;
 
+  const todayStr = getTodayString();
+
   const [doctor, setDoctor] = useState<DoctorDetail | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
-  const [selectedDate, setSelectedDate] = useState<string>('');
+  const [selectedDate, setSelectedDate] = useState<string>(todayStr);
   const [selectedTimeSlot, setSelectedTimeSlot] = useState<string>('');
   const [symptoms, setSymptoms] = useState<string>('');
   const [bookingStatus, setBookingStatus] = useState<{ success?: boolean; message?: string } | null>(null);
@@ -69,7 +82,6 @@ export default function DoctorDetailPage() {
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
   const [showLoginModal, setShowLoginModal] = useState<boolean>(false);
 
-  
   // เช็กสถานะการล็อกอินเมื่อโหลดหน้าเว็บ
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
@@ -116,6 +128,17 @@ export default function DoctorDetailPage() {
     return days[dayNum] || '';
   };
 
+  // ตรวจสอบและจัดการการเปลี่ยนวันที่
+  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const chosenDate = e.target.value;
+    if (chosenDate < todayStr) {
+      alert('ไม่สามารถเลือกวันที่ย้อนหลังได้ กรุณาเลือกวันที่ปัจจุบันหรือวันที่ในอนาคต');
+      setSelectedDate(todayStr);
+      return;
+    }
+    setSelectedDate(chosenDate);
+  };
+
   // ฟังก์ชันเมื่อผู้ใช้คลิกเลือกช่องตารางออกตรวจ
   const handleScheduleClick = (slotValue: string) => {
     if (!isLoggedIn) {
@@ -134,6 +157,11 @@ export default function DoctorDetailPage() {
 
     if (!selectedDate || !selectedTimeSlot) {
       alert('กรุณาเลือกวันที่และช่วงเวลาที่ต้องการนัดหมาย');
+      return;
+    }
+
+    if (selectedDate < todayStr) {
+      alert('วันที่นัดหมายไม่ถูกต้อง ไม่สามารถทำรายการย้อนหลังได้');
       return;
     }
 
@@ -158,13 +186,11 @@ export default function DoctorDetailPage() {
       });
       const result = await res.json();
       if (result.success) {
-        // 🟢 เปิดแสดง Modal ใบนัดจองคิวสำเร็จ
         setShowAppointmentModal(true);
       } else {
         setBookingStatus({ success: false, message: result.message || 'เกิดข้อผิดพลาดในการจองคิว' });
       }
-    } catch (error) {
-      // Demo Mode กรณีทดสอบระบบ
+    } catch {
       setShowAppointmentModal(true);
     } finally {
       setSubmitting(false);
@@ -197,12 +223,10 @@ export default function DoctorDetailPage() {
   return (
     <div className="bg-[#FAFAFA] min-h-screen pb-24 font-sans text-slate-800 space-y-8 relative">
       
-      {/* 🟢 SUCCESS APPOINTMENT MODAL (ใบนัดจองคิวสำเร็จ) */}
+      {/* 🟢 SUCCESS APPOINTMENT MODAL */}
       {showAppointmentModal && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-fadeIn">
           <div className="bg-white rounded-3xl p-6 md:p-8 max-w-md w-full shadow-2xl border border-slate-100 text-center space-y-6 relative overflow-hidden">
-            
-            {/* ตกแต่งแถบสีหัวใบนัด */}
             <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-[#1a2b6d] to-[#c5a035]"></div>
 
             <div className="w-14 h-14 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center mx-auto border border-emerald-200">
@@ -219,7 +243,6 @@ export default function DoctorDetailPage() {
               <p className="text-xs text-slate-500">ระบบได้บันทึกนัดหมายของคุณเรียบร้อยแล้ว รายละเอียดใบนัดมีดังนี้</p>
             </div>
 
-            {/* รายละเอียดในใบนัด */}
             <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 text-left space-y-2 text-xs">
               <div className="flex justify-between border-b border-slate-200/60 pb-1.5">
                 <span className="text-slate-500">แพทย์ผู้ตรวจ:</span>
@@ -247,15 +270,17 @@ export default function DoctorDetailPage() {
 
             <div className="grid grid-cols-2 gap-3 pt-2">
               <button
+                type="button"
                 onClick={() => {
                   setShowAppointmentModal(false);
-                  router.push('/booking'); // หรือไปหน้าประวัติการนัดหมาย
+                  router.push('/appointments');
                 }}
                 className="py-3 px-4 rounded-xl border border-slate-300 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition text-center cursor-pointer"
               >
                 ดูรายการนัดหมาย
               </button>
               <button
+                type="button"
                 onClick={() => {
                   setShowAppointmentModal(false);
                   window.location.reload();
@@ -274,6 +299,7 @@ export default function DoctorDetailPage() {
         <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 animate-fadeIn">
           <div className="bg-white rounded-2xl p-6 md:p-8 max-w-md w-full shadow-2xl border border-slate-100 text-center space-y-6 relative">
             <button
+              type="button"
               onClick={() => setShowLoginModal(false)}
               className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 text-sm font-bold cursor-pointer"
             >
@@ -322,7 +348,6 @@ export default function DoctorDetailPage() {
       {/* SECTION 1: DOCTOR PROFILE CARD */}
       <section className="max-w-6xl mx-auto px-4 md:px-8">
         <div className="bg-white rounded-2xl border border-slate-200 p-6 md:p-8 shadow-sm flex flex-col md:flex-row gap-8 items-center md:items-start">
-          
           <div className="w-44 h-52 md:w-56 md:h-68 rounded-xl bg-slate-100 overflow-hidden flex-shrink-0 border border-slate-200 shadow-inner">
             {doctorImgSrc ? (
               <img src={doctorImgSrc} alt={doctorName} className="w-full h-full object-cover" />
@@ -416,19 +441,26 @@ export default function DoctorDetailPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
               <div className="space-y-1">
-                <label className="text-slate-600 font-medium">วันที่ต้องการนัดหมาย</label>
+                <label htmlFor="doctor-appointment-date" className="text-slate-600 font-medium block">
+                  วันที่ต้องการนัดหมาย
+                </label>
                 <input
+                  id="doctor-appointment-date"
                   type="date"
+                  min={todayStr}
                   value={selectedDate}
-                  onChange={(e) => setSelectedDate(e.target.value)}
-                  className="w-full p-2.5 rounded-xl border border-slate-300 bg-white text-slate-700 focus:outline-none focus:border-[#1a2b6d]"
+                  onChange={handleDateChange}
+                  className="w-full p-2.5 rounded-xl border border-slate-300 bg-white text-slate-700 focus:outline-none focus:border-[#1a2b6d] focus:ring-2 focus:ring-blue-50 transition cursor-pointer"
                   required
                 />
               </div>
 
               <div className="space-y-1">
-                <label className="text-slate-600 font-medium">ช่วงเวลาที่เลือก (จากตารางด้านบน)</label>
+                <label htmlFor="selected-time-slot" className="text-slate-600 font-medium block">
+                  ช่วงเวลาที่เลือก (จากตารางด้านบน)
+                </label>
                 <input
+                  id="selected-time-slot"
                   type="text"
                   value={selectedTimeSlot}
                   readOnly
@@ -440,8 +472,11 @@ export default function DoctorDetailPage() {
             </div>
 
             <div className="space-y-1 text-xs">
-              <label className="text-slate-600 font-medium">อาการเบื้องต้น / หมายเหตุ (ถ้ามี)</label>
+              <label htmlFor="doctor-symptoms" className="text-slate-600 font-medium block">
+                อาการเบื้องต้น / หมายเหตุ (ถ้ามี)
+              </label>
               <textarea
+                id="doctor-symptoms"
                 rows={3}
                 value={symptoms}
                 onChange={(e) => setSymptoms(e.target.value)}
@@ -453,7 +488,7 @@ export default function DoctorDetailPage() {
             <div className="pt-2">
               <button
                 type="submit"
-                disabled={submitting}
+                disabled={submitting || selectedDate < todayStr}
                 className="w-full py-3 bg-[#1a2b6d] text-white rounded-xl text-xs font-semibold hover:bg-[#0f1a42] transition shadow-sm cursor-pointer disabled:opacity-50"
               >
                 {submitting ? 'กำลังบันทึกการนัดหมาย...' : 'ยืนยันการจองคิวแพทย์'}

@@ -2,6 +2,7 @@
 
 import { use, useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter, usePathname } from 'next/navigation';
 
 interface PackageDetail {
   id: number;
@@ -23,7 +24,15 @@ interface CartItem extends PackageDetail {
   quantity: number;
 }
 
-export default function PackageDetailPage({ params }: { params: Promise<{ id: string }> }) {
+interface ToastState {
+  show: boolean;
+  message: string;
+  type: 'success' | 'error' | 'info';
+}
+
+export default function PackageDetailPage({ params }: { readonly params: Promise<{ id: string }> }) {
+  const router = useRouter();
+  const pathname = usePathname();
   const resolvedParams = use(params);
   const packageId = resolvedParams.id;
 
@@ -31,13 +40,41 @@ export default function PackageDetailPage({ params }: { params: Promise<{ id: st
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
 
-  // State สำหรับตะกร้าสินค้า
+  // States สำหรับตะกร้าสินค้าและผู้ใช้งาน
   const [cart, setCart] = useState<CartItem[]>([]);
+  const [currentUser, setCurrentUser] = useState<any>(null);
 
-  // โหลดข้อมูลตะกร้าจาก localStorage
+  // State สำหรับควบคุม Auth Modal และ Toast
+  const [showAuthModal, setShowAuthModal] = useState<boolean>(false);
+  const [toast, setToast] = useState<ToastState>({ show: false, message: '', type: 'info' });
+
+  const showToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
+    setToast({ show: true, message, type });
+    setTimeout(() => {
+      setToast({ show: false, message: '', type: 'info' });
+    }, 3500);
+  };
+
+  const getCartStorageKey = (user: any) => {
+    return user?.id ? `novaria_cart_${user.id}` : 'novaria_cart';
+  };
+
+  // โหลดข้อมูลผู้ใช้และตะกร้าสินค้าจาก localStorage
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const storedCart = localStorage.getItem('novaria_cart');
+      const storedUser = localStorage.getItem('user');
+      let activeUser = null;
+      if (storedUser) {
+        try {
+          activeUser = JSON.parse(storedUser);
+          setCurrentUser(activeUser);
+        } catch (e) {
+          console.error('Failed to parse user:', e);
+        }
+      }
+
+      const cartKey = getCartStorageKey(activeUser);
+      const storedCart = localStorage.getItem(cartKey) || localStorage.getItem('novaria_cart');
       if (storedCart) {
         try {
           setCart(JSON.parse(storedCart));
@@ -86,27 +123,51 @@ export default function PackageDetailPage({ params }: { params: Promise<{ id: st
   const updateCart = (newCart: CartItem[]) => {
     setCart(newCart);
     if (typeof window !== 'undefined') {
+      const cartKey = getCartStorageKey(currentUser);
+      localStorage.setItem(cartKey, JSON.stringify(newCart));
       localStorage.setItem('novaria_cart', JSON.stringify(newCart));
       window.dispatchEvent(new Event('cartUpdated'));
     }
   };
 
-  // ฟังก์ชันเพิ่มสินค้าลงตะกร้าแบบตรงไปตรงมา
+  // ฟังก์ชันเพิ่มสินค้าลงตะกร้าพร้อมระบบเช็กล็อกอินและแจ้งเตือน
   const handleAddToCart = () => {
     if (!pkg) return;
 
-    const existingIndex = cart.findIndex((item) => item.id === pkg.id);
+    if (!currentUser) {
+      setShowAuthModal(true);
+      return;
+    }
+
+    const cartKey = getCartStorageKey(currentUser);
+    let currentCart: CartItem[] = [];
+
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem(cartKey) || localStorage.getItem('novaria_cart');
+      if (stored) {
+        try {
+          currentCart = JSON.parse(stored);
+        } catch {
+          currentCart = cart;
+        }
+      } else {
+        currentCart = cart;
+      }
+    }
+
+    const existingIndex = currentCart.findIndex((item) => String(item.id) === String(pkg.id));
     let updatedCart: CartItem[] = [];
 
     if (existingIndex > -1) {
-      updatedCart = cart.map((item, idx) =>
-        idx === existingIndex ? { ...item, quantity: item.quantity + 1 } : item
+      updatedCart = currentCart.map((item, idx) =>
+        idx === existingIndex ? { ...item, quantity: (item.quantity || 1) + 1 } : item
       );
     } else {
-      updatedCart = [...cart, { ...pkg, quantity: 1 }];
+      updatedCart = [...currentCart, { ...pkg, quantity: 1 }];
     }
 
     updateCart(updatedCart);
+    showToast(`เพิ่ม "${pkg.title}" ลงในตะกร้าเรียบร้อยแล้ว`, 'success');
   };
 
   // แสดง Loading ระหว่างดึงข้อมูล
@@ -130,7 +191,6 @@ export default function PackageDetailPage({ params }: { params: Promise<{ id: st
     );
   }
 
-  // ดึงข้อมูลรายการตรวจ (Features) และเงื่อนไข (Terms) ที่แอดมินกรอกเข้ามา หรือใช้ค่า Fallback
   const featuresList = pkg.features && pkg.features.length > 0 ? pkg.features : [
     'ตรวจวิเคราะห์สุขภาพเบื้องต้นโดยแพทย์ผู้เชี่ยวชาญ',
     'ตรวจวัดสัญญาณชีพ ความดันโลหิต และดัชนีมวลกาย',
@@ -143,8 +203,75 @@ export default function PackageDetailPage({ params }: { params: Promise<{ id: st
     'กรุณานัดหมายล่วงหน้าอย่างน้อย 1 วัน ก่อนเข้ารับบริการ'
   ];
 
+  const redirectTarget = encodeURIComponent(pathname);
+
   return (
-    <div className="min-h-screen bg-slate-100/60 text-slate-800 pb-20 font-sans">
+    <div className="min-h-screen bg-slate-100/60 text-slate-800 pb-20 font-sans relative">
+
+      {/* AUTH REQUIRED MODAL */}
+      {showAuthModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 animate-fadeIn">
+          <div className="bg-white rounded-3xl max-w-md w-full p-8 shadow-2xl relative text-center space-y-5 border border-slate-100">
+            <button
+              onClick={() => setShowAuthModal(false)}
+              className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 p-1 rounded-full hover:bg-slate-100 transition cursor-pointer"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+
+            <div className="w-14 h-14 bg-slate-50 text-slate-500 rounded-full flex items-center justify-center mx-auto border border-slate-200">
+              <svg className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+              </svg>
+            </div>
+
+            <div className="space-y-1.5">
+              <h3 className="text-lg font-bold text-slate-900">กรุณาเข้าสู่ระบบก่อนเลือกซื้อแพ็กเกจ</h3>
+              <p className="text-xs text-slate-500 leading-relaxed px-2">
+                ท่านจำเป็นต้องเข้าสู่ระบบสมาชิกของโรงพยาบาลก่อนทำการเลือกซื้อหรือรับบริการแพ็กเกจสุขภาพ
+              </p>
+            </div>
+
+            <div className="flex items-center justify-center gap-3 pt-2">
+              <button
+                onClick={() => router.push(`/register?redirect=${redirectTarget}`)}
+                className="w-1/2 py-2.5 px-4 border border-slate-300 text-slate-700 font-semibold rounded-xl text-xs hover:bg-slate-50 transition cursor-pointer"
+              >
+                สร้างบัญชีใหม่
+              </button>
+              <button
+                onClick={() => router.push(`/login?redirect=${redirectTarget}`)}
+                className="w-1/2 py-2.5 px-4 bg-[#112260] text-white font-semibold rounded-xl text-xs hover:bg-[#0c1845] transition shadow-md cursor-pointer"
+              >
+                เข้าสู่ระบบ
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* TOAST NOTIFICATION */}
+      {toast.show && (
+        <div className="fixed bottom-6 right-6 z-50 transition-all duration-300">
+          <div className={`px-4 py-3 rounded-lg shadow-lg border text-xs font-medium flex items-center gap-3 ${
+            toast.type === 'success' ? 'bg-slate-900 text-white border-slate-800' :
+            toast.type === 'error' ? 'bg-red-900 text-white border-red-800' : 'bg-slate-800 text-white border-slate-700'
+          }`}>
+            <span className={`w-2 h-2 rounded-full ${
+              toast.type === 'success' ? 'bg-emerald-400' : toast.type === 'error' ? 'bg-red-400' : 'bg-blue-400'
+            }`} />
+            <span>{toast.message}</span>
+            <button 
+              onClick={() => setToast({ show: false, message: '', type: 'info' })} 
+              className="ml-2 text-slate-400 hover:text-white cursor-pointer"
+            >
+              &times;
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* TOP NAVIGATION / BREADCRUMB */}
       <div className="bg-white border-b border-slate-200 py-3 px-6">

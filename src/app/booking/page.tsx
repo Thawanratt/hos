@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { BRANCHES_DATA } from '@/app/api/branches/branches';
 
@@ -19,9 +19,19 @@ interface Doctor {
 }
 
 // ----------------------------------------------------
-// Helper Components (ลดความซับซ้อนของ Step ต่างๆ)
+// Helper Functions (วันที่)
 // ----------------------------------------------------
+function getTodayString(): string {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, '0');
+  const day = String(today.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
 
+// ----------------------------------------------------
+// Helper Components
+// ----------------------------------------------------
 function StepProgressIndicator({ step }: { readonly step: number }) {
   const steps = [
     { num: 1, label: 'เริ่มต้น' },
@@ -221,9 +231,8 @@ function StepOneCheckupSelection({ bookingData, setBookingData }: { readonly boo
 }
 
 // ----------------------------------------------------
-// Inner Component (ใช้ useSearchParams)
+// Main Content
 // ----------------------------------------------------
-
 function BookingContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -232,6 +241,7 @@ function BookingContent() {
   const branchId = searchParams.get('branch') || 'novaria-main';
 
   const currentBranch = BRANCHES_DATA.find((b) => b.id === branchId) || BRANCHES_DATA[0];
+  const todayStr = getTodayString();
 
   const [step, setStep] = useState(1);
   const [doctors, setDoctors] = useState<Doctor[]>([]);
@@ -246,7 +256,7 @@ function BookingContent() {
     doctorId: preSelectedDoctorId ? Number(preSelectedDoctorId) : 0,
     doctorName: '',
     packageType: serviceType === 'checkup' ? 'โปรแกรมตรวจสุขภาพประจำปี' : serviceType === 'vaccine' ? 'วัคซีนป้องกันไข้หวัดใหญ่ 4 สายพันธุ์' : '',
-    date: '',
+    date: todayStr,
     time: '',
     symptoms: ''
   });
@@ -293,7 +303,22 @@ function BookingContent() {
     fetchDoctors();
   }, [bookingData.departmentId, preSelectedDoctorId, serviceType]);
 
+  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedDate = e.target.value;
+    if (selectedDate < todayStr) {
+      alert('ไม่สามารถเลือกวันที่ย้อนหลังได้ กรุณาเลือกวันที่ปัจจุบันหรือวันที่ในอนาคต');
+      setBookingData((prev) => ({ ...prev, date: todayStr }));
+      return;
+    }
+    setBookingData((prev) => ({ ...prev, date: selectedDate }));
+  };
+
   const handleConfirmBooking = async () => {
+    if (bookingData.date < todayStr) {
+      alert('วันที่นัดหมายไม่ถูกต้อง ไม่สามารถทำรายการย้อนหลังได้');
+      return;
+    }
+
     const storedUser = localStorage.getItem('user');
     if (!storedUser) {
       const currentQuery = searchParams.toString();
@@ -327,7 +352,7 @@ function BookingContent() {
       } else {
         alert(result.message || 'เกิดข้อผิดพลาดในการจอง');
       }
-    } catch (error) {
+    } catch {
       alert('ไม่สามารถเชื่อมต่อระบบจองคิวได้');
     } finally {
       setSubmitting(false);
@@ -422,21 +447,25 @@ function BookingContent() {
                 <p className="text-xs text-slate-500">เลือกช่วงเวลาที่คุณสะดวกเข้ารับบริการ</p>
               </div>
 
-              <div className="space-y-4 pt-2">
+              <div className="space-y-5 pt-2">
+                {/* Clean & Modern Date Input */}
                 <div className="space-y-1.5">
                   <label htmlFor="appointment-date" className="block text-xs font-semibold text-slate-700">
                     วันที่เข้ารับบริการ
                   </label>
-                  <input
-                    id="appointment-date"
-                    type="date"
-                    value={bookingData.date}
-                    onChange={(e) => setBookingData({ ...bookingData, date: e.target.value })}
-                    className="w-full p-3.5 rounded-2xl border border-slate-200 text-xs text-slate-700 bg-white focus:outline-none focus:border-[#1a2b6d]"
-                  />
+                  <div className="relative flex items-center">
+                    <input
+                      id="appointment-date"
+                      type="date"
+                      min={todayStr}
+                      value={bookingData.date}
+                      onChange={handleDateChange}
+                      className="w-full pl-4 pr-10 py-3.5 rounded-2xl border border-slate-200 text-xs font-medium text-slate-800 bg-white focus:outline-none focus:border-[#1a2b6d] focus:ring-2 focus:ring-blue-50 transition-all cursor-pointer shadow-2xs"
+                    />
+                  </div>
                 </div>
 
-                <div className="space-y-1.5">
+                <div className="space-y-1.5 pt-2">
                   <p className="text-xs font-semibold text-slate-700">เลือกรอบเวลา</p>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                     {['09:00 - 10:00', '10:30 - 11:30', '13:00 - 14:00', '14:30 - 15:30'].map((time) => (
@@ -482,7 +511,7 @@ function BookingContent() {
                 <button
                   type="button"
                   onClick={() => setStep(3)}
-                  disabled={!bookingData.date || !bookingData.time}
+                  disabled={!bookingData.date || !bookingData.time || bookingData.date < todayStr}
                   className="bg-[#1a2b6d] text-white px-8 py-3 rounded-xl text-xs font-semibold hover:bg-[#0f1a42] transition shadow-xs cursor-pointer disabled:opacity-50"
                 >
                   ต่อไป
@@ -604,10 +633,6 @@ function BookingContent() {
     </div>
   );
 }
-
-// ----------------------------------------------------
-// Main Export Page Component (ห่อหุ้มด้วย Suspense)
-// ----------------------------------------------------
 
 export default function BookingPage() {
   return (
