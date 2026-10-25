@@ -1,13 +1,11 @@
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 generator client {
   provider = "prisma-client-js"
 }
 
-// 1. เพิ่ม Enum สำหรับเพศ
 enum Gender {
   MALE
   FEMALE

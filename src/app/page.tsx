@@ -575,7 +575,7 @@ export default function HomePage() {
         )}
       </section>
 
-      {/* 5. BASIC INFO GRID */}
+{/* 5. BASIC INFO GRID */}
       <section className="bg-white py-14 md:py-16 border-t border-slate-200/70">
         <div className="max-w-7xl mx-auto px-4 md:px-8 space-y-8">
           <h2 className={sectionTitle}>ข้อมูลเบื้องต้น</h2>
@@ -708,7 +708,7 @@ export default function HomePage() {
 
         </div>
       </section>
-
+      
       {/* 🔐 LOGIN MODAL POPUP */}
       {showLoginModal && (
         <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 animate-fadeIn">

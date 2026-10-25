@@ -73,8 +73,8 @@ export async function POST(request: Request) {
       data: {
         firstName,
         lastName,
-        idCard: securedIdCard,
-        phone: securedPhone,
+        idCard: idCard,     
+        phone: phone,
         email,
         password: hashedPassword,
         role: Role.PATIENT,

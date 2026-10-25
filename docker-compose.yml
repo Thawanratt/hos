@@ -13,6 +13,29 @@ services:
       - "5434:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    networks:
+      - novaria-net
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - DATABASE_URL=postgresql://admin:hospassword@postgres:5432/novaria_hospital?schema=public
+    container_name: novaria_web
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      - DATABASE_URL=postgresql://admin:hospassword@postgres:5432/novaria_hospital?schema=public
+    depends_on:
+      - postgres
+    networks:
+      - novaria-net
 
 volumes:
   postgres_data:
+
+networks:
+  novaria-net:
+    driver: bridge
