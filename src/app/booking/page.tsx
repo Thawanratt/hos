@@ -261,16 +261,26 @@ function BookingContent() {
     symptoms: ''
   });
 
+  // ตรวจสอบข้อมูล Session จาก localStorage ป้องกันการ Redirect วนลูป
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
     if (storedUser) {
-      const user = JSON.parse(storedUser);
-      setBookingData((prev) => ({ ...prev, patientId: user.id }));
-    } else {
-      const currentQuery = searchParams.toString();
-      const currentPath = `/booking${currentQuery ? `?${currentQuery}` : ''}`;
-      router.push(`/login?redirect=${encodeURIComponent(currentPath)}`);
+      try {
+        const user = JSON.parse(storedUser);
+        const validId = user.id || user.userId;
+        if (validId) {
+          setBookingData((prev) => ({ ...prev, patientId: Number(validId) }));
+          return;
+        }
+      } catch (e) {
+        console.error('Error parsing user JSON from localStorage:', e);
+      }
     }
+
+    // หากไม่มี Session จริงๆ จึงทำการส่งไปยังหน้า Login
+    const currentQuery = searchParams.toString();
+    const currentPath = `/booking${currentQuery ? `?${currentQuery}` : ''}`;
+    router.push(`/login?redirect=${encodeURIComponent(currentPath)}`);
   }, [router, searchParams]);
 
   useEffect(() => {
@@ -326,7 +336,14 @@ function BookingContent() {
       router.push(`/login?redirect=${encodeURIComponent(currentPath)}`);
       return;
     }
-    const user = JSON.parse(storedUser);
+    
+    let userId = bookingData.patientId;
+    try {
+      const user = JSON.parse(storedUser);
+      userId = Number(user.id || user.userId || bookingData.patientId);
+    } catch (e) {
+      console.error('Error parsing user data:', e);
+    }
 
     setSubmitting(true);
     try {
@@ -334,7 +351,7 @@ function BookingContent() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          patientId: user.id,
+          patientId: userId,
           doctorId: serviceType === 'doctor' && doctorSelectionType === 'manual' ? (bookingData.doctorId || null) : null,
           departmentId: bookingData.departmentId,
           branch: branchId,
@@ -448,7 +465,6 @@ function BookingContent() {
               </div>
 
               <div className="space-y-5 pt-2">
-                {/* Clean & Modern Date Input */}
                 <div className="space-y-1.5">
                   <label htmlFor="appointment-date" className="block text-xs font-semibold text-slate-700">
                     วันที่เข้ารับบริการ
