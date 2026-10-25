@@ -16,7 +16,15 @@ export async function POST(request: Request) {
     }
 
     const formattedDate = new Date(appointmentDate);
+    const validPatientId = Number(patientId);
     const validDoctorId = doctorId && Number(doctorId) > 0 ? Number(doctorId) : null;
+
+    if (isNaN(validPatientId)) {
+      return NextResponse.json(
+        { success: false, message: 'รหัสผู้ป่วยไม่ถูกต้อง' },
+        { status: 400 }
+      );
+    }
 
     // 🔒 1. เช็กว่าหมอติดคิวในวันและเวลานี้แล้วหรือยัง (เช็กเฉพาะกรณีที่มีการเลือกแพทย์)
     if (validDoctorId) {
@@ -42,7 +50,7 @@ export async function POST(request: Request) {
     // 🔒 2. เช็กว่าคนไข้มีการจองซ้ำในช่วงเวลาเดียวกันไหม
     const existingPatientAppointment = await prisma.appointment.findFirst({
       where: {
-        patientId: Number(patientId),
+        patientId: validPatientId,
         appointmentDate: formattedDate,
         timeSlot: timeSlot,
         status: {
@@ -61,7 +69,7 @@ export async function POST(request: Request) {
     // 3. บันทึกรายการนัดหมาย (รองรับ doctorId เป็น null)
     const newAppointment = await prisma.appointment.create({
       data: {
-        patientId: Number(patientId),
+        patientId: validPatientId,
         doctorId: validDoctorId,
         departmentId: Number(departmentId),
         branch: branch || 'novaria-main', 
@@ -78,8 +86,9 @@ export async function POST(request: Request) {
     );
   } catch (error) {
     console.error('Error creating appointment:', error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
     return NextResponse.json(
-      { success: false, message: 'เกิดข้อผิดพลาดในการจองคิว', error },
+      { success: false, message: 'เกิดข้อผิดพลาดในการจองคิว', error: errorMessage },
       { status: 500 }
     );
   }
@@ -93,8 +102,16 @@ export async function GET(request: Request) {
     const doctorId = searchParams.get('doctorId');
 
     const whereCondition: any = {};
-    if (patientId) whereCondition.patientId = Number(patientId);
-    if (doctorId) whereCondition.doctorId = Number(doctorId);
+    
+    if (patientId) {
+      const pId = Number(patientId);
+      if (!isNaN(pId)) whereCondition.patientId = pId;
+    }
+    
+    if (doctorId) {
+      const dId = Number(doctorId);
+      if (!isNaN(dId)) whereCondition.doctorId = dId;
+    }
 
     const appointments = await prisma.appointment.findMany({
       where: whereCondition,
@@ -131,8 +148,9 @@ export async function GET(request: Request) {
     );
   } catch (error) {
     console.error('Error fetching appointments:', error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
     return NextResponse.json(
-      { success: false, message: 'ไม่สามารถดึงข้อมูลรายการนัดหมายได้', error },
+      { success: false, message: 'ไม่สามารถดึงข้อมูลรายการนัดหมายได้', error: errorMessage },
       { status: 500 }
     );
   }

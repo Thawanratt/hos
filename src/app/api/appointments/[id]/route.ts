@@ -10,6 +10,13 @@ export async function GET(
     const resolvedParams = await params;
     const appointmentId = Number(resolvedParams.id);
 
+    if (isNaN(appointmentId)) {
+      return NextResponse.json(
+        { success: false, message: 'รหัสการนัดหมายไม่ถูกต้อง' },
+        { status: 400 }
+      );
+    }
+
     const appointment = await prisma.appointment.findUnique({
       where: { id: appointmentId },
       include: {
@@ -47,8 +54,9 @@ export async function GET(
       { status: 200 }
     );
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
     return NextResponse.json(
-      { success: false, message: 'เกิดข้อผิดพลาดในการดึงข้อมูล', error },
+      { success: false, message: 'เกิดข้อผิดพลาดในการดึงข้อมูล', error: errorMessage },
       { status: 500 }
     );
   }
@@ -62,6 +70,14 @@ export async function PATCH(
   try {
     const resolvedParams = await params;
     const appointmentId = Number(resolvedParams.id);
+
+    if (isNaN(appointmentId)) {
+      return NextResponse.json(
+        { success: false, message: 'รหัสการนัดหมายไม่ถูกต้อง' },
+        { status: 400 }
+      );
+    }
+
     const body = await request.json();
     const { status, symptoms } = body;
 
@@ -79,8 +95,9 @@ export async function PATCH(
     );
   } catch (error) {
     console.error('Error updating appointment:', error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
     return NextResponse.json(
-      { success: false, message: 'ไม่สามารถอัปเดตข้อมูลได้', error },
+      { success: false, message: 'ไม่สามารถอัปเดตข้อมูลได้', error: errorMessage },
       { status: 500 }
     );
   }
@@ -95,6 +112,13 @@ export async function DELETE(
     const resolvedParams = await params;
     const appointmentId = Number(resolvedParams.id);
 
+    if (isNaN(appointmentId)) {
+      return NextResponse.json(
+        { success: false, message: 'รหัสการนัดหมายไม่ถูกต้อง' },
+        { status: 400 }
+      );
+    }
+
     await prisma.appointment.delete({
       where: { id: appointmentId },
     });
@@ -104,8 +128,9 @@ export async function DELETE(
       { status: 200 }
     );
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
     return NextResponse.json(
-      { success: false, message: 'ไม่สามารถลบรายการนัดหมายได้', error },
+      { success: false, message: 'ไม่สามารถลบรายการนัดหมายได้', error: errorMessage },
       { status: 500 }
     );
   }

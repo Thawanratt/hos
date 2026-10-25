@@ -205,36 +205,51 @@ export async function POST(request: NextRequest) {
 // ----------------------------------------------------
 
 async function handleDeletePackage(packageId: string) {
-  await db.package.delete({
-    where: { id: Number(packageId) },
-  });
+  const id = Number(packageId);
+  if (isNaN(id)) {
+    return NextResponse.json({ success: false, message: 'packageId ไม่ถูกต้อง' }, { status: 400 });
+  }
+  await db.package.delete({ where: { id } });
   return NextResponse.json({ success: true, message: 'ลบแพ็กเกจเรียบร้อยแล้ว' });
 }
 
 async function handleDeleteNews(newsId: string) {
-  await db.news.delete({
-    where: { id: Number(newsId) },
-  });
+  const id = Number(newsId);
+  if (isNaN(id)) {
+    return NextResponse.json({ success: false, message: 'newsId ไม่ถูกต้อง' }, { status: 400 });
+  }
+  await db.news.delete({ where: { id } });
   return NextResponse.json({ success: true, message: 'ลบข่าวสารเรียบร้อยแล้ว' });
 }
 
-// 4. DELETE: ลบข่าวสาร หรือ ลบแพ็กเกจ
+async function handleDeleteAppointment(appointmentId: string) {
+  const id = Number(appointmentId);
+  if (isNaN(id)) {
+    return NextResponse.json({ success: false, message: 'appointmentId ไม่ถูกต้อง' }, { status: 400 });
+  }
+  await prisma.appointment.delete({ where: { id } });
+  return NextResponse.json({ success: true, message: 'ลบรายการนัดหมายเรียบร้อยแล้ว' });
+}
+
+// 4. DELETE: ลบข่าวสาร, ลบแพ็กเกจ หรือ ลบรายการนัดหมาย
 export async function DELETE(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const newsId = searchParams.get('newsId');
     const packageId = searchParams.get('packageId');
+    const appointmentId = searchParams.get('appointmentId');
 
     if (packageId) return await handleDeletePackage(packageId);
     if (newsId) return await handleDeleteNews(newsId);
+    if (appointmentId) return await handleDeleteAppointment(appointmentId);
 
     return NextResponse.json(
-      { success: false, message: 'กรุณาระบุ newsId หรือ packageId ที่ต้องการลบ' },
+      { success: false, message: 'กรุณาระบุ newsId, packageId หรือ appointmentId ที่ต้องการลบ' },
       { status: 400 }
     );
   } catch (error) {
     return NextResponse.json(
-      { success: false, message: 'ลบข้อมูลไม่สำเร็จ', error: String(error) },
+      { success: false, message: 'ลบข้อมูลไม่สำเร็จ', error: String(error) }, 
       { status: 500 }
     );
   }

@@ -248,6 +248,7 @@ function BookingContent() {
   const [submitting, setSubmitting] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [doctorSelectionType, setDoctorSelectionType] = useState<'auto' | 'manual'>('auto');
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 
   const [bookingData, setBookingData] = useState({
     patientId: 0,
@@ -261,26 +262,39 @@ function BookingContent() {
     symptoms: ''
   });
 
-  // ตรวจสอบข้อมูล Session จาก localStorage ป้องกันการ Redirect วนลูป
+  // 🟢 ตรวจสอบ Session จาก localStorage (ถ้ามี user อยู่แล้วให้ผ่าน ไม่เด้งกลับไป Login)
   useEffect(() => {
-    const storedUser = localStorage.getItem('user');
-    if (storedUser) {
-      try {
-        const user = JSON.parse(storedUser);
-        const validId = user.id || user.userId;
-        if (validId) {
+    let isMounted = true;
+    
+    try {
+      const storedUser = localStorage.getItem('user');
+
+      if (storedUser && storedUser !== 'undefined' && storedUser !== 'null') {
+        const parsedUser = JSON.parse(storedUser);
+        const realUser = parsedUser.user || parsedUser.data || parsedUser;
+        const validId = realUser?.id || realUser?.userId;
+
+        if (validId && isMounted) {
           setBookingData((prev) => ({ ...prev, patientId: Number(validId) }));
+          setIsCheckingAuth(false);
           return;
         }
-      } catch (e) {
-        console.error('Error parsing user JSON from localStorage:', e);
       }
+
+      // ป้องกันการเด้งวนลูปถ้าไม่มี user จริงๆ ถึงส่งไป Login
+      if (isMounted) {
+        const currentQuery = searchParams.toString();
+        const currentPath = `/booking${currentQuery ? `?${currentQuery}` : ''}`;
+        router.push(`/login?redirect=${encodeURIComponent(currentPath)}`);
+      }
+    } catch (e) {
+      console.error('Error verifying auth state:', e);
+      if (isMounted) setIsCheckingAuth(false);
     }
 
-    // หากไม่มี Session จริงๆ จึงทำการส่งไปยังหน้า Login
-    const currentQuery = searchParams.toString();
-    const currentPath = `/booking${currentQuery ? `?${currentQuery}` : ''}`;
-    router.push(`/login?redirect=${encodeURIComponent(currentPath)}`);
+    return () => {
+      isMounted = false;
+    };
   }, [router, searchParams]);
 
   useEffect(() => {
@@ -330,19 +344,22 @@ function BookingContent() {
     }
 
     const storedUser = localStorage.getItem('user');
-    if (!storedUser) {
-      const currentQuery = searchParams.toString();
-      const currentPath = `/booking${currentQuery ? `?${currentQuery}` : ''}`;
-      router.push(`/login?redirect=${encodeURIComponent(currentPath)}`);
-      return;
-    }
-    
     let userId = bookingData.patientId;
-    try {
-      const user = JSON.parse(storedUser);
-      userId = Number(user.id || user.userId || bookingData.patientId);
-    } catch (e) {
-      console.error('Error parsing user data:', e);
+    
+    if (storedUser) {
+      try {
+        const parsedUser = JSON.parse(storedUser);
+        const realUser = parsedUser.user || parsedUser.data || parsedUser;
+        userId = Number(realUser?.id || realUser?.userId || bookingData.patientId);
+      } catch (e) {
+        console.error('Error parsing user data:', e);
+      }
+    }
+
+    if (!userId) {
+      alert('ไม่พบข้อมูลผู้ใช้งาน กรุณาเข้าสู่ระบบใหม่อีกครั้ง');
+      router.push('/login?redirect=%2Fbooking');
+      return;
     }
 
     setSubmitting(true);
@@ -390,6 +407,14 @@ function BookingContent() {
     if (serviceType === 'vaccine') return 'ฉีดวัคซีนไข้หวัดใหญ่';
     return 'ทำนัดหมายแพทย์';
   };
+
+  if (isCheckingAuth) {
+    return (
+      <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center text-xs text-slate-500">
+        กำลังตรวจสอบสิทธิ์การใช้งาน...
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] font-sans pb-24 text-slate-800">

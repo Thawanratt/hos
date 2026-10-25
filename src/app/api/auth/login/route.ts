@@ -2,12 +2,19 @@
 
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import bcrypt from 'bcryptjs'; // เพิ่มตัวถอดรหัสผ่าน
+import bcrypt from 'bcryptjs';
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
     const { email, password } = body;
+
+    if (!email || !password) {
+      return NextResponse.json(
+        { success: false, message: 'กรุณากรอกอีเมลและรหัสผ่าน' },
+        { status: 400 }
+      );
+    }
 
     // 1. ค้นหาผู้ใช้ด้วยอีเมลใน PostgreSQL ผ่าน Prisma
     const user = await prisma.user.findUnique({
@@ -17,17 +24,17 @@ export async function POST(request: Request) {
     // 2. ถ้าไม่อยู่ในระบบ
     if (!user) {
       return NextResponse.json(
-        { message: 'ไม่พบบัญชีผู้ใช้งานนี้ในระบบ' },
+        { success: false, message: 'ไม่พบบัญชีผู้ใช้งานนี้ในระบบ' },
         { status: 404 }
       );
     }
 
-    // 3.  เช็กรหัสผ่านด้วย bcrypt.compare (เทียบรหัสที่พิมพ์มา กับรหัสที่เข้ารหัสไว้ใน Database)
+    // 3. เช็กรหัสผ่านด้วย bcrypt.compare
     const isPasswordMatch = await bcrypt.compare(password, user.password);
 
     if (!isPasswordMatch) {
       return NextResponse.json(
-        { message: 'รหัสผ่านไม่ถูกต้อง' },
+        { success: false, message: 'รหัสผ่านไม่ถูกต้อง' },
         { status: 401 }
       );
     }
@@ -46,7 +53,7 @@ export async function POST(request: Request) {
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     return NextResponse.json(
-      { message: 'เกิดข้อผิดพลาดในการเข้าสู่ระบบ', error: errorMessage },
+      { success: false, message: 'เกิดข้อผิดพลาดในการเข้าสู่ระบบ', error: errorMessage },
       { status: 500 }
     );
   }

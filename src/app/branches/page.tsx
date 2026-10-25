@@ -18,22 +18,35 @@ function BranchesContent() {
   const [showLoginModal, setShowLoginModal] = useState<boolean>(false);
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
 
-  //  เพิ่ม State สำหรับควบคุม Modal เลือกสาขา
+  // เพิ่ม State สำหรับควบคุม Modal เลือกสาขา
   const [isBranchModalOpen, setIsBranchModalOpen] = useState<boolean>(false);
 
   // ตรวจสอบการล็อกอินเมื่อโหลดหน้า
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const storedUser = localStorage.getItem('user');
-      if (storedUser && storedUser !== 'undefined' && storedUser !== 'null') {
-        setIsLoggedIn(true);
+      try {
+        const storedUser = localStorage.getItem('user');
+        const storedLoggedInState = localStorage.getItem('isLoggedIn');
+
+        if (storedUser && storedUser !== 'undefined' && storedUser !== 'null') {
+          const parsed = JSON.parse(storedUser);
+          const realUser = parsed.user || parsed.data || parsed;
+          const validId = realUser.id || realUser.userId;
+
+          if (validId || storedLoggedInState === 'true') {
+            setIsLoggedIn(true);
+            return;
+          }
+        }
+      } catch (e) {
+        console.error('Error checking auth state on load:', e);
       }
+      setIsLoggedIn(false);
     }
   }, []);
 
   // ฟังก์ชันเมื่อผู้ใช้เลือกสาขาใหม่จาก Modal
   const handleSelectNewBranch = (branch: Branch) => {
-    // อัปเดต URL พารามิเตอร์ branch ให้เปลี่ยนตามสาขาที่เลือก
     router.push(`/branches?branch=${branch.id}`);
   };
 
@@ -74,10 +87,36 @@ function BranchesContent() {
   // URL ปลายทางสำหรับส่งต่อไปยังหน้า Booking
   const targetBookingPath = `/booking?branch=${branchId}&service=${selectedService}`;
 
+  // 🟢 แก้ไขปุ่ม handleNext เช็ก Session สดๆ จาก localStorage ในเสี้ยววินาทีที่กด
   const handleNext = () => {
-    if (isLoggedIn) {
+    let hasValidSession = false;
+
+    if (typeof window !== 'undefined') {
+      const storedUser = localStorage.getItem('user');
+      const storedLoggedInState = localStorage.getItem('isLoggedIn');
+
+      if (storedUser && storedUser !== 'undefined' && storedUser !== 'null') {
+        try {
+          const parsed = JSON.parse(storedUser);
+          const realUser = parsed.user || parsed.data || parsed;
+          if (realUser && (realUser.id || realUser.userId)) {
+            hasValidSession = true;
+          }
+        } catch (e) {
+          console.error('Error parsing session on handleNext:', e);
+        }
+      }
+
+      if (storedLoggedInState === 'true') {
+        hasValidSession = true;
+      }
+    }
+
+    // ล็อกอินอยู่แล้ว -> วิ่งตรงไปหน้า /booking ทันที
+    if (hasValidSession || isLoggedIn) {
       router.push(targetBookingPath);
     } else {
+      // ไม่ได้ล็อกอิน -> เด้ง Pop-up ล็อกอินขึ้นมาเตือน
       setShowLoginModal(true);
     }
   };
@@ -111,14 +150,12 @@ function BranchesContent() {
             </div>
             <div>
               <span className="text-slate-400 block font-medium text-[11px]">สาขาที่เลือกเข้ารับบริการ:</span>
-              {/* 🟢 แสดงชื่อสาขาปัจจุบันแบบ Dynamic ตามที่ส่งผ่านมา */}
               <span className="font-bold text-[#1a2b6d] text-sm md:text-base">
                 {currentBranch ? currentBranch.name : 'สาขาใกล้คุณ'}
               </span>
             </div>
           </div>
 
-          {/* 🟢 ปุ่มเปลี่ยนสาขา กดแล้วเรียก Modal ขึ้นมา */}
           <button 
             onClick={() => setIsBranchModalOpen(true)}
             className="text-xs text-[#1a2b6d] font-bold hover:underline px-4 py-2 rounded-xl bg-white border border-slate-200/80 shadow-2xs hover:bg-slate-50 transition cursor-pointer"
@@ -187,7 +224,7 @@ function BranchesContent() {
 
       </main>
 
-      {/* 🔐 LOGIN MODAL POPUP */}
+      {/* LOGIN MODAL POPUP (ขึ้นเฉพาะเมื่อยังไม่ได้ล็อกอิน) */}
       {showLoginModal && (
         <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 animate-fadeIn">
           <div className="bg-white rounded-3xl p-8 max-w-sm w-full shadow-2xl border border-slate-100 text-center space-y-6 relative">
@@ -229,7 +266,7 @@ function BranchesContent() {
         </div>
       )}
 
-      {/* 🏥 BRANCH SELECTOR MODAL (เชื่อมต่อ Pop-up เลือกสาขา) */}
+      {/* BRANCH SELECTOR MODAL */}
       <BranchSelectorModal
         isOpen={isBranchModalOpen}
         onClose={() => setIsBranchModalOpen(false)}

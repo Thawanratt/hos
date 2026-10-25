@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { Role } from '@prisma/client';
-import { maskIdCard, maskPhone } from '@/utils/maskData';
 import bcrypt from 'bcryptjs';
 
 export async function POST(request: Request) {
@@ -10,19 +9,28 @@ export async function POST(request: Request) {
 
     const firstName = body.firstName ?? body.firstname ?? body.first_name;
     const lastName = body.lastName ?? body.lastname ?? body.last_name;
+    
     // ลบขีดหรือช่องว่างออกก่อนนับจำนวน (เผื่อผู้ใช้พิมพ์มาแบบ 1-2345-...)
     const idCard = String(body.idCard ?? body.id_card ?? body.idcard ?? '').replace(/[^0-9]/g, '');
-    const phone = String(body.phone ?? '').replace(/[^0-9]/g, ''); const email = body.email;
+    const phone = String(body.phone ?? '').replace(/[^0-9]/g, '');
+    const email = body.email;
     const password = body.password || '';
 
     // ==========================================
     // 🛡️ 1. ระบบตรวจสอบความถูกต้องของข้อมูล (Validation)
     // ==========================================
 
+    if (!firstName || !lastName || !email) {
+      return NextResponse.json(
+        { success: false, message: 'กรุณากรอกข้อมูลส่วนตัวและอีเมลให้ครบถ้วน' },
+        { status: 400 }
+      );
+    }
+
     // ตรวจสอบเลขบัตรประชาชน (ต้อง 13 หลัก)
     if (idCard.length !== 13) {
       return NextResponse.json(
-        { message: 'กรุณากรอกเลขประจำตัวประชาชนให้ครบ 13 หลัก' },
+        { success: false, message: 'กรุณากรอกเลขประจำตัวประชาชนให้ครบ 13 หลัก' },
         { status: 400 }
       );
     }
@@ -30,7 +38,7 @@ export async function POST(request: Request) {
     // ตรวจสอบเบอร์โทรศัพท์ (ต้อง 10 หลัก)
     if (phone.length !== 10) {
       return NextResponse.json(
-        { message: 'กรุณากรอกเบอร์โทรศัพท์ให้ครบ 10 หลัก' },
+        { success: false, message: 'กรุณากรอกเบอร์โทรศัพท์ให้ครบ 10 หลัก' },
         { status: 400 }
       );
     }
@@ -38,7 +46,7 @@ export async function POST(request: Request) {
     // ตรวจสอบความยาวรหัสผ่าน (ต้อง 8 ตัวขึ้นไป)
     if (password.length < 8) {
       return NextResponse.json(
-        { message: 'รหัสผ่านต้องมีความยาวอย่างน้อย 8 ตัวอักษรขึ้นไป' },
+        { success: false, message: 'รหัสผ่านต้องมีความยาวอย่างน้อย 8 ตัวอักษรขึ้นไป' },
         { status: 400 }
       );
     }
@@ -54,7 +62,7 @@ export async function POST(request: Request) {
 
     if (existingUser) {
       return NextResponse.json(
-        { message: 'อีเมลหรือเลขบัตรประชาชนนี้ถูกใช้งานแล้ว' },
+        { success: false, message: 'อีเมลหรือเลขบัตรประชาชนนี้ถูกใช้งานแล้วในระบบ' },
         { status: 400 }
       );
     }
@@ -62,10 +70,6 @@ export async function POST(request: Request) {
     // ==========================================
     // 💾 3. บันทึกข้อมูล
     // ==========================================
-    // เซนเซอร์ข้อมูลอ่อนไหวถาวร (เบอร์โทรโชว์ 4 ตัวท้าย, บัตร ปชช. ซ่อนกลาง)
-    const securedPhone = maskPhone(phone);
-    const securedIdCard = maskIdCard(idCard);
-
     // เข้ารหัส (Hash) รหัสผ่าน
     const hashedPassword = await bcrypt.hash(password, 10);
 
@@ -73,22 +77,29 @@ export async function POST(request: Request) {
       data: {
         firstName,
         lastName,
-        idCard: idCard,     
-        phone: phone,
+        idCard,     
+        phone,
         email,
         password: hashedPassword,
         role: Role.PATIENT,
       },
     });
 
+    // ตัดฟิลด์ password ออกก่อนส่งข้อมูลกลับไปให้ Client
+    const { password: _, ...userWithoutPassword } = newUser;
+
     return NextResponse.json(
-      { message: 'สมัครสมาชิกสำเร็จ', user: newUser },
+      { 
+        success: true, 
+        message: 'สมัครสมาชิกสำเร็จ', 
+        user: userWithoutPassword 
+      },
       { status: 201 }
     );
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error);
     return NextResponse.json(
-      { message: 'เกิดข้อผิดพลาดในการสมัครสมาชิก', error: message },
+      { success: false, message: 'เกิดข้อผิดพลาดในการสมัครสมาชิก', error: message },
       { status: 500 }
     );
   }
