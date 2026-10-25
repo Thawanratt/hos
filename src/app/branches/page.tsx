@@ -15,35 +15,19 @@ function BranchesContent() {
   const currentBranch = BRANCHES_DATA.find((b) => b.id === branchId) || BRANCHES_DATA[0];
 
   const [selectedService, setSelectedService] = useState<string>('doctor');
-  const [showLoginModal, setShowLoginModal] = useState<boolean>(false);
-  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
-
-  // เพิ่ม State สำหรับควบคุม Modal เลือกสาขา
   const [isBranchModalOpen, setIsBranchModalOpen] = useState<boolean>(false);
 
-  // ตรวจสอบการล็อกอินเมื่อโหลดหน้า
+  // 🛡️ ดักป้องกันกรณีพิมพ์ URL เข้า /branches โดยตรงโดยที่ยังไม่ได้ล็อกอิน
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      try {
-        const storedUser = localStorage.getItem('user');
-        const storedLoggedInState = localStorage.getItem('isLoggedIn');
-
-        if (storedUser && storedUser !== 'undefined' && storedUser !== 'null') {
-          const parsed = JSON.parse(storedUser);
-          const realUser = parsed.user || parsed.data || parsed;
-          const validId = realUser.id || realUser.userId;
-
-          if (validId || storedLoggedInState === 'true') {
-            setIsLoggedIn(true);
-            return;
-          }
-        }
-      } catch (e) {
-        console.error('Error checking auth state on load:', e);
+      const storedUser = localStorage.getItem('user');
+      if (!storedUser || storedUser === 'undefined' || storedUser === 'null') {
+        const currentQuery = searchParams.toString();
+        const currentPath = `/branches${currentQuery ? `?${currentQuery}` : ''}`;
+        router.push(`/login?redirect=${encodeURIComponent(currentPath)}`);
       }
-      setIsLoggedIn(false);
     }
-  }, []);
+  }, [router, searchParams]);
 
   // ฟังก์ชันเมื่อผู้ใช้เลือกสาขาใหม่จาก Modal
   const handleSelectNewBranch = (branch: Branch) => {
@@ -87,38 +71,9 @@ function BranchesContent() {
   // URL ปลายทางสำหรับส่งต่อไปยังหน้า Booking
   const targetBookingPath = `/booking?branch=${branchId}&service=${selectedService}`;
 
-  // 🟢 แก้ไขปุ่ม handleNext เช็ก Session สดๆ จาก localStorage ในเสี้ยววินาทีที่กด
+  // 🟢 เมื่อกดปุ่ม "ต่อไป" ให้สั่งเปลี่ยนหน้าพุ่งตรงไปที่ /booking ทันที
   const handleNext = () => {
-    let hasValidSession = false;
-
-    if (typeof window !== 'undefined') {
-      const storedUser = localStorage.getItem('user');
-      const storedLoggedInState = localStorage.getItem('isLoggedIn');
-
-      if (storedUser && storedUser !== 'undefined' && storedUser !== 'null') {
-        try {
-          const parsed = JSON.parse(storedUser);
-          const realUser = parsed.user || parsed.data || parsed;
-          if (realUser && (realUser.id || realUser.userId)) {
-            hasValidSession = true;
-          }
-        } catch (e) {
-          console.error('Error parsing session on handleNext:', e);
-        }
-      }
-
-      if (storedLoggedInState === 'true') {
-        hasValidSession = true;
-      }
-    }
-
-    // ล็อกอินอยู่แล้ว -> วิ่งตรงไปหน้า /booking ทันที
-    if (hasValidSession || isLoggedIn) {
-      router.push(targetBookingPath);
-    } else {
-      // ไม่ได้ล็อกอิน -> เด้ง Pop-up ล็อกอินขึ้นมาเตือน
-      setShowLoginModal(true);
-    }
+    router.push(targetBookingPath);
   };
 
   return (
@@ -223,48 +178,6 @@ function BranchesContent() {
         </div>
 
       </main>
-
-      {/* LOGIN MODAL POPUP (ขึ้นเฉพาะเมื่อยังไม่ได้ล็อกอิน) */}
-      {showLoginModal && (
-        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 animate-fadeIn">
-          <div className="bg-white rounded-3xl p-8 max-w-sm w-full shadow-2xl border border-slate-100 text-center space-y-6 relative">
-            <button
-              onClick={() => setShowLoginModal(false)}
-              className="absolute top-5 right-5 text-slate-400 hover:text-slate-600 text-xs font-bold cursor-pointer w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center"
-            >
-              ✕
-            </button>
-
-            <div className="w-14 h-14 bg-blue-50 border border-blue-100 text-[#1a2b6d] rounded-full flex items-center justify-center mx-auto">
-              <svg className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-              </svg>
-            </div>
-
-            <div className="space-y-1.5">
-              <h3 className="text-base font-bold text-slate-900">กรุณาเข้าสู่ระบบก่อนดำเนินการ</h3>
-              <p className="text-xs text-slate-500 leading-relaxed">
-                ท่านจำเป็นต้องเข้าสู่ระบบสมาชิกของโรงพยาบาลเพื่อความปลอดภัยและใช้ยืนยันการทำนัดหมาย
-              </p>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3 pt-2">
-              <Link
-                href={`/register?redirect=${encodeURIComponent(targetBookingPath)}`}
-                className="py-3 px-4 rounded-xl border border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition text-center flex items-center justify-center"
-              >
-                สร้างบัญชีใหม่
-              </Link>
-              <Link
-                href={`/login?redirect=${encodeURIComponent(targetBookingPath)}`}
-                className="py-3 px-4 rounded-xl bg-[#1a2b6d] text-xs font-semibold text-white hover:bg-[#0f1a42] transition shadow-xs text-center flex items-center justify-center"
-              >
-                เข้าสู่ระบบ
-              </Link>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* BRANCH SELECTOR MODAL */}
       <BranchSelectorModal

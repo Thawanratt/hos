@@ -34,8 +34,9 @@ function LoginForm() {
 
       if (res.ok) {
         // 1. บันทึกข้อมูล user ลง localStorage
-        if (data.user) {
-          localStorage.setItem('user', JSON.stringify(data.user));
+        const userData = data.user || data;
+        if (userData) {
+          localStorage.setItem('user', JSON.stringify(userData));
           localStorage.setItem('isLoggedIn', 'true');
         }
 
@@ -43,18 +44,15 @@ function LoginForm() {
         window.dispatchEvent(new Event('storage'));
 
         // 3. เช็ก Role และ Target URL
-        const userRole = data.user?.role || data.role;
+        const userRole = userData?.role || data.role;
         
-        let targetUrl = '/';
+        let targetUrl = '/branches'; // 🟢 ค่าเริ่มต้น: ล็อกอินเสร็จส่งไปหน้าเลือกสาขาเพื่อทำนัดต่อทันที!
         
         if (userRole === 'ADMIN') {
           targetUrl = '/status(admin)/dashboard';
         } else if (redirectTo) {
-          // ถ้ามี param redirect ส่งมา (เช่น จากปุ่มเพิ่มสินค้าลงตะกร้า) ให้เด้งกลับไปหน้านั้น
+          // ถ้ามี param redirect ส่งมา (เช่น จากปุ่มเฉพาะ) ให้ส่งกลับไปตามนั้น
           targetUrl = decodeURIComponent(redirectTo);
-        } else {
-          // ถ้าไม่มี redirect ส่งมา ให้เด้งไปหน้าหลัก (/)
-          targetUrl = '/';
         }
 
         // 4. เปลี่ยนหน้าไปยัง URL ปลายทาง
@@ -72,7 +70,7 @@ function LoginForm() {
 
   return (
     
-    <div className="relative z-10 w-full max-w-md space-y-6 text-center">
+    <div className="relative z-[#10] w-full max-w-md space-y-6 text-center">
       <div className="space-y-2">
         {/* รูปโลโก้โรงพยาบาล */}
         <div className="flex justify-center">
@@ -144,7 +142,10 @@ function LoginForm() {
 
       <p className="text-xs text-gray-600 pt-1">
         ยังไม่มีบัญชีสมาชิก?{' '}
-        <Link href="/register" className="text-[#b8972e] font-bold hover:underline ml-1">
+        <Link 
+          href={redirectTo ? `/register?redirect=${encodeURIComponent(redirectTo)}` : '/register'} 
+          className="text-[#b8972e] font-bold hover:underline ml-1"
+        >
           สมัครสมาชิก
         </Link>
       </p>
