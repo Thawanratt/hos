@@ -30,6 +30,8 @@ services:
       - DATABASE_URL=postgresql://admin:hospassword@postgres:5432/novaria_hospital?schema=public
     depends_on:
       - postgres
+    volumes:
+      - ./public/uploads:/app/public/uploads
     networks:
       - novaria-net
 
