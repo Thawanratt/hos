@@ -13,7 +13,7 @@ interface NavbarProps {
   onSelectBranch?: (branch: Branch) => void;
 }
 
-// 1. แถบแจ้งเหตุฉุกเฉิน (ไม่ใส่ Google Translate)
+// 1. แถบแจ้งเหตุฉุกเฉิน
 function EmergencyStrip() {
   return (
     <div className="bg-[#b91c1c] text-white text-xs py-1.5 px-4 md:px-8">
@@ -239,6 +239,9 @@ export default function Navbar({ selectedBranch: propBranch, onSelectBranch }: N
   const [internalBranch, setInternalBranch] = useState<Branch | null>(null);
   const [cartCount, setCartCount] = useState(0);
 
+  //  State สำหรับกาง/หด Submenu บน Mobile Drawer
+  const [openMobileSubmenu, setOpenMobileSubmenu] = useState<string | null>(null);
+
   const dropdownRef = useRef<HTMLDivElement>(null);
   const activeBranch = propBranch || internalBranch;
 
@@ -307,6 +310,10 @@ export default function Navbar({ selectedBranch: propBranch, onSelectBranch }: N
     } else {
       router.push('/branches');
     }
+  };
+
+  const toggleSubmenu = (menuName: string) => {
+    setOpenMobileSubmenu(openMobileSubmenu === menuName ? null : menuName);
   };
 
   return (
@@ -420,9 +427,9 @@ export default function Navbar({ selectedBranch: propBranch, onSelectBranch }: N
         </div>
       </div>
 
-      {/* MOBILE MENU DRAWER */}
+      {/* 🟢 MOBILE MENU DRAWER (เพิ่มระบบ Accordion ครบทุกหมวดหมู่) */}
       {isMobileMenuOpen && (
-        <div className="lg:hidden bg-white border-b border-slate-200 px-4 pt-3 pb-6 space-y-4 shadow-lg animate-in slide-in-from-top duration-200">
+        <div className="lg:hidden bg-white border-b border-slate-200 px-4 pt-3 pb-6 space-y-4 shadow-lg animate-in slide-in-from-top duration-200 max-h-[85vh] overflow-y-auto">
           <div className="flex justify-between items-center bg-slate-50 p-2.5 rounded-xl border border-slate-100">
             <button
               onClick={() => {
@@ -437,10 +444,95 @@ export default function Navbar({ selectedBranch: propBranch, onSelectBranch }: N
           </div>
 
           <nav className="flex flex-col space-y-1 text-sm font-bold text-slate-700">
-            <Link href="/" onClick={() => setIsMobileMenuOpen(false)} className="p-2 rounded-lg hover:bg-slate-50">หน้าหลัก</Link>
-            <Link href="/doctors" onClick={() => setIsMobileMenuOpen(false)} className="p-2 rounded-lg hover:bg-slate-50">ค้นหาแพทย์</Link>
-            <Link href="/services" onClick={() => setIsMobileMenuOpen(false)} className="p-2 rounded-lg hover:bg-slate-50">ศูนย์และบริการทั้งหมด</Link>
-            <Link href="/packages" onClick={() => setIsMobileMenuOpen(false)} className="p-2 rounded-lg hover:bg-slate-50">แพ็กเกจสุขภาพ</Link>
+            <Link href="/" onClick={() => setIsMobileMenuOpen(false)} className="p-2 rounded-lg hover:bg-slate-50">
+              หน้าหลัก
+            </Link>
+
+            {/* หมวดหมู่: บริการ */}
+            <div>
+              <button
+                onClick={() => toggleSubmenu('services')}
+                className="w-full flex items-center justify-between p-2 rounded-lg hover:bg-slate-50 text-left"
+              >
+                <span>บริการ</span>
+                <svg className={`w-4 h-4 transition-transform ${openMobileSubmenu === 'services' ? 'rotate-180 text-[#1a2b6d]' : 'text-slate-400'}`} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              {openMobileSubmenu === 'services' && (
+                <div className="pl-4 pr-2 py-2 space-y-1 bg-slate-50/60 rounded-lg my-1 text-xs font-semibold text-slate-600">
+                  <p className="text-[10px] uppercase font-bold text-slate-400 pt-1 pb-0.5">ศูนย์เฉพาะทาง</p>
+                  <Link href="/services/heart" onClick={() => setIsMobileMenuOpen(false)} className="block p-1.5 hover:text-[#1a2b6d]">ศูนย์หัวใจ</Link>
+                  <Link href="/services/cancer" onClick={() => setIsMobileMenuOpen(false)} className="block p-1.5 hover:text-[#1a2b6d]">ศูนย์มะเร็ง</Link>
+                  <Link href="/services/bone" onClick={() => setIsMobileMenuOpen(false)} className="block p-1.5 hover:text-[#1a2b6d]">ศูนย์กระดูก</Link>
+                  <Link href="/services/brain" onClick={() => setIsMobileMenuOpen(false)} className="block p-1.5 hover:text-[#1a2b6d]">ศูนย์สมอง</Link>
+                  <Link href="/services/checkup" onClick={() => setIsMobileMenuOpen(false)} className="block p-1.5 hover:text-[#1a2b6d]">ตรวจสุขภาพ</Link>
+                  <Link href="/services" onClick={() => setIsMobileMenuOpen(false)} className="block p-1.5 text-sky-600 font-bold">ศูนย์ทั้งหมด ➔</Link>
+                  <div className="border-t border-slate-200/60 my-1"></div>
+                  <Link href="/doctors" onClick={() => setIsMobileMenuOpen(false)} className="block p-1.5 font-bold text-slate-700">ค้นหาแพทย์</Link>
+                  <Link href="/packages" onClick={() => setIsMobileMenuOpen(false)} className="block p-1.5 font-bold text-slate-700">แพ็กเกจและโปรโมชั่น</Link>
+                </div>
+              )}
+            </div>
+
+            {/* หมวดหมู่: ข้อมูลผู้เข้ารับบริการ */}
+            <div>
+              <button
+                onClick={() => toggleSubmenu('patient-info')}
+                className="w-full flex items-center justify-between p-2 rounded-lg hover:bg-slate-50 text-left"
+              >
+                <span>ข้อมูลผู้เข้ารับบริการ</span>
+                <svg className={`w-4 h-4 transition-transform ${openMobileSubmenu === 'patient-info' ? 'rotate-180 text-[#1a2b6d]' : 'text-slate-400'}`} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              {openMobileSubmenu === 'patient-info' && (
+                <div className="pl-4 pr-2 py-2 space-y-1 bg-slate-50/60 rounded-lg my-1 text-xs font-semibold text-slate-600">
+                  <Link href="/rooms" onClick={() => setIsMobileMenuOpen(false)} className="block p-1.5 hover:text-[#1a2b6d]">ห้องพักผู้ป่วย (Inpatient Rooms)</Link>
+                  <Link href="/map" onClick={() => setIsMobileMenuOpen(false)} className="block p-1.5 hover:text-[#1a2b6d]">แผนที่และการเดินทาง</Link>
+                  <Link href="/insurance" onClick={() => setIsMobileMenuOpen(false)} className="block p-1.5 hover:text-[#1a2b6d]">ประกัน และสิทธิการรักษา</Link>
+                </div>
+              )}
+            </div>
+
+            {/* หมวดหมู่: ข้อมูลสุขภาพ */}
+            <div>
+              <button
+                onClick={() => toggleSubmenu('health-info')}
+                className="w-full flex items-center justify-between p-2 rounded-lg hover:bg-slate-50 text-left"
+              >
+                <span>ข้อมูลสุขภาพ</span>
+                <svg className={`w-4 h-4 transition-transform ${openMobileSubmenu === 'health-info' ? 'rotate-180 text-[#1a2b6d]' : 'text-slate-400'}`} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              {openMobileSubmenu === 'health-info' && (
+                <div className="pl-4 pr-2 py-2 space-y-1 bg-slate-50/60 rounded-lg my-1 text-xs font-semibold text-slate-600">
+                  <Link href="/health" onClick={() => setIsMobileMenuOpen(false)} className="block p-1.5 hover:text-[#1a2b6d]">บทความสุขภาพ</Link>
+                  <Link href="/mental-health" onClick={() => setIsMobileMenuOpen(false)} className="block p-1.5 hover:text-[#1a2b6d]">แบบประเมินสุขภาพใจ</Link>
+                </div>
+              )}
+            </div>
+
+            {/* หมวดหมู่: เกี่ยวกับเรา */}
+            <div>
+              <button
+                onClick={() => toggleSubmenu('about')}
+                className="w-full flex items-center justify-between p-2 rounded-lg hover:bg-slate-50 text-left"
+              >
+                <span>เกี่ยวกับเรา</span>
+                <svg className={`w-4 h-4 transition-transform ${openMobileSubmenu === 'about' ? 'rotate-180 text-[#1a2b6d]' : 'text-slate-400'}`} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              {openMobileSubmenu === 'about' && (
+                <div className="pl-4 pr-2 py-2 space-y-1 bg-slate-50/60 rounded-lg my-1 text-xs font-semibold text-slate-600">
+                  <Link href="/about" onClick={() => setIsMobileMenuOpen(false)} className="block p-1.5 hover:text-[#1a2b6d]">ประวัติโรงพยาบาล</Link>
+                  <Link href="/news" onClick={() => setIsMobileMenuOpen(false)} className="block p-1.5 hover:text-[#1a2b6d]">ข่าวสารและกิจกรรม</Link>
+                  <Link href="/contact" onClick={() => setIsMobileMenuOpen(false)} className="block p-1.5 hover:text-[#1a2b6d]">ติดต่อสอบถาม</Link>
+                </div>
+              )}
+            </div>
           </nav>
 
           <div className="pt-2 border-t border-slate-100 flex flex-col space-y-2">
