@@ -88,10 +88,14 @@ export default function NewsPage() {
     fetchNews();
   }, []);
 
-  // 3. ฟังก์ชันอัปโหลดรูปภาพ
+  // 3. ฟังก์ชันอัปโหลดรูปภาพ ยิงไปยัง /api/upload
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      return showToast('ขนาดไฟล์รูปภาพต้องไม่เกิน 5MB', 'error');
+    }
 
     setUploadingImage(true);
     const formData = new FormData();
@@ -345,10 +349,19 @@ export default function NewsPage() {
                 </div>
               </div>
 
+              {newsImageUrl && (
+                <div className="pt-1">
+                  <div className="flex items-center gap-3 bg-slate-50 p-2 border border-slate-200 rounded-lg w-fit">
+                    <span className="text-[11px] text-slate-500 font-medium">ตัวอย่างรูปภาพ:</span>
+                    <img src={newsImageUrl} alt="Preview" className="h-12 w-20 object-cover rounded border" />
+                  </div>
+                </div>
+              )}
+
               <div className="space-y-1 border-t border-slate-100 pt-3">
                 <label className="font-semibold text-slate-700">เนื้อหาข่าวสาร</label>
                 <textarea
-                  rows={3}
+                  rows={4}
                   value={newsContent}
                   onChange={(e) => setNewsContent(e.target.value)}
                   placeholder="รายละเอียด..."
@@ -360,9 +373,9 @@ export default function NewsPage() {
                 <button
                   type="submit"
                   disabled={submitting || uploadingImage}
-                  className="bg-[#1a2b6d] text-white font-semibold px-4 py-2 rounded-lg hover:bg-[#0f1a42] transition text-xs"
+                  className="bg-[#1a2b6d] text-white font-semibold px-4 py-2 rounded-lg hover:bg-[#0f1a42] transition text-xs disabled:bg-slate-400"
                 >
-                  {submitting ? 'กำลังบันทึก...' : editingId ? 'บันทึกการแก้ไข' : 'เผยแพร่ข่าวสาร'}
+                  {submitting ? 'กำลังบันทึก...' : uploadingImage ? 'กำลังอัปโหลดรูป...' : editingId ? 'บันทึกการแก้ไข' : 'เผยแพร่ข่าวสาร'}
                 </button>
               </div>
             </form>

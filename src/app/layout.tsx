@@ -3,6 +3,7 @@ import Script from 'next/script';
 import './globals.css';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
+import GoogleProvider from '../components/GoogleProvider'; 
 
 export const metadata: Metadata = {
   title: 'โรงพยาบาลโนวาเลีย - Novaria Hospital',
@@ -17,17 +18,14 @@ export default function RootLayout({
   return (
     <html lang="th">
       <body className="min-h-screen flex flex-col justify-between bg-slate-50">
-        <div>
-          <Navbar />
-          <main>{children}</main>
-        </div>
-        <Footer />
-
-        {/* โหลดสคริปต์ Google Translate */}
-        <Script
-          src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"
-          strategy="afterInteractive"
-        />
+        {/* 🟢 ครอบด้วย GoogleProvider เพื่อให้ทุกหน้าเรียกใช้ Google OAuth ได้ */}
+        <GoogleProvider>
+          <div>
+            <Navbar />
+            <main>{children}</main>
+          </div>
+          <Footer />
+        </GoogleProvider>
       </body>
     </html>
   );

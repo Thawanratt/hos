@@ -54,7 +54,7 @@ export default function PackagesPage() {
   // State สำหรับควบคุม Auth Modal
   const [showAuthModal, setShowAuthModal] = useState<boolean>(false);
 
-  // เพิ่มฟิลด์ featuresText, termsText และ validDate ในฟอร์มแอดมินให้ครบถ้วน
+  // ฟิลด์ในฟอร์มแอดมิน
   const [formData, setFormData] = useState({
     title: '',
     subtitle: '',
@@ -70,6 +70,7 @@ export default function PackagesPage() {
   });
 
   const [submitting, setSubmitting] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   // Notifications UI
   const [toast, setToast] = useState<ToastState>({ show: false, message: '', type: 'info' });
@@ -180,19 +181,36 @@ export default function PackagesPage() {
     fetchPackages();
   }, []);
 
-  const handleImageUpload = (e: ChangeEvent<HTMLInputElement>) => {
+  // 🟢 แก้ไขฟังก์ชันอัปโหลดรูปภาพยิงเข้า API Server
+  const handleImageUpload = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      if (file.size > 2 * 1024 * 1024) {
-        return showToast('ขนาดไฟล์รูปภาพต้องไม่เกิน 2MB', 'error');
-      }
+    if (!file) return;
 
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setFormData((prev) => ({ ...prev, imageUrl: reader.result as string }));
-        showToast('เลือกรูปภาพเรียบร้อยแล้ว', 'success');
-      };
-      reader.readAsDataURL(file);
+    if (file.size > 5 * 1024 * 1024) {
+      return showToast('ขนาดไฟล์รูปภาพต้องไม่เกิน 5MB', 'error');
+    }
+
+    setUploadingImage(true);
+    const formDataUpload = new FormData();
+    formDataUpload.append('file', file);
+
+    try {
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        body: formDataUpload,
+      });
+      const data = await res.json();
+
+      if (data.success) {
+        setFormData((prev) => ({ ...prev, imageUrl: data.imageUrl }));
+        showToast('อัปโหลดรูปภาพสำเร็จ', 'success');
+      } else {
+        showToast(data.message || 'อัปโหลดรูปภาพไม่สำเร็จ', 'error');
+      }
+    } catch (err) {
+      showToast('เกิดข้อผิดพลาดในการอัปโหลดรูปภาพ', 'error');
+    } finally {
+      setUploadingImage(false);
     }
   };
 
@@ -202,7 +220,6 @@ export default function PackagesPage() {
       return showToast('กรุณากรอกชื่อแพ็กเกจและราคาโปรโมชั่น', 'error');
     }
 
-    // แปลง Textarea บรรทัดต่อบรรทัดให้เป็น Array ของ features และ terms
     const featuresArray = formData.featuresText
       ? formData.featuresText.split('\n').map((item) => item.trim()).filter(Boolean)
       : [];
@@ -582,10 +599,10 @@ export default function PackagesPage() {
               <div className="flex gap-2 pt-1">
                 <button
                   type="submit"
-                  disabled={submitting}
+                  disabled={submitting || uploadingImage}
                   className="bg-[#1a2b6d] text-white font-semibold px-5 py-2.5 rounded-md hover:bg-[#0f1a42] transition disabled:bg-slate-400 cursor-pointer"
                 >
-                  {submitting ? 'กำลังบันทึก...' : editingId ? 'บันทึกการแก้ไข' : 'เพิ่มแพ็กเกจใหม่'}
+                  {submitting ? 'กำลังบันทึก...' : uploadingImage ? 'กำลังอัปโหลดรูป...' : editingId ? 'บันทึกการแก้ไข' : 'เพิ่มแพ็กเกจใหม่'}
                 </button>
               </div>
             </form>
