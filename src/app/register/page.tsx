@@ -23,6 +23,7 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [successMessage, setSuccessMessage] = useState(''); // 🟢 เพิ่ม State ข้อความสำเร็จ
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -52,7 +53,10 @@ export default function RegisterPage() {
       const data = await res.json();
 
       if (res.ok) {
-        router.push('/login');
+        setSuccessMessage('สมัครสมาชิกสำเร็จ! กำลังพาท่านไปหน้าเข้าสู่ระบบ...');
+        setTimeout(() => {
+          router.push('/login');
+        }, 1200);
       } else {
         setErrorMessage(data.message || 'เกิดข้อผิดพลาดในการสมัครสมาชิก');
       }
@@ -63,20 +67,18 @@ export default function RegisterPage() {
     }
   };
 
-  // 🟢 ฟังก์ชันสมัคร/ล็อกอินผ่าน Google SDK จริง
+  // 🟢 ฟังก์ชันสมัคร/ล็อกอินผ่าน Google SDK
   const handleGoogleRegister = useGoogleLogin({
     onSuccess: async (tokenResponse) => {
       setGoogleLoading(true);
       setErrorMessage('');
 
       try {
-        // 1. ดึงข้อมูล User จาก Google API
         const resUser = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
           headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
         });
         const googleUser = await resUser.json();
 
-        // 2. ส่งข้อมูลผู้ใช้ไปยัง API backend
         const res = await fetch('/api/auth/google', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -93,7 +95,11 @@ export default function RegisterPage() {
           localStorage.setItem('user', JSON.stringify(userData));
           localStorage.setItem('isLoggedIn', 'true');
           window.dispatchEvent(new Event('storage'));
-          router.push('/branches');
+
+          setSuccessMessage('ลงทะเบียนด้วย Google สำเร็จ! กำลังพาท่านไปยังหน้าหลัก...');
+          setTimeout(() => {
+            router.push('/'); // 🟢 พาเข้าสู่หน้าหลักอย่างเป็นธรรมชาติ
+          }, 1200);
         } else {
           setErrorMessage(data.message || 'เกิดข้อผิดพลาดในการลงทะเบียนด้วย Google');
         }
@@ -136,9 +142,20 @@ export default function RegisterPage() {
           <p className="text-xs text-gray-500">สร้างบัญชีใหม่เพื่อใช้งานบริการของเรา</p>
         </div>
 
+        {/* 🔴 ข้อความ Error */}
         {errorMessage && (
           <div className="bg-red-50 text-red-600 border border-red-200 text-xs py-2 px-4 rounded-xl">
             {errorMessage}
+          </div>
+        )}
+
+        {/* 🟢 ข้อความแจ้งเตือนเมื่อสำเร็จ */}
+        {successMessage && (
+          <div className="bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 animate-fade-in">
+            <svg className="w-4 h-4 text-emerald-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+            </svg>
+            <span>{successMessage}</span>
           </div>
         )}
 
@@ -288,7 +305,7 @@ export default function RegisterPage() {
           <div className="pt-3">
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || !!successMessage}
               className="w-full py-3 bg-[#f5e9ce] hover:bg-[#ebd5a0] text-[#7a5c10] font-bold text-xs rounded-full transition shadow-sm active:scale-[0.99] disabled:opacity-50 cursor-pointer"
             >
               {loading ? 'กำลังบันทึกข้อมูล...' : 'สมัครสมาชิก'}
@@ -306,7 +323,7 @@ export default function RegisterPage() {
         <button
           type="button"
           onClick={() => handleGoogleRegister()}
-          disabled={googleLoading}
+          disabled={googleLoading || !!successMessage}
           className="w-full py-2.5 bg-white hover:bg-gray-50 text-gray-700 font-semibold text-xs rounded-full border border-gray-300 transition shadow-xs flex items-center justify-center gap-2 cursor-pointer active:scale-[0.99] disabled:opacity-50"
         >
           <svg className="w-4 h-4" viewBox="0 0 24 24">

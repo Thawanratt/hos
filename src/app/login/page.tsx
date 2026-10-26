@@ -19,6 +19,7 @@ function LoginForm() {
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [successMessage, setSuccessMessage] = useState(''); // 🟢 เพิ่ม State ข้อความสำเร็จ
 
   // ฟังก์ชันล็อกอินแบบธรรมดา
   const handleSubmit = async (e: React.FormEvent) => {
@@ -47,7 +48,7 @@ function LoginForm() {
     }
   };
 
-  // 🟢 ฟังก์ชันจัดการเมื่อล็อกอินสำเร็จ
+  // 🟢 ฟังก์ชันจัดการเมื่อล็อกอินสำเร็จแบบ Smooth UX
   const handleLoginSuccess = (data: any) => {
     const userData = data.user || data.data || data;
     if (userData) {
@@ -57,8 +58,11 @@ function LoginForm() {
 
     window.dispatchEvent(new Event('storage'));
 
+    // แสดง Toast สั้นๆ บอกสถานะ
+    setSuccessMessage('เข้าสู่ระบบสำเร็จ! กำลังพาท่านไปยังหน้าหลัก...');
+
     const userRole = userData?.role || data.role;
-    let targetUrl = '/branches';
+    let targetUrl = '/'; // 🟢 เปลี่ยนจาก /branches เป็นหน้าหลัก (/) เพื่อ UX ที่เป็นธรรมชาติ
     
     if (userRole === 'ADMIN') {
       targetUrl = '/status(admin)/dashboard';
@@ -66,23 +70,24 @@ function LoginForm() {
       targetUrl = decodeURIComponent(redirectTo);
     }
 
-    window.location.href = targetUrl;
+    // หน่วงเวลา 1.2 วินาทีแล้วเปลี่ยนหน้าแบบนุ่มนวล
+    setTimeout(() => {
+      router.push(targetUrl);
+    }, 1200);
   };
 
-  // 🟢 ฟังก์ชันล็อกอินด้วย Google SDK จริง (เปิด Popup เลือกบัญชี Gmail)
+  // 🟢 ฟังก์ชันล็อกอินด้วย Google SDK
   const handleGoogleLogin = useGoogleLogin({
     onSuccess: async (tokenResponse) => {
       setGoogleLoading(true);
       setErrorMessage('');
 
       try {
-        // 1. ดึงข้อมูล User (email, name) จาก Google API โดยใช้ access_token
         const resUser = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
           headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
         });
         const googleUser = await resUser.json();
 
-        // 2. ส่งข้อมูลผู้ใช้ไปยัง API backend ของเราเพื่อบันทึก/เช็กในฐานข้อมูล
         const res = await fetch('/api/auth/google', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -129,9 +134,20 @@ function LoginForm() {
         <p className="text-xs text-gray-500">ยินดีต้อนรับกลับ เข้าสู่ระบบเพื่อจัดการการนัดหมาย</p>
       </div>
 
+      {/* 🔴 ข้อความ Error */}
       {errorMessage && (
         <div className="bg-red-50 text-red-600 border border-red-200 text-xs py-2 px-4 rounded-xl">
           {errorMessage}
+        </div>
+      )}
+
+      {/* 🟢 ข้อความแจ้งเตือนเมื่อสำเร็จ */}
+      {successMessage && (
+        <div className="bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 animate-fade-in">
+          <svg className="w-4 h-4 text-emerald-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+          </svg>
+          <span>{successMessage}</span>
         </div>
       )}
 
@@ -173,7 +189,7 @@ function LoginForm() {
         <div className="pt-3">
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || !!successMessage}
             className="w-full py-3 bg-[#f5e9ce] hover:bg-[#ebd5a0] text-[#7a5c10] font-bold text-xs rounded-full transition shadow-sm active:scale-[0.99] disabled:opacity-50 cursor-pointer"
           >
             {loading ? 'กำลังเข้าสู่ระบบ...' : 'เข้าสู่ระบบ'}
@@ -191,7 +207,7 @@ function LoginForm() {
       <button
         type="button"
         onClick={() => handleGoogleLogin()}
-        disabled={googleLoading}
+        disabled={googleLoading || !!successMessage}
         className="w-full py-2.5 bg-white hover:bg-gray-50 text-gray-700 font-semibold text-xs rounded-full border border-gray-300 transition shadow-xs flex items-center justify-center gap-2 cursor-pointer active:scale-[0.99] disabled:opacity-50"
       >
         <svg className="w-4 h-4" viewBox="0 0 24 24">
