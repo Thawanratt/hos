@@ -2,18 +2,12 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 export function middleware(request: NextRequest) {
-  // ดึง Token การล็อกอินจาก Cookie
-  const token = request.cookies.get('userToken')?.value;
-  const userRole = request.cookies.get('userRole')?.value; // 'PATIENT' หรือ 'ADMIN'
-
+  const userRole = request.cookies.get('userRole')?.value;
   const { pathname } = request.nextUrl;
 
-  // 1. ถ้าผู้ใช้ทั่วไปพยายามเข้าหน้า /booking หรือ /history โดยไม่ได้ล็อกอิน
-  if (!token && (pathname.startsWith('/booking') || pathname.startsWith('/history'))) {
-    return NextResponse.redirect(new URL('/login', request.url));
-  }
+  // ปล่อยให้ /booking และ /history ผ่านได้ แล้วให้ Client-side เช็ก localStorage เอาเอง
 
-  // 2. ถ้าคนไข้ทั่วไปพยายามแอบเข้าหน้า /admin
+  // ดักเฉพาะคนไข้ทั่วไปที่พยายามแอบเข้าหน้า /admin เท่านั้น
   if (pathname.startsWith('/admin') && userRole !== 'ADMIN') {
     return NextResponse.redirect(new URL('/', request.url));
   }
@@ -21,7 +15,7 @@ export function middleware(request: NextRequest) {
   return NextResponse.next();
 }
 
-// ระบุเส้นทางที่ต้องการให้ Middleware ทำงานตรวจสิทธิ์
+// ตัด /booking และ /history ออกจาก matcher ให้เหลือเฉพาะหน้า admin
 export const config = {
-  matcher: ['/booking/:path*', '/history/:path*', '/admin/:path*'],
+  matcher: ['/admin/:path*'],
 };
