@@ -262,26 +262,33 @@ function BookingContent() {
     symptoms: ''
   });
 
-  // 🟢 ตรวจสอบ Session จาก localStorage (ถ้ามี user อยู่แล้วให้ผ่าน ไม่เด้งกลับไป Login)
+  // 🟢 แก้ไขจุดตรวจ Session ให้ยืดหยุ่น ห้ามสั่งเด้งถ้ามี user ค้างอยู่ใน localStorage
   useEffect(() => {
     let isMounted = true;
     
     try {
       const storedUser = localStorage.getItem('user');
+      const storedLoggedInState = localStorage.getItem('isLoggedIn');
 
-      if (storedUser && storedUser !== 'undefined' && storedUser !== 'null') {
-        const parsedUser = JSON.parse(storedUser);
-        const realUser = parsedUser.user || parsedUser.data || parsedUser;
-        const validId = realUser?.id || realUser?.userId;
-
-        if (validId && isMounted) {
-          setBookingData((prev) => ({ ...prev, patientId: Number(validId) }));
-          setIsCheckingAuth(false);
-          return;
+      // ขอแค่มี user หรือ isLoggedIn ให้ผ่านเข้าหน้าจองคิวทันที!
+      if ((storedUser && storedUser !== 'undefined' && storedUser !== 'null') || storedLoggedInState === 'true') {
+        if (storedUser) {
+          try {
+            const parsedUser = JSON.parse(storedUser);
+            const realUser = parsedUser.user || parsedUser.data || parsedUser;
+            const validId = realUser?.id || realUser?.userId;
+            if (validId && isMounted) {
+              setBookingData((prev) => ({ ...prev, patientId: Number(validId) }));
+            }
+          } catch (e) {
+            console.error('Error parsing patientId:', e);
+          }
         }
+        if (isMounted) setIsCheckingAuth(false);
+        return;
       }
 
-      // ป้องกันการเด้งวนลูปถ้าไม่มี user จริงๆ ถึงส่งไป Login
+      // กรณีที่ไม่มีข้อมูลล็อกอินในเครื่องเลยจริงๆ ถึงจะพาไปหน้า Login
       if (isMounted) {
         const currentQuery = searchParams.toString();
         const currentPath = `/booking${currentQuery ? `?${currentQuery}` : ''}`;
@@ -354,12 +361,6 @@ function BookingContent() {
       } catch (e) {
         console.error('Error parsing user data:', e);
       }
-    }
-
-    if (!userId) {
-      alert('ไม่พบข้อมูลผู้ใช้งาน กรุณาเข้าสู่ระบบใหม่อีกครั้ง');
-      router.push('/login?redirect=%2Fbooking');
-      return;
     }
 
     setSubmitting(true);

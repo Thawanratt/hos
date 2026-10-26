@@ -1,38 +1,20 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useState, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { BRANCHES_DATA, Branch } from '@/app/api/branches/branches';
 import BranchSelectorModal from '@/components/BranchSelectorModal';
 
 function BranchesContent() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   
-  // รับรหัสสาขาที่ส่งมาจากหน้าแรกผ่าน URL (ถ้าไม่มีให้ใช้สาขาแรกเป็นค่าเริ่มต้น)
+  // รับรหัสสาขาที่ส่งมาจากหน้าแรกผ่าน URL
   const branchId = searchParams.get('branch') || 'novaria-main';
   const currentBranch = BRANCHES_DATA.find((b) => b.id === branchId) || BRANCHES_DATA[0];
 
   const [selectedService, setSelectedService] = useState<string>('doctor');
   const [isBranchModalOpen, setIsBranchModalOpen] = useState<boolean>(false);
-
-  // 🛡️ ดักป้องกันกรณีพิมพ์ URL เข้า /branches โดยตรงโดยที่ยังไม่ได้ล็อกอิน
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const storedUser = localStorage.getItem('user');
-      if (!storedUser || storedUser === 'undefined' || storedUser === 'null') {
-        const currentQuery = searchParams.toString();
-        const currentPath = `/branches${currentQuery ? `?${currentQuery}` : ''}`;
-        router.push(`/login?redirect=${encodeURIComponent(currentPath)}`);
-      }
-    }
-  }, [router, searchParams]);
-
-  // ฟังก์ชันเมื่อผู้ใช้เลือกสาขาใหม่จาก Modal
-  const handleSelectNewBranch = (branch: Branch) => {
-    router.push(`/branches?branch=${branch.id}`);
-  };
 
   // ประเภทบริการ
   const services = [
@@ -70,11 +52,6 @@ function BranchesContent() {
 
   // URL ปลายทางสำหรับส่งต่อไปยังหน้า Booking
   const targetBookingPath = `/booking?branch=${branchId}&service=${selectedService}`;
-
-  // 🟢 เมื่อกดปุ่ม "ต่อไป" ให้สั่งเปลี่ยนหน้าพุ่งตรงไปที่ /booking ทันที
-  const handleNext = () => {
-    router.push(targetBookingPath);
-  };
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] font-sans pb-24 text-slate-800">
@@ -165,15 +142,17 @@ function BranchesContent() {
             >
               ย้อนกลับ
             </Link>
-            <button
-              onClick={handleNext}
+            
+            {/* 🟢 ใช้ Link ครอบและส่งต่อไปหน้า /booking ตรงๆ เหมือนปุ่มย้อนกลับ */}
+            <Link
+              href={targetBookingPath}
               className="bg-[#1a2b6d] text-white px-8 py-3 rounded-xl text-xs font-semibold hover:bg-[#0f1a42] transition shadow-xs cursor-pointer flex items-center space-x-2"
             >
               <span>ต่อไป: ไปหน้าจองคิว</span>
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
               </svg>
-            </button>
+            </Link>
           </div>
         </div>
 
@@ -183,7 +162,9 @@ function BranchesContent() {
       <BranchSelectorModal
         isOpen={isBranchModalOpen}
         onClose={() => setIsBranchModalOpen(false)}
-        onSelectBranch={handleSelectNewBranch}
+        onSelectBranch={(branch: Branch) => {
+          window.location.href = `/branches?branch=${branch.id}`;
+        }}
       />
 
     </div>
