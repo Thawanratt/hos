@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import BranchSelectorModal from '@/components/BranchSelectorModal';
 import { BRANCHES_DATA, Branch } from '@/app/api/branches/branches';
 
-// ไอคอน SVG ตัวช่วย (ลดโค้ดซ้ำ — แก้เฉพาะ UI)
+// ไอคอน SVG 
 const Icon = ({ d, className = 'w-5 h-5', stroke = 1.6 }: { d: string; className?: string; stroke?: number }) => (
   <svg className={className} fill="none" stroke="currentColor" strokeWidth={stroke} viewBox="0 0 24 24" aria-hidden="true">
     <path strokeLinecap="round" strokeLinejoin="round" d={d} />
@@ -38,7 +38,7 @@ export default function HomePage() {
   const [toastMessage, setToastMessage] = useState('');
   const [showToast, setShowToast] = useState(false);
 
-  // 🔐 State สำหรับเปิด-ปิด Login Modal Popup
+  //  State สำหรับเปิด-ปิด Login Modal Popup
   const [showLoginModal, setShowLoginModal] = useState(false);
 
   const triggerToast = (msg: string) => {
@@ -46,10 +46,9 @@ export default function HomePage() {
     setShowToast(true);
     setTimeout(() => {
       setShowToast(false);
-    }, 2500); // ซ่อนอัตโนมัติใน 2.5 วินาที
+    }, 2500);
   };
 
-  // ฟังก์ชันเมื่อผู้ใช้เลือกสาขาจาก Popup แล้ว ให้พาไปหน้าเลือกประเภทบริการ (/branches) ทันที
   const handleSelectBranch = (branch: Branch) => {
     setSelectedBranch(branch);
     setIsBranchModalOpen(false);
@@ -104,7 +103,7 @@ export default function HomePage() {
     setCurrentSlide((prev) => (prev - 1 + heroBanners.length) % heroBanners.length);
   };
 
-  // 2. บริการของเรา (เพิ่มคำอธิบายสั้น ๆ สำหรับ UI เท่านั้น)
+  // 2. บริการของเรา
   const mainServices = [
     {
       title: 'หัวใจ',
@@ -150,25 +149,18 @@ export default function HomePage() {
     },
   ];
 
-  // State สำหรับดึงข้อมูลจากหลังบ้าน
-  // 3. แพ็กเกจและโปรโมชั่น
   const [packagesList, setPackagesList] = useState<any[]>([]);
-
-  // 4. บทความสุขภาพ
   const [healthArticles, setHealthArticles] = useState<any[]>([]);
 
-  // ดึงข้อมูลบทความจาก API เมื่อ Component ถูกโหลด
   useEffect(() => {
     const fetchData = async () => {
       try {
         const res = await fetch('/api/admin');
         if (res.ok) {
           const result = await res.json();
-          //ข่าวสาร
           if (result.success && Array.isArray(result.data?.news)) {
             setHealthArticles(result.data.news);
           }
-          //แพ็กเกจ
           if (result.success && Array.isArray(result.data?.packages)) {
             setPackagesList(result.data.packages);
           }
@@ -231,16 +223,22 @@ export default function HomePage() {
                   </p>
                 </button>
 
-                {/* แถบลงทะเบียน / เข้าสู่ระบบ */}
-                <div className="rounded-xl p-3 border border-slate-200/70 bg-slate-50 flex items-center justify-between">
-                  <div>
-                    <span className="text-[11px] text-slate-400 block">เข้าร่วมสิทธิพิเศษวันนี้</span>
-                    <span className="text-sm font-semibold text-slate-700">สิทธิพิเศษสำหรับสมาชิก</span>
-                  </div>
-                  <Link href="/login" className="text-xs font-semibold text-[#1a2b6d] bg-white border border-slate-200 hover:border-[#1a2b6d] px-3.5 py-1.5 rounded-lg transition-colors">
-                    เข้าสู่ระบบ
-                  </Link>
-                </div>
+                {/* แถบสิทธิพิเศษ โทนน้ำเงินพรีเมียม */}
+<div className="rounded-xl p-3.5 border border-sky-200/50 bg-gradient-to-r from-[#1a2b6d] to-[#253880] text-white flex items-center justify-between shadow-sm">
+  <div className="space-y-0.5">
+    <span className="text-[9px] font-bold uppercase tracking-widest text-sky-200 bg-white/10 px-2 py-0.5 rounded border border-white/10">
+      Exclusive
+    </span>
+    <span className="text-xs font-semibold text-white block mt-1">Novaria Elite & VIP</span>
+  </div>
+  <Link 
+    href="/vip-privileges" 
+    className="text-xs font-bold text-[#1a2b6d] bg-white hover:bg-sky-50 px-3.5 py-2 rounded-lg transition-all shadow-2xs shrink-0 flex items-center gap-1"
+  >
+    <span>สิทธิพิเศษ</span>
+    <Chevron className="w-3.5 h-3.5" />
+  </Link>
+</div>
 
                 {/* 4 ปุ่มบริการด่วน */}
                 <div className="grid grid-cols-2 gap-2.5">
@@ -285,10 +283,10 @@ export default function HomePage() {
                   style={
                     slide.imageUrl
                       ? {
-                          backgroundImage: `linear-gradient(to right, rgba(15, 23, 42, 0.88), rgba(15, 23, 42, 0.3)), url(${slide.imageUrl})`,
-                          backgroundSize: 'cover',
-                          backgroundPosition: 'center',
-                        }
+                        backgroundImage: `linear-gradient(to right, rgba(15, 23, 42, 0.88), rgba(15, 23, 42, 0.3)), url(${slide.imageUrl})`,
+                        backgroundSize: 'cover',
+                        backgroundPosition: 'center',
+                      }
                       : undefined
                   }
                 >
@@ -315,7 +313,6 @@ export default function HomePage() {
                 </div>
               ))}
 
-              {/* ปุ่มเลื่อนสไลด์ Left/Right */}
               <button
                 onClick={prevSlide}
                 aria-label="ก่อนหน้า"
@@ -331,7 +328,6 @@ export default function HomePage() {
                 <Chevron />
               </button>
 
-              {/* Indicators */}
               <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex space-x-2">
                 {heroBanners.map((_, idx) => (
                   <button
@@ -352,8 +348,6 @@ export default function HomePage() {
       <section className="max-w-7xl mx-auto px-4 md:px-8 py-12 md:py-16">
         <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
           <div className="grid grid-cols-1 lg:grid-cols-12">
-
-            {/* ส่วนหัวด้านซ้าย */}
             <div className="lg:col-span-3 bg-gradient-to-b from-sky-50/70 to-white p-6 md:p-8 flex flex-col justify-between gap-6 lg:border-r border-b lg:border-b-0 border-slate-200/70">
               <div className="space-y-3">
                 <p className="text-sm font-medium text-sky-700">Medical Specialties</p>
@@ -367,7 +361,6 @@ export default function HomePage() {
               </Link>
             </div>
 
-            {/* รายการบริการ */}
             <div className="lg:col-span-9 p-4 md:p-6 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
               {mainServices.map((item, idx) => (
                 <Link
@@ -388,7 +381,6 @@ export default function HomePage() {
                 </Link>
               ))}
 
-              {/* ช่องสุดท้าย: ดูทั้งหมด */}
               <Link
                 href="/services"
                 className="group flex items-center justify-center gap-2 p-3.5 rounded-xl bg-[#1a2b6d] hover:bg-[#15235a] text-white text-sm font-semibold transition-colors duration-200"
@@ -397,12 +389,11 @@ export default function HomePage() {
                 <Chevron className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
               </Link>
             </div>
-
           </div>
         </div>
       </section>
 
-      {/* 3. PACKAGES & PROMOTIONS (ดึงข้อมูลแบบ Dynamic จาก API หลังบ้าน) */}
+      {/* 3. PACKAGES & PROMOTIONS */}
       <section className="bg-white py-14 md:py-16 border-y border-slate-200/70">
         <div className="max-w-7xl mx-auto px-4 md:px-8 space-y-8">
           <div className="flex justify-between items-end border-b border-slate-200 pb-5">
@@ -575,13 +566,12 @@ export default function HomePage() {
         )}
       </section>
 
-{/* 5. BASIC INFO GRID */}
+      {/* 5. BASIC INFO GRID */}
       <section className="bg-white py-14 md:py-16 border-t border-slate-200/70">
         <div className="max-w-7xl mx-auto px-4 md:px-8 space-y-8">
           <h2 className={sectionTitle}>ข้อมูลเบื้องต้น</h2>
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
-
             <div className="lg:col-span-8 grid grid-cols-2 sm:grid-cols-4 gap-4">
               {[
                 { href: '/about', label: 'ข้อมูลโรงพยาบาล', d: 'M2.25 21h19.5m-18-18v18m10.5-18v18m-6-18v18m6-18h.008v.008H12V3zm0 3h.008v.008H12V6zm0 3h.008v.008H12V9zm0 3h.008v.008H12v-1.5zm0 3h.008v.008H12v-1.5zm0 3h.008v.008H12v-1.5z' },
@@ -608,7 +598,6 @@ export default function HomePage() {
               </div>
               <p className="text-sm text-slate-500">เครือข่ายโรงพยาบาลโนวาเลีย {selectedBranch.name}</p>
             </div>
-
           </div>
         </div>
       </section>
@@ -617,7 +606,6 @@ export default function HomePage() {
       <section className="py-12 border-t border-slate-200/70 bg-slate-50">
         <div className="max-w-7xl mx-auto px-4 md:px-8 space-y-6">
           <h2 className="text-xl font-bold text-[#1a2b6d] text-center md:text-left">รางวัลและการรับรองมาตรฐาน</h2>
-
           <div className="flex flex-wrap justify-around items-center gap-8 py-4 opacity-80 hover:opacity-100 transition-opacity duration-300">
             <div className="flex items-center gap-3 font-bold text-slate-700 text-base md:text-lg tracking-wide">
               <div className="w-10 h-10 rounded-full bg-amber-400 border-2 border-amber-600 flex items-center justify-center text-white font-black text-xs shadow-sm">JCI</div>
@@ -673,7 +661,6 @@ export default function HomePage() {
       {/* 8. NEWSLETTER & SOCIAL LINKS */}
       <section className="py-10 bg-slate-50 border-t border-slate-200/70">
         <div className="max-w-7xl mx-auto px-4 md:px-8 flex flex-col md:flex-row justify-between items-center gap-6">
-
           <div className="space-y-3 w-full md:w-auto">
             <h3 className="font-semibold text-sm text-slate-800">ติดตามข่าวสารสุขภาพ</h3>
             <div className="flex gap-3">
@@ -695,20 +682,29 @@ export default function HomePage() {
           <div className="space-y-3 w-full md:w-auto text-left md:text-right">
             <h3 className="font-semibold text-sm text-slate-800">ช่องทางการติดตาม</h3>
             <div className="flex gap-2.5 text-slate-600 justify-start md:justify-end">
-              {['f', 'LINE', 'TT', 'YT', 'IG'].map((s) => (
-                <span
-                  key={s}
-                  className="w-9 h-9 rounded-lg bg-white border border-slate-200 flex items-center justify-center font-semibold text-[10px] hover:bg-[#1a2b6d] hover:border-[#1a2b6d] hover:text-white transition-colors cursor-pointer"
+              {[
+                { name: 'Facebook', label: 'f', href: 'https://facebook.com' },
+                { name: 'LINE', label: 'LINE', href: 'https://line.me' },
+                { name: 'TikTok', label: 'TT', href: 'https://tiktok.com' },
+                { name: 'YouTube', label: 'YT', href: 'https://youtube.com' },
+                { name: 'Instagram', label: 'IG', href: 'https://instagram.com' },
+              ].map((social) => (
+                <a
+                  key={social.name}
+                  href={social.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={social.name}
+                  className="w-9 h-9 rounded-lg bg-white border border-slate-200 flex items-center justify-center font-semibold text-[10px] text-slate-600 hover:bg-[#1a2b6d] hover:border-[#1a2b6d] hover:text-white transition-all duration-200 shadow-2xs hover:scale-105 cursor-pointer"
                 >
-                  {s}
-                </span>
+                  {social.label}
+                </a>
               ))}
             </div>
           </div>
-
         </div>
       </section>
-      
+
       {/* 🔐 LOGIN MODAL POPUP */}
       {showLoginModal && (
         <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 animate-fadeIn">

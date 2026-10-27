@@ -23,14 +23,35 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
-  const [successMessage, setSuccessMessage] = useState(''); // 🟢 เพิ่ม State ข้อความสำเร็จ
+  const [successMessage, setSuccessMessage] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage('');
 
+    // 🟢 ตรวจสอบความถูกต้องของข้อมูลก่อนส่ง
+    if (!formData.firstName.trim() || !formData.lastName.trim()) {
+      setErrorMessage('กรุณากรอกชื่อจริงและนามสกุลให้ครบถ้วน');
+      return;
+    }
+    if (formData.idCard.length !== 13) {
+      setErrorMessage('กรุณากรอกเลขบัตรประจำตัวประชาชนให้ครบ 13 หลัก');
+      return;
+    }
+    if (formData.phone.length !== 10) {
+      setErrorMessage('กรุณากรอกเบอร์โทรศัพท์ให้ครบ 10 หลัก');
+      return;
+    }
+    if (formData.password.length < 8) {
+      setErrorMessage('รหัสผ่านต้องมีความยาวอย่างน้อย 8 ตัวอักษรขึ้นไป');
+      return;
+    }
     if (formData.password !== formData.confirmPassword) {
       setErrorMessage('รหัสผ่านและยืนยันรหัสผ่านไม่ตรงกัน');
+      return;
+    }
+    if (!formData.acceptTerms) {
+      setErrorMessage('กรุณายอมรับข้อกำหนดและเงื่อนไขการใช้งาน');
       return;
     }
 
@@ -67,7 +88,7 @@ export default function RegisterPage() {
     }
   };
 
-  // 🟢 ฟังก์ชันสมัคร/ล็อกอินผ่าน Google SDK
+  // ฟังก์ชันสมัคร/ล็อกอินผ่าน Google SDK
   const handleGoogleRegister = useGoogleLogin({
     onSuccess: async (tokenResponse) => {
       setGoogleLoading(true);
@@ -98,7 +119,7 @@ export default function RegisterPage() {
 
           setSuccessMessage('ลงทะเบียนด้วย Google สำเร็จ! กำลังพาท่านไปยังหน้าหลัก...');
           setTimeout(() => {
-            router.push('/'); // 🟢 พาเข้าสู่หน้าหลักอย่างเป็นธรรมชาติ
+            router.push('/');
           }, 1200);
         } else {
           setErrorMessage(data.message || 'เกิดข้อผิดพลาดในการลงทะเบียนด้วย Google');
@@ -144,14 +165,14 @@ export default function RegisterPage() {
 
         {/* 🔴 ข้อความ Error */}
         {errorMessage && (
-          <div className="bg-red-50 text-red-600 border border-red-200 text-xs py-2 px-4 rounded-xl">
+          <div className="bg-red-50 text-red-600 border border-red-200 text-xs py-2 px-4 rounded-xl font-semibold">
             {errorMessage}
           </div>
         )}
 
         {/* 🟢 ข้อความแจ้งเตือนเมื่อสำเร็จ */}
         {successMessage && (
-          <div className="bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 animate-fade-in">
+          <div className="bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 animate-fade-in font-semibold">
             <svg className="w-4 h-4 text-emerald-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
             </svg>
@@ -196,37 +217,46 @@ export default function RegisterPage() {
             </div>
           </div>
 
-          {/* FIELD 3: ID CARD */}
+          {/* FIELD 3: ID CARD (บังคับตัวเลข 13 หลัก) */}
           <div className="space-y-1">
-            <label className="text-xs font-semibold text-gray-700">เลขบัตรประชาชน</label>
+            <label className="text-xs font-semibold text-gray-700">เลขบัตรประชาชน (13 หลัก)</label>
             <div className="relative flex items-center">
               <span className="absolute left-4 text-gray-400">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3 3 0 00-3 3h6a3 3 0 00-3-3z" /></svg>
               </span>
               <input
                 type="text"
+                inputMode="numeric"
                 maxLength={13}
                 placeholder="กรอกเลขบัตรประชาชน 13 หลัก"
                 value={formData.idCard}
-                onChange={(e) => setFormData({ ...formData, idCard: e.target.value })}
+                onChange={(e) => {
+                  const val = e.target.value.replace(/\D/g, '').slice(0, 13);
+                  setFormData({ ...formData, idCard: val });
+                }}
                 className="w-full pl-11 pr-4 py-2.5 bg-[#f5e9ce]/70 focus:bg-[#f5e9ce] text-xs text-gray-800 placeholder-gray-500 rounded-full border-none focus:outline-none focus:ring-2 focus:ring-[#d4af37] transition"
                 required
               />
             </div>
           </div>
 
-          {/* FIELD 4: PHONE NUMBER */}
+          {/* FIELD 4: PHONE NUMBER (บังคับตัวเลข 10 หลัก) */}
           <div className="space-y-1">
-            <label className="text-xs font-semibold text-gray-700">เบอร์โทรศัพท์</label>
+            <label className="text-xs font-semibold text-gray-700">เบอร์โทรศัพท์ (10 หลัก)</label>
             <div className="relative flex items-center">
               <span className="absolute left-4 text-gray-400">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
               </span>
               <input
                 type="tel"
-                placeholder="กรอกเบอร์โทรศัพท์"
+                inputMode="numeric"
+                maxLength={10}
+                placeholder="กรอกเบอร์โทรศัพท์ 10 หลัก"
                 value={formData.phone}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                onChange={(e) => {
+                  const val = e.target.value.replace(/\D/g, '').slice(0, 10);
+                  setFormData({ ...formData, phone: val });
+                }}
                 className="w-full pl-11 pr-4 py-2.5 bg-[#f5e9ce]/70 focus:bg-[#f5e9ce] text-xs text-gray-800 placeholder-gray-500 rounded-full border-none focus:outline-none focus:ring-2 focus:ring-[#d4af37] transition"
                 required
               />
@@ -253,7 +283,7 @@ export default function RegisterPage() {
 
           {/* FIELD 6: PASSWORD */}
           <div className="space-y-1">
-            <label className="text-xs font-semibold text-gray-700">รหัสผ่าน</label>
+            <label className="text-xs font-semibold text-gray-700">รหัสผ่าน (อย่างน้อย 6 ตัวอักษร)</label>
             <div className="relative flex items-center">
               <span className="absolute left-4 text-gray-400">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
@@ -313,13 +343,13 @@ export default function RegisterPage() {
           </div>
         </form>
 
-        {/* 🔴 เส้นแบ่ง หรือ */}
+        {/* เส้นแบ่ง หรือ */}
         <div className="relative flex items-center justify-center my-4">
           <div className="border-t border-gray-300 w-full"></div>
           <span className="bg-[#fff9ed] px-3 text-[11px] text-gray-500 uppercase tracking-wider absolute">หรือ</span>
         </div>
 
-        {/* 🔴 ปุ่ม GOOGLE REGISTER */}
+        {/* ปุ่ม GOOGLE REGISTER */}
         <button
           type="button"
           onClick={() => handleGoogleRegister()}

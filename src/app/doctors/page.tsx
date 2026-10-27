@@ -51,6 +51,7 @@ const doctorImageMap: Record<number, string> = {
   9: '/images/11.jpeg',
   10: '/images/12.jpeg',
   11: '/images/13.jpeg',
+  201: '/images/14.jpeg',
 };
 
 export default function DoctorsPage() {
@@ -63,16 +64,26 @@ export default function DoctorsPage() {
   const [instantBookingOnly, setInstantBookingOnly] = useState<boolean>(false);
   const [showFilterPanel, setShowFilterPanel] = useState<boolean>(false);
 
-  // รายชื่อแผนกตรงตามฐานข้อมูลจริง
+  // รายชื่อแผนกและศูนย์การรักษาทั้งหมด
   const [departmentsList] = useState<DepartmentData[]>([
     { id: 1, name: 'อายุรกรรมแพทย์' },
     { id: 2, name: 'กุมารแพทย์' },
     { id: 3, name: 'สูตินรีแพทย์' },
     { id: 4, name: 'ศัลยแพทย์' },
+    { id: 5, name: 'ศูนย์หัวใจ' },
+    { id: 6, name: 'ศูนย์มะเร็ง' },
+    { id: 7, name: 'ศูนย์กระดูกและข้อ' },
+    { id: 8, name: 'ศูนย์สมองและระบบประสาท' },
+    { id: 9, name: 'ศูนย์อุบัติเหตุและฉุกเฉิน' },
+    { id: 10, name: 'ศูนย์ตรวจสุขภาพ' },
+    { id: 11, name: 'ศูนย์ศัลยกรรม' },
   ]);
 
   const [doctorsList, setDoctorsList] = useState<DoctorData[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+
+  // 🟢 เพิ่ม State สำหรับเก็บข้อมูลข่าวสารจริงจาก API หลังบ้าน
+  const [healthArticles, setHealthArticles] = useState<any[]>([]);
 
   // States สำหรับ Pagination & News Slide
   const [currentPage, setCurrentPage] = useState(1);
@@ -121,6 +132,25 @@ export default function DoctorsPage() {
     }
   }, [searchQuery, selectedDeptId, selectedGender, selectedDay, selectedTime, instantBookingOnly]);
 
+  // 🟢 ดึงข้อมูลข่าวสารจาก API หลังบ้าน (/api/admin) เมื่อโหลดหน้าเว็บ
+  useEffect(() => {
+    const fetchArticles = async () => {
+      try {
+        const res = await fetch('/api/admin');
+        if (res.ok) {
+          const result = await res.json();
+          if (result.success && Array.isArray(result.data?.news)) {
+            setHealthArticles(result.data.news);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to fetch news articles:', error);
+      }
+    };
+
+    fetchArticles();
+  }, []);
+
   useEffect(() => {
     const timer = setTimeout(() => {
       fetchDoctors();
@@ -151,30 +181,6 @@ export default function DoctorsPage() {
     currentPage * itemsPerPage
   );
 
-  // ข่าวสารทางการแพทย์พร้อมรูปภาพ
-  const newsList = [
-    { 
-      title: 'การประชุมวิชาการความก้าวหน้าทางการแพทย์ระดับนานาชาติ ประจำปี 2026', 
-      date: '5 กันยายน 2026',
-      imageUrl: '/images/1.jpg'
-    },
-    { 
-      title: 'ศูนย์หลอดเลือดสมองได้รับรองมาตรฐานการรักษาระดับสากล', 
-      date: '15 กันยายน 2026',
-      imageUrl: '/images/2.jpg'
-    },
-    { 
-      title: 'ความร่วมมือทางการแพทย์ในการพัฒนาเทคโนโลยีการผ่าตัดแผลเล็ก', 
-      date: '25 กันยายน 2026',
-      imageUrl: '/images/3.jpg'
-    },
-    { 
-      title: 'ต้อนรับคณะแพทย์ผู้เชี่ยวชาญประจำศูนย์หัวใจและหลอดเลือด', 
-      date: '15 กันยายน 2026',
-      imageUrl: '/images/5.jpg'
-    },
-  ];
-
   // คำนวณจำนวนตัวกรองที่ใช้งานอยู่
   const activeFiltersCount = [
     selectedDeptId !== 'ALL',
@@ -187,11 +193,10 @@ export default function DoctorsPage() {
   return (
     <div className="bg-[#f8fafc] min-h-screen pb-24 font-sans text-slate-800 space-y-10">
       
-      {/* HEADER BANNER - EXECUTIVE ACCENT BAR STYLE */}
+      {/* HEADER BANNER */}
       <section className="bg-white border-b border-slate-200/80 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 md:px-8 py-8 space-y-6">
           
-          {/* Breadcrumb & Executive Title Banner */}
           <div className="space-y-3">
             <nav className="text-[11px] text-slate-400 font-medium tracking-wider uppercase flex items-center gap-1.5">
               <Link href="/" className="hover:text-[#1a2b6d] transition-colors">หน้าแรก</Link>
@@ -199,7 +204,6 @@ export default function DoctorsPage() {
               <span className="text-slate-600 font-semibold">นัดหมายแพทย์</span>
             </nav>
 
-            {/* Executive Accent Header */}
             <div className="pl-4 border-l-4 border-[#1a2b6d] py-0.5 flex flex-col md:flex-row md:items-end justify-between gap-4">
               <div>
                 <h1 className="text-2xl md:text-3xl font-light text-slate-900 tracking-tight leading-tight">
@@ -220,7 +224,6 @@ export default function DoctorsPage() {
           <div className="bg-slate-50/70 rounded-xl border border-slate-200/80 p-3.5 md:p-4 space-y-3 shadow-inner">
             <div className="flex flex-col lg:flex-row gap-3 items-center justify-between">
               
-              {/* Search Input */}
               <div className="w-full lg:flex-1 relative">
                 <input
                   type="text"
@@ -244,7 +247,6 @@ export default function DoctorsPage() {
                 )}
               </div>
 
-              {/* Filter Button */}
               <div className="flex items-center gap-3 w-full lg:w-auto justify-end">
                 <button
                   onClick={() => setShowFilterPanel(!showFilterPanel)}
@@ -270,12 +272,10 @@ export default function DoctorsPage() {
               </div>
             </div>
 
-            {/* Collapsible Filter Panel */}
             {showFilterPanel && (
               <div className="pt-4 border-t border-slate-200/80 space-y-4 animate-fadeIn">
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
                   
-                  {/* 1. แผนกการรักษา */}
                   <div className="space-y-1.5">
                     <label className="text-slate-600 font-semibold">แผนกการรักษา</label>
                     <select
@@ -290,7 +290,6 @@ export default function DoctorsPage() {
                     </select>
                   </div>
 
-                  {/* 2. เพศแพทย์ */}
                   <div className="space-y-1.5">
                     <label className="text-slate-600 font-semibold">เพศแพทย์</label>
                     <select
@@ -304,7 +303,6 @@ export default function DoctorsPage() {
                     </select>
                   </div>
 
-                  {/* 3. วันออกตรวจ */}
                   <div className="space-y-1.5">
                     <label className="text-slate-600 font-semibold">วันออกตรวจ</label>
                     <select
@@ -318,7 +316,6 @@ export default function DoctorsPage() {
                     </select>
                   </div>
 
-                  {/* 4. ช่วงเวลา */}
                   <div className="space-y-1.5">
                     <label className="text-slate-600 font-semibold">ช่วงเวลาตรวจ</label>
                     <select
@@ -333,7 +330,6 @@ export default function DoctorsPage() {
                   </div>
                 </div>
 
-                {/* Filter Actions */}
                 <div className="flex flex-wrap items-center justify-between gap-4 pt-3 border-t border-slate-200/60">
                   <label className="flex items-center gap-2 text-xs text-slate-700 cursor-pointer select-none">
                     <input
@@ -401,7 +397,6 @@ export default function DoctorsPage() {
                   key={doc.id}
                   className="bg-white rounded-2xl border border-slate-200/90 shadow-sm hover:shadow-xl hover:border-slate-300 transition-all duration-300 flex flex-col justify-between relative group overflow-hidden"
                 >
-                  {/* Instant Booking Badge */}
                   {doc.isInstantBooking && (
                     <div className="absolute top-3 left-3 z-10">
                       <span className="bg-[#1a2b6d]/90 backdrop-blur-md text-white text-[10px] font-medium px-2.5 py-1 rounded-md shadow-md flex items-center gap-1.5 tracking-wider uppercase border border-white/20">
@@ -411,7 +406,6 @@ export default function DoctorsPage() {
                     </div>
                   )}
 
-                  {/* กรอบแสดงรูปภาพแพทย์ */}
                   <Link 
                     href={`/doctors/${doc.id}`} 
                     className="block h-60 bg-gradient-to-b from-slate-100 to-slate-200/60 relative overflow-hidden border-b border-slate-100 group-hover:opacity-95 transition-all"
@@ -434,7 +428,6 @@ export default function DoctorsPage() {
                     )}
                   </Link>
 
-                  {/* Doctor Info */}
                   <div className="p-5 space-y-3.5 flex-1 flex flex-col justify-between">
                     <div className="space-y-1.5">
                       <span className="text-[10px] font-bold text-[#1a2b6d] uppercase tracking-wider block bg-slate-100 w-max px-2 py-0.5 rounded">
@@ -450,7 +443,6 @@ export default function DoctorsPage() {
                       </p>
                     </div>
 
-                    {/* Doctor Schedules */}
                     <div className="pt-3 border-t border-slate-100 space-y-1.5">
                       <span className="text-[11px] font-semibold text-slate-500 block">ตารางออกตรวจ:</span>
                       {doc.schedules && doc.schedules.length > 0 ? (
@@ -467,7 +459,6 @@ export default function DoctorsPage() {
                     </div>
                   </div>
 
-                  {/* Action Buttons */}
                   <div className="grid grid-cols-2 border-t border-slate-100 text-xs font-semibold">
                     <Link
                       href={`/doctors/${doc.id}`}
@@ -505,7 +496,6 @@ export default function DoctorsPage() {
           </div>
         )}
 
-        {/* PAGINATION */}
         {totalPages > 1 && (
           <div className="flex items-center justify-center gap-1.5 pt-6">
             <button
@@ -541,7 +531,7 @@ export default function DoctorsPage() {
         )}
       </section>
 
-      {/* NEWS SECTION */}
+      {/* 🟢 NEWS SECTION - เชื่อมโยงข้อมูลจริงจาก API หลังบ้าน */}
       <section className="max-w-7xl mx-auto px-4 md:px-8 pt-4 space-y-6">
         <div className="flex justify-between items-baseline border-b border-slate-200/80 pb-3">
           <div>
@@ -553,44 +543,58 @@ export default function DoctorsPage() {
           </Link>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {newsList.slice(newsSlide * 2, newsSlide * 2 + 2).map((news, idx) => (
-            <div key={idx} className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-sm hover:shadow-md transition flex space-x-4 items-center group">
-              <div className="w-28 h-20 bg-slate-100 rounded-lg flex-shrink-0 overflow-hidden border border-slate-100 relative">
-                {news.imageUrl ? (
-                  <img
-                    src={news.imageUrl}
-                    alt={news.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-[10px] text-slate-400">
-                    [ ไม่มีรูปภาพ ]
-                  </div>
-                )}
-              </div>
-              <div className="space-y-1.5">
-                <span className="text-[10px] text-[#1a2b6d] font-bold uppercase tracking-wider block">{news.date}</span>
-                <h4 className="text-xs font-semibold text-slate-800 line-clamp-2 group-hover:text-[#1a2b6d] cursor-pointer leading-snug transition-colors">
-                  {news.title}
-                </h4>
-              </div>
-            </div>
-          ))}
-        </div>
+        {healthArticles.length === 0 ? (
+          <div className="text-center py-10 bg-white rounded-xl border border-dashed border-slate-200 text-slate-400 text-xs">
+            ยังไม่มีบทความหรือข่าวสารในขณะนี้
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {healthArticles.slice(newsSlide * 2, newsSlide * 2 + 2).map((article) => (
+              <Link 
+                key={article.id} 
+                href={`/news/${article.id}`}
+                className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-sm hover:shadow-md transition flex space-x-4 items-center group"
+              >
+                <div className="w-28 h-20 bg-slate-100 rounded-lg flex-shrink-0 overflow-hidden border border-slate-100 relative">
+                  {article.imageUrl ? (
+                    <img
+                      src={article.imageUrl}
+                      alt={article.title}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-[10px] text-slate-400">
+                      [ ไม่มีรูปภาพ ]
+                    </div>
+                  )}
+                </div>
+                <div className="space-y-1.5 flex-1 min-w-0">
+                  <span className="text-[10px] text-[#1a2b6d] font-bold uppercase tracking-wider block">
+                    {article.createdAt ? new Date(article.createdAt).toLocaleDateString('th-TH') : 'ข่าวสาร'}
+                  </span>
+                  <h4 className="text-xs font-semibold text-slate-800 line-clamp-2 group-hover:text-[#1a2b6d] cursor-pointer leading-snug transition-colors">
+                    {article.title}
+                  </h4>
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
 
-        <div className="flex justify-center space-x-2 pt-1">
-          <button 
-            onClick={() => setNewsSlide(0)} 
-            aria-label="Slide 1"
-            className={`w-2.5 h-2.5 rounded-full transition cursor-pointer ${newsSlide === 0 ? 'bg-[#1a2b6d] w-5' : 'bg-slate-300'}`}
-          ></button>
-          <button 
-            onClick={() => setNewsSlide(1)} 
-            aria-label="Slide 2"
-            className={`w-2.5 h-2.5 rounded-full transition cursor-pointer ${newsSlide === 1 ? 'bg-[#1a2b6d] w-5' : 'bg-slate-300'}`}
-          ></button>
-        </div>
+        {healthArticles.length > 2 && (
+          <div className="flex justify-center space-x-2 pt-1">
+            <button 
+              onClick={() => setNewsSlide(0)} 
+              aria-label="Slide 1"
+              className={`w-2.5 h-2.5 rounded-full transition cursor-pointer ${newsSlide === 0 ? 'bg-[#1a2b6d] w-5' : 'bg-slate-300'}`}
+            ></button>
+            <button 
+              onClick={() => setNewsSlide(1)} 
+              aria-label="Slide 2"
+              className={`w-2.5 h-2.5 rounded-full transition cursor-pointer ${newsSlide === 1 ? 'bg-[#1a2b6d] w-5' : 'bg-slate-300'}`}
+            ></button>
+          </div>
+        )}
       </section>
 
     </div>

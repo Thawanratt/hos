@@ -13,11 +13,11 @@ interface NavbarProps {
   onSelectBranch?: (branch: Branch) => void;
 }
 
-// 1. แถบแจ้งเหตุฉุกเฉิน
+// 1. แถบแจ้งเหตุฉุกเฉิน 
 function EmergencyStrip() {
   return (
     <div className="bg-[#b91c1c] text-white text-xs py-1.5 px-4 md:px-8">
-      <div className="max-w-7xl mx-auto flex justify-between items-center">
+      <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-1 sm:gap-0">
         <div className="flex items-center space-x-2.5 font-medium">
           <span className="flex h-2 w-2 relative">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
@@ -26,119 +26,157 @@ function EmergencyStrip() {
           <span className="tracking-wide text-[11px] sm:text-xs">ศูนย์อุบัติเหตุและฉุกเฉิน พร้อมบริการ 24 ชั่วโมง</span>
         </div>
 
-        <div className="hidden sm:flex items-center space-x-4">
-          <a href="tel:02165555" className="font-bold hover:underline flex items-center gap-1.5 tracking-wide text-xs">
+        <div className="flex items-center space-x-3 sm:space-x-4">
+          <a href="tel:02165555" className="font-bold hover:underline flex items-center gap-1.5 tracking-wide text-[11px] sm:text-xs">
             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
             </svg>
             สายด่วน: 02-165-5555
           </a>
           <span className="opacity-40">|</span>
-          <span className="text-red-100 font-light text-xs">รองรับสิทธิ 30 บาท / ประกันสังคม</span>
+          <span className="text-red-100 font-light text-[10px] sm:text-xs">รองรับสิทธิ 30 บาท / ประกันสังคม</span>
         </div>
       </div>
     </div>
   );
 }
 
-// 2. เมนูหลักฝั่ง Desktop
+// 2. เมนูหลักฝั่ง Desktop & Tablet 
 function DesktopNavigation({ pathname, isAdmin, onPrimaryAction }: { pathname: string; isAdmin: boolean; onPrimaryAction: () => void }) {
+  const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+  const navRef = useRef<HTMLDivElement>(null);
+
+  // ปิดเมนูดรอปดาวน์เมื่อคลิกพื้นที่ด้านนอก
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (navRef.current && !navRef.current.contains(event.target as Node)) {
+        setActiveDropdown(null);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const toggleDropdown = (name: string) => {
+    setActiveDropdown(activeDropdown === name ? null : name);
+  };
+
   return (
-    <nav className="hidden lg:flex items-center space-x-1 text-xs xl:text-sm font-bold text-slate-700">
+    <nav ref={navRef} className="hidden lg:flex items-center space-x-1 text-xs xl:text-sm font-bold text-slate-700 relative">
       <Link href="/" className={`px-2.5 py-2 rounded-lg transition ${pathname === '/' ? 'text-[#1a2b6d] bg-sky-50/80' : 'hover:text-[#1a2b6d] hover:bg-slate-50'}`}>
         หน้าหลัก
       </Link>
 
       {/* เมนู: บริการ */}
-      <div className="relative group py-2">
-        <button className="px-2.5 py-2 rounded-lg hover:text-[#1a2b6d] hover:bg-slate-50 transition flex items-center gap-1 cursor-pointer">
+      <div className="relative py-2">
+        <button
+          onClick={() => toggleDropdown('services')}
+          className="px-2.5 py-2 rounded-lg hover:text-[#1a2b6d] hover:bg-slate-50 transition flex items-center gap-1 cursor-pointer"
+        >
           บริการ
-          <svg className="w-3.5 h-3.5 text-slate-400 group-hover:rotate-180 transition-transform duration-200" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+          <svg className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${activeDropdown === 'services' ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
           </svg>
         </button>
-        <div className="absolute top-full left-0 pt-2 hidden group-hover:block z-50 animate-in fade-in slide-in-from-top-1 duration-150">
-          <div className="w-80 bg-white text-slate-800 shadow-xl rounded-xl p-4 border border-slate-100 space-y-4">
-            <div className="space-y-2">
-              <div className="flex items-center gap-2 text-[#1a2b6d] font-extrabold text-xs uppercase tracking-wider border-b border-slate-100 pb-2">
-                ศูนย์และคลินิกเฉพาะทาง
+        {activeDropdown === 'services' && (
+          <div className="absolute top-full left-0 pt-2 z-50 animate-in fade-in slide-in-from-top-1 duration-150">
+            <div className="w-80 bg-white text-slate-800 shadow-xl rounded-xl p-4 border border-slate-100 space-y-4">
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-[#1a2b6d] font-extrabold text-xs uppercase tracking-wider border-b border-slate-100 pb-2">
+                  ศูนย์และคลินิกเฉพาะทาง
+                </div>
+                <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-xs font-semibold text-slate-600 pt-1">
+                  <Link href="/services/heart" onClick={() => setActiveDropdown(null)} className="p-1.5 rounded-md hover:bg-sky-50 hover:text-[#1a2b6d] transition">ศูนย์หัวใจ</Link>
+                  <Link href="/services/cancer" onClick={() => setActiveDropdown(null)} className="p-1.5 rounded-md hover:bg-sky-50 hover:text-[#1a2b6d] transition">ศูนย์มะเร็ง</Link>
+                  <Link href="/services/bone" onClick={() => setActiveDropdown(null)} className="p-1.5 rounded-md hover:bg-sky-50 hover:text-[#1a2b6d] transition">ศูนย์กระดูก</Link>
+                  <Link href="/services/brain" onClick={() => setActiveDropdown(null)} className="p-1.5 rounded-md hover:bg-sky-50 hover:text-[#1a2b6d] transition">ศูนย์สมอง</Link>
+                  <Link href="/services/checkup" onClick={() => setActiveDropdown(null)} className="p-1.5 rounded-md hover:bg-sky-50 hover:text-[#1a2b6d] transition">ตรวจสุขภาพ</Link>
+                  <Link href="/services" onClick={() => setActiveDropdown(null)} className="p-1.5 rounded-md hover:bg-sky-50 text-sky-600 font-bold transition">ศูนย์ทั้งหมด ➔</Link>
+                </div>
               </div>
-              <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-xs font-semibold text-slate-600 pt-1">
-                <Link href="/services/heart" className="p-1.5 rounded-md hover:bg-sky-50 hover:text-[#1a2b6d] transition">ศูนย์หัวใจ</Link>
-                <Link href="/services/cancer" className="p-1.5 rounded-md hover:bg-sky-50 hover:text-[#1a2b6d] transition">ศูนย์มะเร็ง</Link>
-                <Link href="/services/bone" className="p-1.5 rounded-md hover:bg-sky-50 hover:text-[#1a2b6d] transition">ศูนย์กระดูก</Link>
-                <Link href="/services/brain" className="p-1.5 rounded-md hover:bg-sky-50 hover:text-[#1a2b6d] transition">ศูนย์สมอง</Link>
-                <Link href="/services/checkup" className="p-1.5 rounded-md hover:bg-sky-50 hover:text-[#1a2b6d] transition">ตรวจสุขภาพ</Link>
-                <Link href="/services" className="p-1.5 rounded-md hover:bg-sky-50 text-sky-600 font-bold transition">ศูนย์ทั้งหมด ➔</Link>
+              <div className="pt-2 border-t border-slate-100 space-y-1 text-xs font-bold text-slate-700">
+                <Link href="/doctors" onClick={() => setActiveDropdown(null)} className="flex items-center gap-2 p-2 rounded-lg hover:bg-slate-50 hover:text-[#1a2b6d] transition">ค้นหาแพทย์</Link>
+                {!isAdmin && (
+                  <button onClick={() => { setActiveDropdown(null); onPrimaryAction(); }} className="w-full flex items-center gap-2 p-2 rounded-lg hover:bg-slate-50 text-[#1a2b6d] transition cursor-pointer text-left">
+                    ทำนัดหมายออนไลน์
+                  </button>
+                )}
+                <Link href="/packages" onClick={() => setActiveDropdown(null)} className="flex items-center gap-2 p-2 rounded-lg hover:bg-slate-50 hover:text-[#1a2b6d] transition">แพ็กเกจและโปรโมชั่น</Link>
               </div>
-            </div>
-            <div className="pt-2 border-t border-slate-100 space-y-1 text-xs font-bold text-slate-700">
-              <Link href="/doctors" className="flex items-center gap-2 p-2 rounded-lg hover:bg-slate-50 hover:text-[#1a2b6d] transition">ค้นหาแพทย์</Link>
-              {!isAdmin && (
-                <button onClick={onPrimaryAction} className="w-full flex items-center gap-2 p-2 rounded-lg hover:bg-slate-50 text-[#1a2b6d] transition cursor-pointer text-left">
-                  ทำนัดหมายออนไลน์
-                </button>
-              )}
-              <Link href="/packages" className="flex items-center gap-2 p-2 rounded-lg hover:bg-slate-50 hover:text-[#1a2b6d] transition">แพ็กเกจและโปรโมชั่น</Link>
             </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* เมนู: ข้อมูลผู้เข้ารับบริการ */}
-      <div className="relative group py-2">
-        <button className="px-2.5 py-2 rounded-lg hover:text-[#1a2b6d] hover:bg-slate-50 transition flex items-center gap-1 cursor-pointer">
+      <div className="relative py-2">
+        <button
+          onClick={() => toggleDropdown('patient')}
+          className="px-2.5 py-2 rounded-lg hover:text-[#1a2b6d] hover:bg-slate-50 transition flex items-center gap-1 cursor-pointer"
+        >
           ข้อมูลผู้เข้ารับบริการ
-          <svg className="w-3.5 h-3.5 text-slate-400 group-hover:rotate-180 transition-transform duration-200" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+          <svg className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${activeDropdown === 'patient' ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
           </svg>
         </button>
-        <div className="absolute top-full left-0 pt-2 hidden group-hover:block z-50 animate-in fade-in slide-in-from-top-1 duration-150">
-          <div className="w-64 bg-white text-slate-800 shadow-xl rounded-xl p-2.5 border border-slate-100 space-y-0.5 text-xs font-semibold">
-            <Link href="/rooms" className="block p-2 rounded-lg hover:bg-sky-50 hover:text-[#1a2b6d] transition">ห้องพักผู้ป่วย (Inpatient Rooms)</Link>
-            <Link href="/map" className="block p-2 rounded-lg hover:bg-sky-50 hover:text-[#1a2b6d] transition">แผนที่และการเดินทาง</Link>
-            <Link href="/insurance" className="block p-2 rounded-lg hover:bg-sky-50 hover:text-[#1a2b6d] transition">ประกัน และสิทธิการรักษา</Link>
+        {activeDropdown === 'patient' && (
+          <div className="absolute top-full left-0 pt-2 z-50 animate-in fade-in slide-in-from-top-1 duration-150">
+            <div className="w-64 bg-white text-slate-800 shadow-xl rounded-xl p-2.5 border border-slate-100 space-y-0.5 text-xs font-semibold">
+              <Link href="/rooms" onClick={() => setActiveDropdown(null)} className="block p-2 rounded-lg hover:bg-sky-50 hover:text-[#1a2b6d] transition">ห้องพักผู้ป่วย (Inpatient Rooms)</Link>
+              <Link href="/map" onClick={() => setActiveDropdown(null)} className="block p-2 rounded-lg hover:bg-sky-50 hover:text-[#1a2b6d] transition">แผนที่และการเดินทาง</Link>
+              <Link href="/insurance" onClick={() => setActiveDropdown(null)} className="block p-2 rounded-lg hover:bg-sky-50 hover:text-[#1a2b6d] transition">ประกัน และสิทธิการรักษา</Link>
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* เมนู: ข้อมูลสุขภาพ */}
-      <div className="relative group py-2">
-        <button className="px-2.5 py-2 rounded-lg hover:text-[#1a2b6d] hover:bg-slate-50 transition flex items-center gap-1 cursor-pointer">
+      <div className="relative py-2">
+        <button
+          onClick={() => toggleDropdown('health')}
+          className="px-2.5 py-2 rounded-lg hover:text-[#1a2b6d] hover:bg-slate-50 transition flex items-center gap-1 cursor-pointer"
+        >
           ข้อมูลสุขภาพ
-          <svg className="w-3.5 h-3.5 text-slate-400 group-hover:rotate-180 transition-transform duration-200" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+          <svg className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${activeDropdown === 'health' ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
           </svg>
         </button>
-        <div className="absolute top-full left-0 pt-2 hidden group-hover:block z-50 animate-in fade-in slide-in-from-top-1 duration-150">
-          <div className="w-56 bg-white text-slate-800 shadow-xl rounded-xl p-2.5 border border-slate-100 space-y-0.5 text-xs font-semibold">
-            <Link href="/health" className="block p-2 rounded-lg hover:bg-sky-50 hover:text-[#1a2b6d] transition">บทความสุขภาพ</Link>
-            <Link href="/mental-health" className="block p-2 rounded-lg hover:bg-sky-50 hover:text-[#1a2b6d] transition">แบบประเมินสุขภาพใจ</Link>
+        {activeDropdown === 'health' && (
+          <div className="absolute top-full left-0 pt-2 z-50 animate-in fade-in slide-in-from-top-1 duration-150">
+            <div className="w-56 bg-white text-slate-800 shadow-xl rounded-xl p-2.5 border border-slate-100 space-y-0.5 text-xs font-semibold">
+              <Link href="/health" onClick={() => setActiveDropdown(null)} className="block p-2 rounded-lg hover:bg-sky-50 hover:text-[#1a2b6d] transition">บทความสุขภาพ</Link>
+              <Link href="/mental-health" onClick={() => setActiveDropdown(null)} className="block p-2 rounded-lg hover:bg-sky-50 hover:text-[#1a2b6d] transition">แบบประเมินสุขภาพใจ</Link>
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* เมนู: เกี่ยวกับเรา */}
-      <div className="relative group py-2">
-        <button className="px-2.5 py-2 rounded-lg hover:text-[#1a2b6d] hover:bg-slate-50 transition flex items-center gap-1 cursor-pointer">
+      <div className="relative py-2">
+        <button
+          onClick={() => toggleDropdown('about')}
+          className="px-2.5 py-2 rounded-lg hover:text-[#1a2b6d] hover:bg-slate-50 transition flex items-center gap-1 cursor-pointer"
+        >
           เกี่ยวกับเรา
-          <svg className="w-3.5 h-3.5 text-slate-400 group-hover:rotate-180 transition-transform duration-200" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+          <svg className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${activeDropdown === 'about' ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
           </svg>
         </button>
-        <div className="absolute top-full left-0 pt-2 hidden group-hover:block z-50 animate-in fade-in slide-in-from-top-1 duration-150">
-          <div className="w-56 bg-white text-slate-800 shadow-xl rounded-xl p-2.5 border border-slate-100 space-y-0.5 text-xs font-semibold">
-            <Link href="/about" className="block p-2 rounded-lg hover:bg-sky-50 hover:text-[#1a2b6d] transition">ประวัติโรงพยาบาล</Link>
-            <Link href="/news" className="block p-2 rounded-lg hover:bg-sky-50 hover:text-[#1a2b6d] transition">ข่าวสารและกิจกรรม</Link>
-            <Link href="/contact" className="block p-2 rounded-lg hover:bg-sky-50 hover:text-[#1a2b6d] transition">ติดต่อสอบถาม</Link>
+        {activeDropdown === 'about' && (
+          <div className="absolute top-full left-0 pt-2 z-50 animate-in fade-in slide-in-from-top-1 duration-150">
+            <div className="w-56 bg-white text-slate-800 shadow-xl rounded-xl p-2.5 border border-slate-100 space-y-0.5 text-xs font-semibold">
+              <Link href="/about" onClick={() => setActiveDropdown(null)} className="block p-2 rounded-lg hover:bg-sky-50 hover:text-[#1a2b6d] transition">ประวัติโรงพยาบาล</Link>
+              <Link href="/news" onClick={() => setActiveDropdown(null)} className="block p-2 rounded-lg hover:bg-sky-50 hover:text-[#1a2b6d] transition">ข่าวสารและกิจกรรม</Link>
+              <Link href="/contact" onClick={() => setActiveDropdown(null)} className="block p-2 rounded-lg hover:bg-sky-50 hover:text-[#1a2b6d] transition">ติดต่อสอบถาม</Link>
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </nav>
   );
 }
 
-// 3. User Dropdown Menu Component
+// 3. User Dropdown Menu Component (Desktop)
 function UserMenuDropdown({
   user,
   userName,
@@ -207,7 +245,7 @@ function UserMenuDropdown({
                   onClick={() => setIsOpen(false)}
                   className="flex items-center gap-2.5 p-2.5 rounded-xl hover:bg-sky-50 hover:text-[#1a2b6d] transition"
                 >
-                  ประวัติการนัดหมาย
+                  ประวัตินัดหมาย
                 </Link>
                 <div className="border-t border-slate-100 my-1"></div>
               </>
@@ -239,7 +277,6 @@ export default function Navbar({ selectedBranch: propBranch, onSelectBranch }: N
   const [internalBranch, setInternalBranch] = useState<Branch | null>(null);
   const [cartCount, setCartCount] = useState(0);
 
-  //  State สำหรับกาง/หด Submenu บน Mobile Drawer
   const [openMobileSubmenu, setOpenMobileSubmenu] = useState<string | null>(null);
 
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -427,7 +464,7 @@ export default function Navbar({ selectedBranch: propBranch, onSelectBranch }: N
         </div>
       </div>
 
-      {/* 🟢 MOBILE MENU DRAWER (เพิ่มระบบ Accordion ครบทุกหมวดหมู่) */}
+      {/* MOBILE MENU DRAWER */}
       {isMobileMenuOpen && (
         <div className="lg:hidden bg-white border-b border-slate-200 px-4 pt-3 pb-6 space-y-4 shadow-lg animate-in slide-in-from-top duration-200 max-h-[85vh] overflow-y-auto">
           <div className="flex justify-between items-center bg-slate-50 p-2.5 rounded-xl border border-slate-100">
@@ -535,9 +572,9 @@ export default function Navbar({ selectedBranch: propBranch, onSelectBranch }: N
             </div>
           </nav>
 
-          <div className="pt-2 border-t border-slate-100 flex flex-col space-y-2">
+          <div className="pt-3 border-t border-slate-100 flex flex-col space-y-2">
             {user ? (
-              <div className={`p-3 rounded-2xl border flex flex-col space-y-2 ${isAdmin ? 'bg-amber-50/80 border-amber-200/80' : 'bg-blue-50/80 border-blue-200/80'}`}>
+              <div className={`p-3.5 rounded-2xl border flex flex-col space-y-3 ${isAdmin ? 'bg-amber-50/80 border-amber-200/80' : 'bg-blue-50/80 border-blue-200/80'}`}>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2.5">
                     <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-xs shadow-2xs ${isAdmin ? 'bg-amber-600' : 'bg-[#1a2b6d]'}`}>
@@ -554,6 +591,25 @@ export default function Navbar({ selectedBranch: propBranch, onSelectBranch }: N
                     ออกจากระบบ
                   </button>
                 </div>
+
+                {!isAdmin && (
+                  <div className="grid grid-cols-2 gap-2 pt-2 border-t border-blue-200/50 text-xs font-bold">
+                    <Link
+                      href="/profile"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className="p-2 rounded-xl bg-white text-center text-[#1a2b6d] border border-blue-100 hover:bg-sky-50 shadow-2xs"
+                    >
+                      ข้อมูลส่วนตัว
+                    </Link>
+                    <Link
+                      href="/appointments"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className="p-2 rounded-xl bg-white text-center text-[#1a2b6d] border border-blue-100 hover:bg-sky-50 shadow-2xs"
+                    >
+                      ประวัตินัดหมาย
+                    </Link>
+                  </div>
+                )}
               </div>
             ) : (
               <Link

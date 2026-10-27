@@ -28,6 +28,9 @@ export default function CartPage() {
   };
 
   useEffect(() => {
+    // 💡 จุดที่เพิ่ม: เคลียร์ข้อมูลคำสั่งซื้อเก่าทิ้งทันทีเมื่อเข้ามาหน้าตะกร้า เพื่อป้องกันข้อมูลเก่าค้าง
+    localStorage.removeItem('novaria_checkout_data');
+
     const savedCart = localStorage.getItem('novaria_cart');
     if (savedCart) {
       try {

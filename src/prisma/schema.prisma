@@ -160,6 +160,29 @@ model MentalHealthAssessment {
   @@map("mental_health_assessments")
 }
 
+// 7. ตารางเก็บข้อความติดต่อจากหน้า Contact Us
+model ContactMessage {
+  id        String   @id @default(uuid())
+  fullName  String   @map("full_name")
+  phone     String
+  email     String?
+  category  String   // เช่น general, appointment, insurance ฯลฯ
+  subject   String
+  message   String   @db.Text
+  status    ContactStatus @default(PENDING) // สถานะการติดต่อ
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("contact_messages")
+}
+
+// สถานะของข้อความติดต่อ
+enum ContactStatus {
+  PENDING   // รอดำเนินการ
+  CONTACTED // ติดต่อกลับแล้ว
+  CLOSED    // ปิดเคสแล้ว
+}
+
 enum AppointmentStatus {
   PENDING
   CONFIRMED

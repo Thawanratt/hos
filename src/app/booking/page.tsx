@@ -18,6 +18,12 @@ interface Doctor {
   };
 }
 
+interface Department {
+  id: number;
+  name: string;
+  description?: string;
+}
+
 // ----------------------------------------------------
 // Helper Functions (วันที่)
 // ----------------------------------------------------
@@ -71,6 +77,8 @@ function StepOneDoctorSelection({
   setBookingData,
   doctors,
   filteredDoctors,
+  departments,
+  doctorError,
 }: {
   readonly doctorSelectionType: 'auto' | 'manual';
   readonly setDoctorSelectionType: (type: 'auto' | 'manual') => void;
@@ -78,14 +86,9 @@ function StepOneDoctorSelection({
   readonly setBookingData: React.Dispatch<React.SetStateAction<any>>;
   readonly doctors: Doctor[];
   readonly filteredDoctors: Doctor[];
+  readonly departments: Department[];
+  readonly doctorError: boolean;
 }) {
-  const departments = [
-    { id: 1, name: 'อายุรแพทย์' },
-    { id: 2, name: 'กุมารแพทย์' },
-    { id: 3, name: 'สูตินรีแพทย์' },
-    { id: 4, name: 'ศัลยแพทย์' },
-  ];
-
   return (
     <div className="space-y-6">
       <div className="space-y-3">
@@ -134,9 +137,9 @@ function StepOneDoctorSelection({
 
       <div className="space-y-3 pt-2">
         <p className="text-xs font-bold text-slate-700 tracking-wide uppercase">
-          เลือกแผนกรักษา
+          เลือกแผนกและศูนย์การรักษา
         </p>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           {departments.map((dept) => (
             <button
               key={dept.id}
@@ -163,7 +166,7 @@ function StepOneDoctorSelection({
       </div>
 
       {doctorSelectionType === 'manual' && (
-        <div className="space-y-3 pt-2">
+        <div className="space-y-2 pt-2">
           <label htmlFor="doctor-select" className="block text-xs font-bold text-slate-700 tracking-wide uppercase">
             เลือกแพทย์เฉพาะทาง
           </label>
@@ -179,7 +182,9 @@ function StepOneDoctorSelection({
                 doctorName: doc ? `นพ./พญ. ${doc.user.firstName} ${doc.user.lastName}` : 'แพทย์ท่านใดก็ได้'
               });
             }}
-            className="w-full p-3.5 rounded-2xl border border-slate-200 text-xs text-slate-700 bg-white outline-none focus:border-[#1a2b6d]"
+            className={`w-full p-3.5 rounded-2xl border text-xs text-slate-700 bg-white outline-none transition-all ${
+              doctorError ? 'border-rose-500 ring-1 ring-rose-500 bg-rose-50/20' : 'border-slate-200 focus:border-[#1a2b6d]'
+            }`}
           >
             <option value={0}>-- โปรดเลือกแพทย์ผู้ตรวจ --</option>
             {filteredDoctors.map((doc) => (
@@ -188,44 +193,13 @@ function StepOneDoctorSelection({
               </option>
             ))}
           </select>
+          {doctorError && (
+            <p className="text-[11px] text-rose-600 font-medium pl-1 animate-fadeIn">
+              * กรุณาเลือกแพทย์ผู้ตรวจก่อนดำเนินการต่อ
+            </p>
+          )}
         </div>
       )}
-    </div>
-  );
-}
-
-function StepOneCheckupSelection({ bookingData, setBookingData }: { readonly bookingData: any; readonly setBookingData: any }) {
-  const packages = [
-    { title: 'โปรแกรมตรวจสุขภาพประจำปี (Standard Checkup)', price: '3,500 บาท', desc: 'ตรวจร่างกายพื้นฐาน ตรวจเลือด เอกซเรย์ปอด' },
-    { title: 'ชุดตรวจวิตามินและสารอาหาร (Vita-Beauty Checkup)', price: '5,200 บาท', desc: 'วิเคราะห์ระดับวิตามิน และสารต้านอนุมูลอิสระ' },
-    { title: 'ชุดตรวจสมดุลแร่ธาตุและสารต้านอนุมูลอิสระ', price: '6,800 บาท', desc: 'ตรวจเชิงลึกสำหรับผู้ที่ต้องการดูแลสุขภาพพิเศษ' },
-  ];
-
-  return (
-    <div className="space-y-4">
-      <p className="text-xs font-bold text-slate-700 tracking-wide uppercase">
-        เลือกโปรแกรมตรวจสุขภาพ
-      </p>
-      <div className="space-y-3">
-        {packages.map((pkg, idx) => (
-          <button
-            key={idx}
-            type="button"
-            onClick={() => setBookingData({ ...bookingData, packageType: pkg.title })}
-            className={`w-full p-5 rounded-2xl border cursor-pointer transition-all flex justify-between items-center text-left ${
-              bookingData.packageType === pkg.title
-                ? 'border-[#1a2b6d] bg-blue-50/30 shadow-xs ring-1 ring-[#1a2b6d]'
-                : 'border-slate-200 hover:border-slate-300 bg-white'
-            }`}
-          >
-            <div className="space-y-1">
-              <h3 className="font-bold text-xs text-slate-900">{pkg.title}</h3>
-              <p className="text-[11px] text-slate-500">{pkg.desc}</p>
-            </div>
-            <span className="text-xs font-bold text-[#1a2b6d] whitespace-nowrap ml-4">{pkg.price}</span>
-          </button>
-        ))}
-      </div>
     </div>
   );
 }
@@ -237,6 +211,7 @@ function BookingContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const preSelectedDoctorId = searchParams.get('doctorId');
+  const preSelectedDepartmentId = searchParams.get('departmentId');
   const serviceType = searchParams.get('service') || 'doctor';
   const branchId = searchParams.get('branch') || 'novaria-main';
 
@@ -245,15 +220,38 @@ function BookingContent() {
 
   const [step, setStep] = useState(1);
   const [doctors, setDoctors] = useState<Doctor[]>([]);
+  const [departmentsList, setDepartmentsList] = useState<Department[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [doctorSelectionType, setDoctorSelectionType] = useState<'auto' | 'manual'>('auto');
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 
+  // States สำหรับเช็ค Error ใต้ฟิลด์
+  const [doctorError, setDoctorError] = useState(false);
+  const [dateError, setDateError] = useState(false);
+  const [timeError, setTimeError] = useState(false);
+
+  const getInitialDepartmentId = () => {
+    if (preSelectedDepartmentId) return Number(preSelectedDepartmentId);
+    
+    switch (serviceType) {
+      case 'heart': return 5;
+      case 'cancer': return 6;
+      case 'bone': return 7;
+      case 'brain': return 8;
+      case 'emergency': return 9;
+      case 'checkup': return 10;
+      case 'surgery': return 11;
+      default: return 1;
+    }
+  };
+
+  const initialDeptId = getInitialDepartmentId();
+
   const [bookingData, setBookingData] = useState({
     patientId: 0,
-    departmentId: 1,
-    departmentName: serviceType === 'checkup' ? 'ตรวจสุขภาพ' : serviceType === 'vaccine' ? 'ฉีดวัคซีน' : 'อายุรแพทย์',
+    departmentId: initialDeptId,
+    departmentName: 'กำลังโหลด...',
     doctorId: preSelectedDoctorId ? Number(preSelectedDoctorId) : 0,
     doctorName: '',
     packageType: serviceType === 'checkup' ? 'โปรแกรมตรวจสุขภาพประจำปี' : serviceType === 'vaccine' ? 'วัคซีนป้องกันไข้หวัดใหญ่ 4 สายพันธุ์' : '',
@@ -262,15 +260,13 @@ function BookingContent() {
     symptoms: ''
   });
 
-  // 🟢 แก้ไขจุดตรวจ Session ให้ยืดหยุ่น ห้ามสั่งเด้งถ้ามี user ค้างอยู่ใน localStorage
+  // 1. ตรวจสอบสิทธิ์การเข้าใช้งาน
   useEffect(() => {
     let isMounted = true;
-    
     try {
       const storedUser = localStorage.getItem('user');
       const storedLoggedInState = localStorage.getItem('isLoggedIn');
 
-      // ขอแค่มี user หรือ isLoggedIn ให้ผ่านเข้าหน้าจองคิวทันที!
       if ((storedUser && storedUser !== 'undefined' && storedUser !== 'null') || storedLoggedInState === 'true') {
         if (storedUser) {
           try {
@@ -288,7 +284,6 @@ function BookingContent() {
         return;
       }
 
-      // กรณีที่ไม่มีข้อมูลล็อกอินในเครื่องเลยจริงๆ ถึงจะพาไปหน้า Login
       if (isMounted) {
         const currentQuery = searchParams.toString();
         const currentPath = `/booking${currentQuery ? `?${currentQuery}` : ''}`;
@@ -304,8 +299,33 @@ function BookingContent() {
     };
   }, [router, searchParams]);
 
+  // 2. ดึงข้อมูลแผนกทั้งหมดจาก API ฐานข้อมูล
   useEffect(() => {
-    if (serviceType !== 'doctor') return;
+    async function fetchDepartments() {
+      try {
+        const res = await fetch('/api/departments');
+        const result = await res.json();
+        if (result.success && result.data.length > 0) {
+          setDepartmentsList(result.data);
+
+          const targetDeptId = getInitialDepartmentId();
+          const found = result.data.find((d: Department) => d.id === targetDeptId);
+
+          setBookingData((prev) => ({
+            ...prev,
+            departmentId: targetDeptId,
+            departmentName: found ? found.name : result.data[0].name,
+          }));
+        }
+      } catch (error) {
+        console.error('Error fetching departments:', error);
+      }
+    }
+    fetchDepartments();
+  }, [preSelectedDepartmentId, serviceType]);
+
+  // 3. ดึงข้อมูลแพทย์ตามแผนกที่เลือก
+  useEffect(() => {
     async function fetchDoctors() {
       try {
         const res = await fetch(`/api/doctors?departmentId=${bookingData.departmentId}`);
@@ -332,21 +352,22 @@ function BookingContent() {
       }
     }
     fetchDoctors();
-  }, [bookingData.departmentId, preSelectedDoctorId, serviceType]);
+  }, [bookingData.departmentId, preSelectedDoctorId]);
 
   const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedDate = e.target.value;
     if (selectedDate < todayStr) {
-      alert('ไม่สามารถเลือกวันที่ย้อนหลังได้ กรุณาเลือกวันที่ปัจจุบันหรือวันที่ในอนาคต');
+      setDateError(true);
       setBookingData((prev) => ({ ...prev, date: todayStr }));
       return;
     }
+    setDateError(false);
     setBookingData((prev) => ({ ...prev, date: selectedDate }));
   };
 
   const handleConfirmBooking = async () => {
     if (bookingData.date < todayStr) {
-      alert('วันที่นัดหมายไม่ถูกต้อง ไม่สามารถทำรายการย้อนหลังได้');
+      setDateError(true);
       return;
     }
 
@@ -370,14 +391,12 @@ function BookingContent() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           patientId: userId,
-          doctorId: serviceType === 'doctor' && doctorSelectionType === 'manual' ? (bookingData.doctorId || null) : null,
+          doctorId: doctorSelectionType === 'manual' ? (bookingData.doctorId || null) : null,
           departmentId: bookingData.departmentId,
           branch: branchId,
           appointmentDate: bookingData.date,
           timeSlot: bookingData.time,
-          symptoms: serviceType === 'doctor'
-            ? (bookingData.symptoms || null)
-            : `[${serviceType.toUpperCase()}] ${bookingData.packageType}`,
+          symptoms: bookingData.symptoms || null,
         }),
       });
 
@@ -406,7 +425,7 @@ function BookingContent() {
   const getServiceTitle = () => {
     if (serviceType === 'checkup') return 'ตรวจสุขภาพ';
     if (serviceType === 'vaccine') return 'ฉีดวัคซีนไข้หวัดใหญ่';
-    return 'ทำนัดหมายแพทย์';
+    return bookingData.departmentName || 'ทำนัดหมายแพทย์';
   };
 
   if (isCheckingAuth) {
@@ -441,39 +460,29 @@ function BookingContent() {
           {/* STEP 1 */}
           {step === 1 && (
             <div className="space-y-8 max-w-2xl mx-auto">
-              {serviceType === 'doctor' && (
-                <StepOneDoctorSelection
-                  doctorSelectionType={doctorSelectionType}
-                  setDoctorSelectionType={setDoctorSelectionType}
-                  bookingData={bookingData}
-                  setBookingData={setBookingData}
-                  doctors={doctors}
-                  filteredDoctors={filteredDoctors}
-                />
-              )}
-
-              {serviceType === 'checkup' && (
-                <StepOneCheckupSelection bookingData={bookingData} setBookingData={setBookingData} />
-              )}
-
-              {serviceType === 'vaccine' && (
-                <div className="space-y-4">
-                  <p className="text-xs font-bold text-slate-700 tracking-wide uppercase">
-                    รายการวัคซีน
-                  </p>
-                  <div className="p-5 rounded-2xl border border-[#1a2b6d] bg-blue-50/30 space-y-1">
-                    <h3 className="font-bold text-xs text-[#1a2b6d]">วัคซีนป้องกันไข้หวัดใหญ่ 4 สายพันธุ์ (Influenza Vaccine)</h3>
-                    <p className="text-[11px] text-slate-500 leading-relaxed">
-                      เหมาะสำหรับผู้ที่มีอายุ 15 ปีขึ้นไป ช่วยสร้างภูมิคุ้มกันป้องกันเชื้อไข้หวัดใหญ่สายพันธุ์ล่าสุด
-                    </p>
-                  </div>
-                </div>
-              )}
+              <StepOneDoctorSelection
+                doctorSelectionType={doctorSelectionType}
+                setDoctorSelectionType={setDoctorSelectionType}
+                bookingData={bookingData}
+                setBookingData={setBookingData}
+                doctors={doctors}
+                filteredDoctors={filteredDoctors}
+                departments={departmentsList}
+                doctorError={doctorError}
+              />
 
               <div className="flex justify-end pt-6 border-t border-slate-100">
                 <button
                   type="button"
-                  onClick={() => setStep(2)}
+                  onClick={() => {
+                    // ตรวจสอบกรณีเลือกแบบ manual แต่ยังไม่เลือกแพทย์
+                    if (doctorSelectionType === 'manual' && (!bookingData.doctorId || bookingData.doctorId === 0)) {
+                      setDoctorError(true);
+                      return;
+                    }
+                    setDoctorError(false);
+                    setStep(2);
+                  }}
                   className="bg-[#1a2b6d] text-white px-8 py-3 rounded-xl text-xs font-semibold hover:bg-[#0f1a42] transition-all shadow-xs cursor-pointer flex items-center space-x-2"
                 >
                   <span>ต่อไป</span>
@@ -502,22 +511,34 @@ function BookingContent() {
                       min={todayStr}
                       value={bookingData.date}
                       onChange={handleDateChange}
-                      className="w-full pl-4 pr-10 py-3.5 rounded-2xl border border-slate-200 text-xs font-medium text-slate-800 bg-white focus:outline-none focus:border-[#1a2b6d] focus:ring-2 focus:ring-blue-50 transition-all cursor-pointer shadow-2xs"
+                      className={`w-full pl-4 pr-10 py-3.5 rounded-2xl border text-xs font-medium text-slate-800 bg-white focus:outline-none transition-all cursor-pointer shadow-2xs ${
+                        dateError ? 'border-rose-500 ring-1 ring-rose-500 bg-rose-50/20' : 'border-slate-200 focus:border-[#1a2b6d]'
+                      }`}
                     />
                   </div>
+                  {dateError && (
+                    <p className="text-[11px] text-rose-600 font-medium pl-1">
+                      * กรุณาเลือกวันที่ปัจจุบันหรือวันที่ในอนาคต (ไม่อนุญาตให้เลือกวันที่ย้อนหลัง)
+                    </p>
+                  )}
                 </div>
 
-                <div className="space-y-1.5 pt-2">
+                <div className="space-y-2 pt-2">
                   <p className="text-xs font-semibold text-slate-700">เลือกรอบเวลา</p>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                     {['09:00 - 10:00', '10:30 - 11:30', '13:00 - 14:00', '14:30 - 15:30'].map((time) => (
                       <button
                         key={time}
                         type="button"
-                        onClick={() => setBookingData({ ...bookingData, time })}
+                        onClick={() => {
+                          setTimeError(false);
+                          setBookingData({ ...bookingData, time });
+                        }}
                         className={`p-3.5 rounded-2xl border text-center text-xs font-semibold transition-all cursor-pointer ${
                           bookingData.time === time
                             ? 'border-[#1a2b6d] bg-[#1a2b6d] text-white shadow-xs'
+                            : timeError
+                            ? 'border-rose-300 text-slate-600 bg-rose-50/20'
                             : 'border-slate-200 text-slate-600 bg-white hover:border-slate-300'
                         }`}
                       >
@@ -525,6 +546,11 @@ function BookingContent() {
                       </button>
                     ))}
                   </div>
+                  {timeError && (
+                    <p className="text-[11px] text-rose-600 font-medium pl-1">
+                      * กรุณาเลือกรอบเวลาก่อนดำเนินการต่อ
+                    </p>
+                  )}
                 </div>
 
                 <div className="space-y-1.5 pt-2">
@@ -552,9 +578,23 @@ function BookingContent() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setStep(3)}
-                  disabled={!bookingData.date || !bookingData.time || bookingData.date < todayStr}
-                  className="bg-[#1a2b6d] text-white px-8 py-3 rounded-xl text-xs font-semibold hover:bg-[#0f1a42] transition shadow-xs cursor-pointer disabled:opacity-50"
+                  onClick={() => {
+                    let hasError = false;
+                    if (!bookingData.date || bookingData.date < todayStr) {
+                      setDateError(true);
+                      hasError = true;
+                    }
+                    if (!bookingData.time) {
+                      setTimeError(true);
+                      hasError = true;
+                    }
+                    if (hasError) return;
+
+                    setDateError(false);
+                    setTimeError(false);
+                    setStep(3);
+                  }}
+                  className="bg-[#1a2b6d] text-white px-8 py-3 rounded-xl text-xs font-semibold hover:bg-[#0f1a42] transition shadow-xs cursor-pointer"
                 >
                   ต่อไป
                 </button>
@@ -576,37 +616,13 @@ function BookingContent() {
                   <span className="font-bold text-[#1a2b6d]">{currentBranch.name}</span>
                 </div>
                 <div className="flex justify-between border-b border-slate-200/60 pb-2.5">
-                  <span className="text-slate-500">บริการ:</span>
-                  <span className="font-bold text-slate-800">{getServiceTitle()}</span>
+                  <span className="text-slate-500">แผนก:</span>
+                  <span className="font-bold text-slate-800">{bookingData.departmentName}</span>
                 </div>
-
-                {serviceType === 'doctor' && (
-                  <>
-                    <div className="flex justify-between border-b border-slate-200/60 pb-2.5">
-                      <span className="text-slate-500">แผนก:</span>
-                      <span className="font-bold text-slate-800">{bookingData.departmentName}</span>
-                    </div>
-                    <div className="flex justify-between border-b border-slate-200/60 pb-2.5">
-                      <span className="text-slate-500">แพทย์:</span>
-                      <span className="font-bold text-slate-800">{bookingData.doctorName || 'จัดสรรแพทย์ให้อัตโนมัติ'}</span>
-                    </div>
-                  </>
-                )}
-
-                {serviceType === 'checkup' && (
-                  <div className="flex justify-between border-b border-slate-200/60 pb-2.5">
-                    <span className="text-slate-500">แพ็กเกจ:</span>
-                    <span className="font-bold text-slate-800">{bookingData.packageType}</span>
-                  </div>
-                )}
-
-                {serviceType === 'vaccine' && (
-                  <div className="flex justify-between border-b border-slate-200/60 pb-2.5">
-                    <span className="text-slate-500">รายการ:</span>
-                    <span className="font-bold text-slate-800">วัคซีนป้องกันไข้หวัดใหญ่ 4 สายพันธุ์</span>
-                  </div>
-                )}
-
+                <div className="flex justify-between border-b border-slate-200/60 pb-2.5">
+                  <span className="text-slate-500">แพทย์:</span>
+                  <span className="font-bold text-slate-800">{bookingData.doctorName || 'จัดสรรแพทย์ให้อัตโนมัติ'}</span>
+                </div>
                 <div className="flex justify-between border-b border-slate-200/60 pb-2.5">
                   <span className="text-slate-500">วันที่นัดหมาย:</span>
                   <span className="font-bold text-slate-800">{bookingData.date}</span>

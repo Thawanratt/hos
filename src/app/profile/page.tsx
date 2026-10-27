@@ -24,6 +24,7 @@ export default function ProfilePage() {
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState<UserProfile>({});
   const [savedSuccess, setSavedSuccess] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null); // State สำหรับเก็บข้อความแจ้งเตือนข้อผิดพลาด
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -44,10 +45,31 @@ export default function ProfilePage() {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+    if (errorMessage) setErrorMessage(null); // ล้างข้อความเตือนเมื่อผู้ใช้เริ่มพิมพ์แก้ไข
   };
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
+    setErrorMessage(null);
+
+    // ตรวจสอบความถูกต้องของข้อมูลก่อนบันทึก
+    if (!formData.firstName?.trim() || !formData.lastName?.trim()) {
+      setErrorMessage('กรุณากรอกชื่อจริงและนามสกุลให้ครบถ้วน');
+      return;
+    }
+    if (!formData.email?.trim()) {
+      setErrorMessage('กรุณากรอกอีเมลติดต่อ');
+      return;
+    }
+    if (formData.phone && formData.phone.length < 10) {
+      setErrorMessage('กรุณากรอกเบอร์โทรศัพท์ให้ครบ 10 หลัก');
+      return;
+    }
+    if (formData.idCard && formData.idCard.length < 13) {
+      setErrorMessage('กรุณากรอกเลขประจำตัวประชาชนให้ครบ 13 หลัก');
+      return;
+    }
+
     setUser(formData);
     localStorage.setItem('user', JSON.stringify(formData));
     setIsEditing(false);
@@ -78,7 +100,7 @@ export default function ProfilePage() {
           <span className="text-slate-700 font-bold">ข้อมูลส่วนตัวผู้ป่วย</span>
         </nav>
 
-        {/* Notification Toast */}
+        {/* Notification Toast (Success) */}
         {savedSuccess && (
           <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs md:text-sm font-bold p-4 rounded-2xl flex items-center justify-between shadow-xs animate-in fade-in slide-in-from-top-2">
             <div className="flex items-center space-x-2">
@@ -88,6 +110,19 @@ export default function ProfilePage() {
               <span>บันทึกข้อมูลส่วนตัวเรียบร้อยแล้ว</span>
             </div>
             <button onClick={() => setSavedSuccess(false)} className="text-emerald-500 hover:text-emerald-700">✕</button>
+          </div>
+        )}
+
+        {/* Notification Toast (Error Validation) */}
+        {errorMessage && (
+          <div className="bg-red-50 border border-red-200 text-red-800 text-xs md:text-sm font-bold p-4 rounded-2xl flex items-center justify-between shadow-xs animate-in fade-in slide-in-from-top-2">
+            <div className="flex items-center space-x-2">
+              <svg className="w-5 h-5 text-red-600 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+              <span>{errorMessage}</span>
+            </div>
+            <button onClick={() => setErrorMessage(null)} className="text-red-400 hover:text-red-700">✕</button>
           </div>
         )}
 
@@ -111,7 +146,7 @@ export default function ProfilePage() {
 
           {!isEditing ? (
             <button
-              onClick={() => setIsEditing(true)}
+              onClick={() => { setIsEditing(true); setErrorMessage(null); }}
               className="bg-[#1a2b6d] hover:bg-blue-900 text-white font-bold px-5 py-2.5 rounded-xl text-xs transition flex items-center gap-2 shadow-xs cursor-pointer active:scale-95 shrink-0"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
@@ -121,7 +156,7 @@ export default function ProfilePage() {
             </button>
           ) : (
             <button
-              onClick={() => setIsEditing(false)}
+              onClick={() => { setIsEditing(false); setErrorMessage(null); setFormData(user); }}
               className="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-5 py-2.5 rounded-xl text-xs transition cursor-pointer shrink-0"
             >
               ยกเลิก
@@ -144,7 +179,7 @@ export default function ProfilePage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5 text-xs font-semibold">
             {/* ชื่อ */}
             <div>
-              <label className="block text-slate-500 mb-1.5 font-bold">ชื่อจริง</label>
+              <label className="block text-slate-500 mb-1.5 font-bold">ชื่อจริง *</label>
               {isEditing ? (
                 <input
                   type="text"
@@ -160,7 +195,7 @@ export default function ProfilePage() {
 
             {/* นามสกุล */}
             <div>
-              <label className="block text-slate-500 mb-1.5 font-bold">นามสกุล</label>
+              <label className="block text-slate-500 mb-1.5 font-bold">นามสกุล *</label>
               {isEditing ? (
                 <input
                   type="text"
@@ -176,7 +211,7 @@ export default function ProfilePage() {
 
             {/* อีเมล */}
             <div>
-              <label className="block text-slate-500 mb-1.5 font-bold">อีเมลติดต่อ</label>
+              <label className="block text-slate-500 mb-1.5 font-bold">อีเมลติดต่อ *</label>
               {isEditing ? (
                 <input
                   type="email"
@@ -190,20 +225,47 @@ export default function ProfilePage() {
               )}
             </div>
 
-            {/* เบอร์โทรศัพท์ */}
+            {/* เบอร์โทรศัพท์ (บังคับตัวเลข 10 หลัก) */}
             <div>
-              <label className="block text-slate-500 mb-1.5 font-bold">เบอร์โทรศัพท์</label>
+              <label className="block text-slate-500 mb-1.5 font-bold">เบอร์โทรศัพท์ (10 หลัก)</label>
               {isEditing ? (
                 <input
                   type="tel"
+                  inputMode="numeric"
                   name="phone"
                   value={formData.phone || ''}
-                  onChange={handleChange}
-                  placeholder="08X-XXX-XXXX"
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/\D/g, '').slice(0, 10);
+                    setFormData({ ...formData, phone: val });
+                    if (errorMessage) setErrorMessage(null);
+                  }}
+                  placeholder="08XXXXXXXX"
                   className="w-full p-3 rounded-xl border border-slate-200 focus:border-[#1a2b6d] focus:ring-1 focus:ring-[#1a2b6d] outline-none font-semibold text-slate-800"
                 />
               ) : (
                 <p className="p-3 bg-slate-50 rounded-xl text-slate-800 font-bold">{user.phone || 'ยังไม่ได้ระบุ'}</p>
+              )}
+            </div>
+
+            {/* เลขประจำตัวประชาชน (บังคับตัวเลข 13 หลัก) */}
+            <div>
+              <label className="block text-slate-500 mb-1.5 font-bold">เลขประจำตัวประชาชน (13 หลัก)</label>
+              {isEditing ? (
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  name="idCard"
+                  value={formData.idCard || ''}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/\D/g, '').slice(0, 13);
+                    setFormData({ ...formData, idCard: val });
+                    if (errorMessage) setErrorMessage(null);
+                  }}
+                  placeholder="กรอกเลขบัตรประชาชน 13 หลัก"
+                  className="w-full p-3 rounded-xl border border-slate-200 focus:border-[#1a2b6d] focus:ring-1 focus:ring-[#1a2b6d] outline-none font-semibold text-slate-800"
+                />
+              ) : (
+                <p className="p-3 bg-slate-50 rounded-xl text-slate-800 font-bold">{user.idCard || 'ยังไม่ได้ระบุ'}</p>
               )}
             </div>
 
@@ -229,7 +291,7 @@ export default function ProfilePage() {
             </div>
 
             {/* ประวัติแพ้ยา/อาหาร */}
-            <div>
+            <div className="md:col-span-2">
               <label className="block text-slate-500 mb-1.5 font-bold">ประวัติการแพ้ยา/อาหาร</label>
               {isEditing ? (
                 <input
@@ -275,8 +337,6 @@ export default function ProfilePage() {
             </div>
           )}
         </form>
-
-        
 
       </div>
     </main>

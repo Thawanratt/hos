@@ -28,27 +28,53 @@ export default function ContactPage() {
 
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState(''); // 🟢 เพิ่ม State สำหรับแจ้งเตือนข้อผิดพลาด
 
-  const handleSubmit = (e: React.FormEvent) => {
+const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.consent) return;
+    setErrorMessage('');
+
+    if (formData.phone.length !== 10) {
+      setErrorMessage('กรุณากรอกเบอร์โทรศัพท์ให้ครบ 10 หลัก');
+      return;
+    }
+    if (!formData.consent) {
+      setErrorMessage('กรุณากดยอมรับนโยบายความเป็นส่วนตัว (PDPA)');
+      return;
+    }
 
     setIsSubmitting(true);
-    setTimeout(() => {
-      setIsSubmitting(false);
-      setIsSubmitted(true);
-      setFormData({
-        fullName: '',
-        phone: '',
-        email: '',
-        category: 'general',
-        subject: '',
-        message: '',
-        consent: false,
-      });
-    }, 800);
-  };
 
+    try {
+      const res = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data.success) {
+        setIsSubmitted(true);
+        setFormData({
+          fullName: '',
+          phone: '',
+          email: '',
+          category: 'general',
+          subject: '',
+          message: '',
+          consent: false,
+        });
+      } else {
+        setErrorMessage(data.message || 'เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
+      }
+    } catch (error) {
+      setErrorMessage('ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+  
   return (
     <div className="min-h-screen bg-[#f8fafc] text-slate-800 font-sans pb-20">
       
@@ -129,6 +155,14 @@ export default function ContactPage() {
               <div className="h-0.5 w-16 bg-[#1a2b6d] mt-2"></div>
             </div>
 
+            {/* 🔴 ข้อความแจ้งเตือน Error เมื่อกรอกข้อมูลไม่ถูกต้อง */}
+            {errorMessage && (
+              <div className="bg-red-50 border border-red-200 rounded-md p-3 text-red-700 text-xs font-bold flex items-center justify-between">
+                <span>{errorMessage}</span>
+                <button onClick={() => setErrorMessage('')} className="text-red-400 hover:text-red-700">✕</button>
+              </div>
+            )}
+
             {isSubmitted && (
               <div className="bg-emerald-50 border border-emerald-200 rounded-md p-4 flex items-start gap-3 text-emerald-800 text-xs md:text-sm">
                 <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
@@ -159,17 +193,24 @@ export default function ContactPage() {
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* ช่องเบอร์โทรศัพท์: กรอกได้เฉพาะตัวเลข และจำกัดความยาวไม่เกิน 10 หลัก */}
                 <div className="space-y-1">
                   <label htmlFor="phone" className="font-semibold text-slate-700">
-                    เบอร์โทรศัพท์ติดต่อ <span className="text-rose-500">*</span>
+                    เบอร์โทรศัพท์ติดต่อ (10 หลัก) <span className="text-rose-500">*</span>
                   </label>
                   <input
                     id="phone"
                     type="tel"
+                    inputMode="numeric"
+                    maxLength={10}
                     required
-                    placeholder="08X-XXX-XXXX"
+                    placeholder="08XXXXXXXX"
                     value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    onChange={(e) => {
+                      const val = e.target.value.replace(/\D/g, '').slice(0, 10);
+                      setFormData({ ...formData, phone: val });
+                      if (errorMessage) setErrorMessage('');
+                    }}
                     className="w-full px-3 py-2 rounded-md border border-slate-300 text-slate-800 focus:outline-none focus:border-[#1a2b6d]"
                   />
                 </div>

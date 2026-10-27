@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 // Helper: แปลงราคาเป็นตัวเลข
 function parsePrice(priceVal: any): number {
@@ -236,7 +237,7 @@ function PromptPaySection({ totalPrice }: { readonly totalPrice: number }) {
   );
 }
 
-// Sub-component: Credit Card Form
+// Sub-component: Credit Card Form (จำกัดกรอกเฉพาะตัวเลขและความยาวที่ถูกต้อง)
 function CreditCardSection({ cardName, setCardName, cardNumber, setCardNumber, cardExpiry, setCardExpiry, cardCvc, setCardCvc }: any) {
   return (
     <div className="space-y-4 text-xs">
@@ -262,14 +263,19 @@ function CreditCardSection({ cardName, setCardName, cardNumber, setCardNumber, c
       </div>
 
       <div className="space-y-1">
-        <label htmlFor="card-number" className="block text-slate-500 font-medium">หมายเลขบัตร</label>
+        <label htmlFor="card-number" className="block text-slate-500 font-medium">หมายเลขบัตร (16 หลัก)</label>
         <input 
           id="card-number"
           type="text" 
+          inputMode="numeric"
           required
+          maxLength={19}
           placeholder="4242 4242 4242 4242" 
           value={cardNumber}
-          onChange={(e) => setCardNumber(e.target.value)}
+          onChange={(e) => {
+            const val = e.target.value.replace(/\D/g, '').slice(0, 16);
+            setCardNumber(val);
+          }}
           className="w-full border border-slate-300 rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-[#1a2b6d]" 
         />
       </div>
@@ -281,22 +287,33 @@ function CreditCardSection({ cardName, setCardName, cardNumber, setCardNumber, c
             id="card-expiry"
             type="text" 
             required
+            maxLength={5}
             placeholder="MM/YY" 
             value={cardExpiry}
-            onChange={(e) => setCardExpiry(e.target.value)}
+            onChange={(e) => {
+              let val = e.target.value.replace(/\D/g, '').slice(0, 4);
+              if (val.length >= 3) {
+                val = `${val.slice(0, 2)}/${val.slice(2)}`;
+              }
+              setCardExpiry(val);
+            }}
             className="w-full border border-slate-300 rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-[#1a2b6d]" 
           />
         </div>
         <div className="space-y-1">
-          <label htmlFor="card-cvc" className="block text-slate-500 font-medium">CVC / CVV</label>
+          <label htmlFor="card-cvc" className="block text-slate-500 font-medium">CVC / CVV (3-4 หลัก)</label>
           <input 
             id="card-cvc"
             type="password" 
+            inputMode="numeric"
             required
             placeholder="123" 
             maxLength={4}
             value={cardCvc}
-            onChange={(e) => setCardCvc(e.target.value)}
+            onChange={(e) => {
+              const val = e.target.value.replace(/\D/g, '').slice(0, 4);
+              setCardCvc(val);
+            }}
             className="w-full border border-slate-300 rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-[#1a2b6d]" 
           />
         </div>
@@ -347,7 +364,7 @@ function OrderSummary({ cartItems, patientName, totalPrice, paymentMethod, total
         </div>
       </div>
 
-      <button
+     <button
         type="submit"
         className="w-full bg-[#1a2b6d] hover:bg-[#0f1a42] text-white py-3.5 rounded-xl text-xs font-bold transition shadow-xs cursor-pointer text-center"
       >
@@ -358,6 +375,7 @@ function OrderSummary({ cartItems, patientName, totalPrice, paymentMethod, total
 }
 
 export default function CheckoutPage() {
+  const router = useRouter();
   const [cartItems, setCartItems] = useState<any[]>([]);
   const [paymentMethod, setPaymentMethod] = useState('qr');
   const [patientName, setPatientName] = useState('');
@@ -372,11 +390,17 @@ export default function CheckoutPage() {
 
   useEffect(() => {
     const data = loadCartAndUserData();
+    
+    if (data.items.length === 0) {
+      router.push('/cart');
+      return;
+    }
+
     if (data.items.length > 0) setCartItems(data.items);
     if (data.calculatedTotal > 0) setTotalPrice(data.calculatedTotal);
     if (data.fetchedPaymentMethod) setPaymentMethod(data.fetchedPaymentMethod);
     if (data.fetchedPatientName) setPatientName(data.fetchedPatientName);
-  }, []);
+  }, [router]);
 
   const totalItemsCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
 
