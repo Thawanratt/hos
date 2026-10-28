@@ -153,7 +153,6 @@ export default function DoctorDetailPage() {
       return;
     }
 
-    // 🟢 แก้ไขรูปแบบ string เวลาให้อยู่ในบรรทัดเดียวกันถูกต้อง
     const slotValue = `วัน${getDayName(sched.dayOfWeek)} (${sched.startTime} - ${sched.endTime})`;
     setSelectedTimeSlot(slotValue);
   };
@@ -228,7 +227,7 @@ export default function DoctorDetailPage() {
   }
 
   const doctorImgSrc = doctorImageMap[doctor.id] || doctorImageMap[doctor.userId];
-  const doctorName = `$ ${doctor.user?.firstName} ${doctor.user?.lastName}`;
+  const doctorName = `${doctor.user?.firstName} ${doctor.user?.lastName}`;
 
   return (
     <div className="bg-[#FAFAFA] min-h-screen pb-24 font-sans text-slate-800 space-y-8 relative">
@@ -408,7 +407,7 @@ export default function DoctorDetailPage() {
                 {doctor.schedules.map((sched) => {
                   const slotValue = `วัน${getDayName(sched.dayOfWeek)} (${sched.startTime} - ${sched.endTime})`;
                   const isSelected = selectedTimeSlot === slotValue;
-                  const isAvailable = sched.isAvailable; // 🟢 ตรวจสอบสถานะเปิด/ปิดตรวจ
+                  const isAvailable = sched.isAvailable;
 
                   return (
                     <div
@@ -416,7 +415,7 @@ export default function DoctorDetailPage() {
                       onClick={() => handleScheduleClick(sched)}
                       className={`p-3.5 border rounded-xl text-center space-y-1 transition-all duration-200 ${
                         !isAvailable 
-                          ? 'bg-red-50/60 border-red-200 text-red-400 opacity-75 cursor-not-allowed line-through' // 🟢 สไตล์เมื่อแพทย์งดออกตรวจ
+                          ? 'bg-red-50/60 border-red-200 text-red-400 opacity-75 cursor-not-allowed line-through'
                           : isSelected 
                           ? 'bg-[#1a2b6d] text-white border-[#1a2b6d] shadow-md scale-[1.02] cursor-pointer' 
                           : 'bg-slate-50 hover:bg-blue-50/50 border-slate-200 text-slate-700 cursor-pointer'
