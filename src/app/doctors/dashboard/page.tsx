@@ -105,7 +105,7 @@ export default function DoctorDashboardPage() {
     }
   };
 
-  // 2. อัปเดตสถานะการรักษา พร้อมบันทึกเวชระเบียนอัตโนมัติเมื่อตรวจเสร็จ
+// 2. อัปเดตสถานะการรักษา พร้อมบันทึกเวชระเบียนอัตโนมัติ (ดึงตามที่คนไข้กรอกจริงเป๊ะๆ)
   const handleStatusChange = async (appointment: Appointment, newStatus: string) => {
     setUpdatingId(appointment.id);
     try {
@@ -118,7 +118,7 @@ export default function DoctorDashboardPage() {
       const result = await res.json();
 
       if (res.ok) {
-        // 2. ถ้าเปลี่ยนสถานะเป็น COMPLETED (ตรวจเสร็จสิ้น) ให้บันทึกเวชระเบียนลงประวัติอัตโนมัติ
+        // 2. ถ้าเปลี่ยนสถานะเป็น COMPLETED (ตรวจเสร็จสิ้น) ให้บันทึกเวชระเบียนลงฐานข้อมูลอัตโนมัติทันที
         if (newStatus === 'COMPLETED' && appointment.patient?.id && doctorUser) {
           const docId = doctorUser.id || doctorUser.doctorId;
           await fetch('/api/doctors/patients', {
@@ -127,8 +127,8 @@ export default function DoctorDashboardPage() {
             body: JSON.stringify({
               doctorId: docId,
               patientId: appointment.patient.id,
-              diagnosis: appointment.symptoms ? `อาการเบื้องต้น: ${appointment.symptoms}` : 'ตรวจรักษาเรียบร้อยตามนัด',
-              prescription: 'รับประทานยาตามอาการและปฏิบัติตามคำแนะนำของแพทย์',
+              diagnosis: appointment.symptoms || '-', // ดึงข้อความอาการที่คนไข้กรอกมาตรงๆ
+              prescription: '', // ปล่อยว่างไว้ตามที่ต้องการ
             }),
           }).catch((err) => console.error('Auto save medical record error:', err));
         }

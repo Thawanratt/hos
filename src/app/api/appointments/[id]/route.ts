@@ -22,6 +22,7 @@ export async function GET(
       include: {
         patient: {
           select: {
+            id: true,
             firstName: true,
             lastName: true,
             email: true,
@@ -62,7 +63,7 @@ export async function GET(
   }
 }
 
-// 2. PATCH: อัปเดตข้อมูล/สถานะการนัดหมาย (รองรับการ Assign แพทย์, เปลี่ยนสถานะ, แก้ไขอาการ)
+// 2. PATCH: อัปเดตข้อมูล/สถานะการนัดหมาย (รองรับการ Assign แพทย์, เปลี่ยนสถานะ, แก้ไขอาการ และสร้างเวชระเบียนอัตโนมัติเมื่อตรวจเสร็จ)
 export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -84,6 +85,7 @@ export async function PATCH(
     // ดึงข้อมูลนัดหมายเดิมมาตรวจสอบก่อนอัปเดต
     const existingAppointment = await prisma.appointment.findUnique({
       where: { id: appointmentId },
+      include: { patient: true, doctor: true },
     });
 
     if (!existingAppointment) {
@@ -129,6 +131,29 @@ export async function PATCH(
         department: true,
       },
     });
+
+    // 🟢 เพิ่มระบบอัตโนมัติ: ถ้าสถานะเปลี่ยนเป็น COMPLETED (ตรวจเสร็จสิ้น) ให้บันทึกเวชระเบียนลงตาราง medical_records ทันที
+    if (status === 'COMPLETED' && updatedAppointment.patientId && updatedAppointment.doctorId) {
+      // ตรวจสอบก่อนว่าเคยบันทึกเวชระเบียนของนัดหมายนี้ไปหรือยัง เพื่อป้องกันการเบิ้ลซ้ำ
+      const existingRecord = await prisma.medicalRecord.findFirst({
+        where: {
+          patientId: updatedAppointment.patientId,
+          doctorId: updatedAppointment.doctorId,
+          diagnosis: updatedAppointment.symptoms || '',
+        },
+      });
+
+      if (!existingRecord) {
+        await prisma.medicalRecord.create({
+          data: {
+            doctorId: updatedAppointment.doctorId,
+            patientId: updatedAppointment.patientId,
+            diagnosis: updatedAppointment.symptoms || 'ตรวจรักษาเรียบร้อย', // ดึงอาการที่คนไข้กรอกมาตรงๆ
+            prescription: '', // ปล่อยว่างไว้ตามที่ต้องการ
+          },
+        });
+      }
+    }
 
     return NextResponse.json(
       { success: true, message: 'อัปเดตข้อมูลเรียบร้อยแล้ว', data: updatedAppointment },
