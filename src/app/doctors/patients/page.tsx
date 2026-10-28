@@ -1,8 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { IBM_Plex_Sans_Thai } from 'next/font/google';
 
 const plex = IBM_Plex_Sans_Thai({
@@ -10,21 +9,22 @@ const plex = IBM_Plex_Sans_Thai({
   weight: ['300', '400', '500', '600', '700'],
 });
 
-interface Appointment {
+interface MedicalRecordItem {
   id: number;
-  appointmentDate: string;
-  timeSlot: string;
-  status: string;
-  symptoms?: string;
-  patient?: { id: number; firstName: string; lastName: string; phone: string; email: string };
-  department?: { name: string };
-  doctorId?: number;
-  doctor?: { userId: number; id: number };
+  diagnosis: string;
+  prescription: string | null;
+  createdAt: string;
 }
 
-interface StatusBanner {
-  text: string;
-  type: string;
+interface PatientUser {
+  id: number;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string | null;
+  gender: string | null;
+  createdAt: string;
+  medicalRecords?: MedicalRecordItem[];
 }
 
 const Icon = ({ d, className = 'w-4 h-4' }: { d: string; className?: string }) => (
@@ -35,404 +35,428 @@ const Icon = ({ d, className = 'w-4 h-4' }: { d: string; className?: string }) =
 
 const icons = {
   back: 'M19 12H5M11 6l-6 6 6 6',
-  refresh: 'M4 4v5h5M20 20v-5h-5M5.6 15A8 8 0 0 0 20 12M18.4 9A8 8 0 0 0 4 12',
-  logout: 'M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9',
-  phone: 'M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2Z',
-  check: 'M5 12l5 5 9-10',
+  search: 'M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14ZM21 21l-4.5-4.5',
+  chevron: 'M9 6l6 6-6 6',
+  record: 'M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8l-5-5ZM14 3v5h5M12 11v6M9 14h6',
+  edit: 'M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5Z',
+  plus: 'M12 5v14M5 12h14',
+  history: 'M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5M12 7v5l3 2',
+  calendar: 'M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z',
 };
 
-const LABELS: Record<string, string> = {
-  CONFIRMED: 'ยืนยันนัดหมาย',
-  IN_PROGRESS: 'กำลังตรวจ',
-  COMPLETED: 'เสร็จสิ้นการตรวจ',
-  CANCELLED: 'ยกเลิกนัดหมาย',
-};
+const genderLabel = (g: string | null) => (g === 'MALE' ? 'ชาย' : g === 'FEMALE' ? 'หญิง' : '-');
 
-const byTime = (a: Appointment, b: Appointment) =>
-  new Date(a.appointmentDate).getTime() - new Date(b.appointmentDate).getTime() ||
-  (a.timeSlot || '').localeCompare(b.timeSlot || '');
+export default function DoctorPatientsPage() {
+  const [patients, setPatients] = useState<PatientUser[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedPatient, setSelectedPatient] = useState<PatientUser | null>(null);
 
-export default function DoctorDashboardPage() {
-  const router = useRouter();
-  const [doctorUser, setDoctorUser] = useState<any>(null);
-  const [appointments, setAppointments] = useState<Appointment[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [statusMessage, setStatusMessage] = useState<StatusBanner | null>(null);
-  const [updatingId, setUpdatingId] = useState<number | null>(null);
-  const [showCancelled, setShowCancelled] = useState(false);
+  const [editingRecordId, setEditingRecordId] = useState<number | null>(null);
+  const [diagnosisText, setDiagnosisText] = useState('');
+  const [prescriptionText, setPrescriptionText] = useState('');
 
-  // 1. ตรวจสอบสิทธิ์การล็อกอินและดึงข้อมูลเฉพาะแพทย์ท่านนั้น
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
+  const [doctorId, setDoctorId] = useState<number | null>(null);
+  
+  const panelRef = useRef<HTMLDivElement>(null);
+  const formRef = useRef<HTMLDivElement>(null);
+
+  const showMessage = (text: string, type: 'success' | 'error' = 'success') => {
+    setMessage({ text, type });
+    setTimeout(() => setMessage(null), 3500);
+  };
+
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
-    if (!storedUser) {
-      router.push('/login');
-      return;
+    if (storedUser) {
+      try {
+        const user = JSON.parse(storedUser);
+        const currentDocId = user.id || user.doctorId;
+        setDoctorId(currentDocId);
+        fetchPatients(currentDocId);
+      } catch (e) {
+        console.error(e);
+        setLoading(false);
+      }
+    } else {
+      setLoading(false);
     }
+  }, []);
 
-    const user = JSON.parse(storedUser);
-    if (user.role !== 'DOCTOR' && user.role !== 'ADMIN') {
-      router.push('/');
-      return;
+  useEffect(() => {
+    if (selectedPatient && typeof window !== 'undefined' && window.innerWidth < 1024) {
+      panelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
+  }, [selectedPatient]);
 
-    setDoctorUser(user);
-    fetchDoctorData(user);
-  }, [router]);
-
-  const fetchDoctorData = async (user: any) => {
+  const fetchPatients = async (docId: number) => {
     setLoading(true);
     try {
-      const res = await fetch('/api/appointments');
+      const res = await fetch(`/api/doctors/patients?doctorId=${docId}`);
       const result = await res.json();
-
-      const list = Array.isArray(result) ? result : result.appointments || result.data || [];
-
-      if (user.role === 'DOCTOR') {
-        const filtered = list.filter(
-          (item: any) =>
-            item.doctorId === user.id ||
-            item.doctor?.userId === user.id ||
-            item.doctorId === user.doctorId
-        );
-        setAppointments(filtered);
-      } else {
-        setAppointments(list);
+      if (result.success) {
+        setPatients(result.data || []);
+        if (selectedPatient) {
+          const updated = result.data.find((p: PatientUser) => p.id === selectedPatient.id);
+          if (updated) setSelectedPatient(updated);
+        }
       }
     } catch (error) {
-      console.error('Failed to fetch doctor appointments:', error);
+      console.error('Failed to fetch patients:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  // 2. อัปเดตสถานะการรักษา พร้อมบันทึกเวชระเบียนอัตโนมัติ (ใช้ข้อมูลตามที่คนไข้กรอกจริงเป๊ะๆ)
-  const handleStatusChange = async (appointment: Appointment, newStatus: string) => {
-    setUpdatingId(appointment.id);
+  const handleSelect = (patient: PatientUser) => {
+    setSelectedPatient(patient);
+    setEditingRecordId(null);
+    setDiagnosisText('');
+    setPrescriptionText('');
+  };
+
+  const handleStartEdit = (record: MedicalRecordItem) => {
+    setEditingRecordId(record.id);
+    setDiagnosisText(record.diagnosis);
+    setPrescriptionText(record.prescription || '');
+    formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  };
+
+  const handleCancelEdit = () => {
+    setEditingRecordId(null);
+    setDiagnosisText('');
+    setPrescriptionText('');
+  };
+
+  const handleSubmitRecord = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedPatient || !doctorId) return;
+
+    setSaving(true);
     try {
-      // 1. อัปเดตสถานะนัดหมายตามปกติ
-      const res = await fetch(`/api/appointments/${appointment.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: newStatus }),
-      });
+      let res;
+      if (editingRecordId) {
+        res = await fetch('/api/doctors/patients', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            recordId: editingRecordId,
+            diagnosis: diagnosisText,
+            prescription: prescriptionText,
+          }),
+        });
+      } else {
+        res = await fetch('/api/doctors/patients', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            doctorId: doctorId,
+            patientId: selectedPatient.id,
+            diagnosis: diagnosisText,
+            prescription: prescriptionText,
+          }),
+        });
+      }
+
       const result = await res.json();
 
-      if (res.ok) {
-        // 2. ถ้าเปลี่ยนสถานะเป็น COMPLETED (ตรวจเสร็จสิ้น) ให้บันทึกเวชระเบียนอัตโนมัติด้วยอาการที่คนไข้กรอกจริง
-        if (newStatus === 'COMPLETED' && appointment.patient?.id && doctorUser) {
-          const docId = doctorUser.id || doctorUser.doctorId;
-          await fetch('/api/doctors/patients', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              doctorId: docId,
-              patientId: appointment.patient.id,
-              diagnosis: appointment.symptoms || '', // ใช้ข้อความอาการที่คนไข้กรอกจริงเท่านั้น
-              prescription: '', // ปล่อยว่างไว้ตามที่คนไข้ไม่ได้กรอก
-            }),
-          }).catch((err) => console.error('Auto save medical record error:', err));
-        }
-
-        setStatusMessage({
-          text: `อัปเดตนัดหมาย #${appointment.id} เป็น "${LABELS[newStatus] || newStatus}" เรียบร้อยแล้ว`,
-          type: newStatus,
-        });
-        if (doctorUser) fetchDoctorData(doctorUser);
+      if (res.ok || result.success) {
+        showMessage(editingRecordId ? 'อัปเดตเวชระเบียนเรียบร้อยแล้ว' : 'บันทึกเวชระเบียนใหม่เรียบร้อยแล้ว');
+        setEditingRecordId(null);
+        setDiagnosisText('');
+        setPrescriptionText('');
+        fetchPatients(doctorId);
       } else {
-        setStatusMessage({ text: result.message || 'เกิดข้อผิดพลาดในการอัปเดตสถานะ', type: 'error' });
+        showMessage(result.message || 'ไม่สามารถบันทึกข้อมูลได้', 'error');
       }
     } catch (err) {
-      setStatusMessage({ text: 'เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์', type: 'error' });
+      showMessage('เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์', 'error');
     } finally {
-      setUpdatingId(null);
+      setSaving(false);
     }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem('user');
-    localStorage.removeItem('isLoggedIn');
-    window.dispatchEvent(new Event('storage'));
-    router.push('/login');
-  };
+  const filteredPatients = patients.filter(
+    (p) =>
+      `${p.firstName} ${p.lastName}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (p.phone && p.phone.includes(searchTerm))
+  );
 
-  const waiting = appointments.filter((a) => a.status === 'PENDING' || a.status === 'CONFIRMED').sort(byTime);
-  const inProgress = appointments.filter((a) => a.status === 'IN_PROGRESS').sort(byTime);
-  const completed = appointments.filter((a) => a.status === 'COMPLETED').sort(byTime).reverse();
-  const cancelled = appointments.filter((a) => a.status === 'CANCELLED').sort(byTime);
-
-  const columns = [
-    { key: 'WAIT', title: 'รอตรวจ', hint: 'รออนุมัติ / ยืนยันแล้ว', items: waiting, emphasis: false },
-    { key: 'PROGRESS', title: 'กำลังตรวจ', hint: 'ผู้ป่วยที่อยู่ในห้องตรวจ', items: inProgress, emphasis: true },
-    { key: 'DONE', title: 'ตรวจเสร็จสิ้น', hint: 'เรียงจากล่าสุด', items: completed, emphasis: false },
-    ...(showCancelled ? [{ key: 'CANCEL', title: 'ยกเลิก', hint: 'นัดหมายที่ถูกยกเลิก', items: cancelled, emphasis: false }] : []),
-  ];
-
-  const doctorName = doctorUser ? `${doctorUser.firstName} ${doctorUser.lastName}` : 'แพทย์ผู้เชี่ยวชาญ';
+  const inputCls =
+    'w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm text-slate-800 bg-white placeholder:text-slate-400 focus:outline-none focus:border-[#2f5597] focus:ring-2 focus:ring-[#2f5597]/15 transition';
 
   return (
     <div className={`${plex.className} min-h-screen bg-[#f6f8fb] text-slate-800 pb-20`}>
-      {/* ---------- แถบบน ---------- */}
       <header className="bg-white border-b border-slate-200 sticky top-0 z-30">
-        <div className="max-w-[1400px] mx-auto px-4 md:px-8 h-16 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 md:px-8 h-16 flex items-center justify-between">
           <Link
             href="/doctors/main"
-            className="inline-flex items-center gap-1.5 text-xs font-medium text-[#2f5597] hover:text-[#1e3a6e] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2f5597] rounded"
+            className="inline-flex items-center gap-1.5 text-xs font-medium text-[#2f5597] hover:text-[#1e3a6e] transition-colors"
           >
             <Icon d={icons.back} />
             กลับหน้าหลักแพทย์
           </Link>
-
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => doctorUser && fetchDoctorData(doctorUser)}
-              disabled={loading}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors cursor-pointer disabled:opacity-50"
-            >
-              <Icon d={icons.refresh} className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-              รีเฟรช
-            </button>
-            <button
-              onClick={handleLogout}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors cursor-pointer"
-            >
-              <Icon d={icons.logout} className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">ออกจากระบบ</span>
-            </button>
-          </div>
+          <div className="text-xs text-slate-500 font-medium hidden sm:block">ระบบสารสนเทศโรงพยาบาล</div>
         </div>
       </header>
 
-      <main className="max-w-[1400px] mx-auto px-4 md:px-8 py-8 space-y-6">
-        {/* หัวเรื่อง */}
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight text-[#1e3a6e]">คิวตรวจผู้ป่วย</h1>
-            <p className="mt-1.5 text-sm text-slate-500">
-              {doctorName}
-              {!loading && <span className="text-slate-400"> · คิวทั้งหมด {appointments.length} รายการ</span>}
-            </p>
-          </div>
-          {!loading && cancelled.length > 0 && (
-            <button
-              onClick={() => setShowCancelled((v) => !v)}
-              className="self-start sm:self-auto text-xs font-medium text-slate-500 hover:text-[#2f5597] transition-colors cursor-pointer"
-            >
-              {showCancelled ? 'ซ่อน' : 'แสดง'}รายการที่ยกเลิก ({cancelled.length})
-            </button>
-          )}
+      <main className="max-w-7xl mx-auto px-4 md:px-8 py-8">
+        <div className="mb-6">
+          <h1 className="text-2xl font-semibold tracking-tight text-[#1e3a6e]">เวชระเบียนและประวัติการรักษา</h1>
+          <p className="mt-1.5 text-sm text-slate-500">
+            เรียกดูประวัติการรักษาเดิม แก้ไขข้อมูล หรือบันทึกผลการวินิจฉัยครั้งใหม่
+          </p>
         </div>
 
-        {/* แจ้งเตือน */}
-        {statusMessage && (
+        {message && (
           <div
             role="status"
-            className={`flex items-center justify-between gap-3 px-4 py-3 rounded-lg text-sm border ${
-              statusMessage.type === 'error'
-                ? 'bg-red-50 text-red-800 border-red-200'
-                : 'bg-[#e9eff7] text-[#1e3a6e] border-[#d6e0ee]'
+            className={`mb-5 flex items-center gap-2.5 px-4 py-3 rounded-lg text-sm border ${
+              message.type === 'success'
+                ? 'bg-[#e9eff7] text-[#1e3a6e] border-[#d6e0ee]'
+                : 'bg-red-50 text-red-800 border-red-200'
             }`}
           >
-            <span className="flex items-center gap-2.5">
-              <span className={`w-1.5 h-1.5 rounded-full ${statusMessage.type === 'error' ? 'bg-red-500' : 'bg-[#2f5597]'}`} />
-              {statusMessage.text}
-            </span>
-            <button
-              onClick={() => setStatusMessage(null)}
-              aria-label="ปิดการแจ้งเตือน"
-              className="text-slate-400 hover:text-slate-600 text-lg leading-none px-1 cursor-pointer"
-            >
-              ×
-            </button>
+            <span className={`w-1.5 h-1.5 rounded-full ${message.type === 'success' ? 'bg-[#2f5597]' : 'bg-red-500'}`} />
+            {message.text}
           </div>
         )}
 
-        {/* ---------- บอร์ดคิว ---------- */}
-        <div className={`grid grid-cols-1 gap-5 items-start ${showCancelled ? 'lg:grid-cols-4' : 'lg:grid-cols-3'}`}>
-          {columns.map((col) => (
-            <section
-              key={col.key}
-              className={`rounded-xl bg-[#eaeff6] p-3 border-t-[3px] ${col.emphasis ? 'border-t-[#2f5597]' : 'border-t-transparent'}`}
-            >
-              <div className="flex items-center justify-between px-2 pt-1 pb-3">
-                <div>
-                  <h2 className={`text-sm font-semibold ${col.emphasis ? 'text-[#2f5597]' : 'text-[#1e3a6e]'}`}>{col.title}</h2>
-                  <p className="text-[11px] text-slate-500 mt-0.5">{col.hint}</p>
-                </div>
-                <span
-                  className={`min-w-7 text-center text-xs font-semibold tabular-nums px-2 py-1 rounded-full ${
-                    col.emphasis ? 'bg-[#2f5597] text-white' : 'bg-white text-[#1e3a6e]'
-                  }`}
-                >
-                  {loading ? '–' : col.items.length}
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 items-start">
+          {/* ซ้าย: รายชื่อผู้ป่วย */}
+          <section className="lg:col-span-2 bg-white border border-slate-200 rounded-xl overflow-hidden">
+            <div className="p-4 border-b border-slate-100 space-y-3">
+              <div className="flex items-baseline justify-between">
+                <h2 className="text-sm font-semibold text-slate-900">ผู้ป่วยในความดูแล</h2>
+                {!loading && <span className="text-xs text-slate-400">{patients.length} ราย</span>}
+              </div>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
+                  <Icon d={icons.search} />
                 </span>
+                <input
+                  type="text"
+                  placeholder="ค้นหาด้วยชื่อ หรือเบอร์โทรศัพท์"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className={`${inputCls} pl-9`}
+                />
               </div>
+            </div>
 
-              <div className="space-y-3 lg:max-h-[calc(100vh-17rem)] overflow-y-auto pr-0.5">
-                {loading ? (
-                  [0, 1].map((i) => <div key={i} className="h-36 rounded-lg bg-white/70 animate-pulse" />)
-                ) : col.items.length === 0 ? (
-                  <div className="rounded-lg border border-dashed border-slate-300 py-10 text-center text-sm text-slate-400">
-                    ไม่มีคิวในส่วนนี้
-                  </div>
-                ) : (
-                  col.items.map((item) => (
-                    <QueueCard
-                      key={item.id}
-                      item={item}
-                      busy={updatingId === item.id}
-                      onChange={handleStatusChange}
-                    />
-                  ))
-                )}
+            <div className="lg:max-h-[calc(100vh-22rem)] lg:min-h-[320px] overflow-y-auto">
+              {loading ? (
+                <div className="text-center py-14 text-sm text-slate-400">กำลังโหลดข้อมูลผู้ป่วย...</div>
+              ) : filteredPatients.length === 0 ? (
+                <div className="text-center py-14 px-6 text-sm text-slate-400">ไม่พบรายชื่อผู้ป่วยในความดูแลของท่าน</div>
+              ) : (
+                <ul className="divide-y divide-slate-100">
+                  {filteredPatients.map((patient) => {
+                    const active = selectedPatient?.id === patient.id;
+                    return (
+                      <li key={patient.id}>
+                        <button
+                          type="button"
+                          onClick={() => handleSelect(patient)}
+                          className={`relative w-full flex items-center gap-3.5 px-4 py-3.5 text-left transition-colors cursor-pointer ${
+                            active ? 'bg-[#f1f5fb]' : 'hover:bg-slate-50'
+                          }`}
+                        >
+                          {active && <span className="absolute left-0 top-0 bottom-0 w-[3px] bg-[#2f5597]" />}
+                          <div
+                            className={`shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold ${
+                              active ? 'bg-[#2f5597] text-white' : 'bg-[#e9eff7] text-[#2f5597]'
+                            }`}
+                          >
+                            {patient.firstName.charAt(0)}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="text-sm font-semibold text-slate-900 truncate">
+                              {patient.firstName} {patient.lastName}
+                            </div>
+                            <div className="mt-0.5 text-xs text-slate-500 truncate">
+                              USR-{patient.id} {patient.medicalRecords?.length ? `· ประวัติ ${patient.medicalRecords.length} ครั้ง` : ''}
+                            </div>
+                          </div>
+                          <span className={active ? 'text-[#2f5597]' : 'text-slate-300'}>
+                            <Icon d={icons.chevron} />
+                          </span>
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </div>
+          </section>
+
+          {/* ขวา: รายละเอียดและประวัติการรักษา */}
+          <section ref={panelRef} className="lg:col-span-3 space-y-6">
+            {!selectedPatient ? (
+              <div className="bg-white border border-dashed border-slate-300 rounded-xl px-6 py-20 text-center">
+                <div className="mx-auto w-12 h-12 rounded-full bg-[#e9eff7] text-[#2f5597] flex items-center justify-center">
+                  <Icon d={icons.record} className="w-6 h-6" />
+                </div>
+                <h3 className="mt-4 text-sm font-semibold text-slate-900">ยังไม่ได้เลือกผู้ป่วย</h3>
+                <p className="mt-1 text-sm text-slate-500">เลือกรายชื่อผู้ป่วยจากรายการ เพื่อดูประวัติหรือบันทึกเวชระเบียน</p>
               </div>
-            </section>
-          ))}
+            ) : (
+              <>
+                {/* ข้อมูลทั่วไปผู้ป่วย */}
+                <div className="bg-white border border-slate-200 rounded-xl p-6">
+                  <div className="flex items-center gap-4">
+                    <div className="shrink-0 w-14 h-14 rounded-full bg-[#2f5597] text-white flex items-center justify-center text-xl font-semibold">
+                      {selectedPatient.firstName.charAt(0)}
+                    </div>
+                    <div className="min-w-0">
+                      <h2 className="text-lg font-semibold text-[#1e3a6e] truncate">
+                        {selectedPatient.firstName} {selectedPatient.lastName}
+                      </h2>
+                      <p className="text-xs text-slate-500">รหัสผู้ป่วย USR-{selectedPatient.id}</p>
+                    </div>
+                  </div>
+
+                  <dl className="mt-5 grid grid-cols-2 gap-x-6 gap-y-4 text-sm">
+                    <div>
+                      <dt className="text-xs text-slate-500">เพศ</dt>
+                      <dd className="mt-0.5 font-medium text-slate-900">{genderLabel(selectedPatient.gender)}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-xs text-slate-500">เบอร์โทรศัพท์</dt>
+                      <dd className="mt-0.5 font-medium text-slate-900">{selectedPatient.phone || '-'}</dd>
+                    </div>
+                  </dl>
+                </div>
+
+                {/* ฟอร์มบันทึกเวชระเบียนใหม่ หรือแก้ไขข้อมูลเดิม */}
+                <div ref={formRef} className="bg-white border border-slate-200 rounded-xl p-6">
+                  <div className="flex justify-between items-center mb-4">
+                    <div className="flex items-center gap-2.5">
+                      <span className="w-8 h-8 rounded-lg bg-[#e9eff7] text-[#2f5597] flex items-center justify-center">
+                        <Icon d={editingRecordId ? icons.edit : icons.plus} />
+                      </span>
+                      <h3 className="text-sm font-semibold text-slate-900">
+                        {editingRecordId ? 'แก้ไขบันทึกเวชระเบียนเดิม' : 'บันทึกเวชระเบียนครั้งใหม่'}
+                      </h3>
+                    </div>
+                    {editingRecordId && (
+                      <button
+                        type="button"
+                        onClick={handleCancelEdit}
+                        className="text-xs font-medium text-slate-500 hover:text-[#2f5597] transition-colors cursor-pointer"
+                      >
+                        ยกเลิกการแก้ไข
+                      </button>
+                    )}
+                  </div>
+
+                  <form onSubmit={handleSubmitRecord} className="space-y-4">
+                    <div className="space-y-1.5">
+                      <label className="block text-sm font-medium text-slate-700">ผลการวินิจฉัยโรค (Diagnosis)</label>
+                      <input
+                        type="text"
+                        value={diagnosisText}
+                        onChange={(e) => setDiagnosisText(e.target.value)}
+                        placeholder="ระบุผลการวินิจฉัยโรค..."
+                        className={inputCls}
+                        required
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="block text-sm font-medium text-slate-700">คำสั่งการรักษา / สั่งจ่ายยา (Prescription)</label>
+                      <textarea
+                        rows={3}
+                        value={prescriptionText}
+                        onChange={(e) => setPrescriptionText(e.target.value)}
+                        placeholder="ระบุรายการยาหรือคำแนะนำ..."
+                        className={`${inputCls} resize-none`}
+                      />
+                    </div>
+
+                    <div className="flex justify-end gap-3 pt-2">
+                      <button
+                        type="submit"
+                        disabled={saving}
+                        className="px-6 py-2.5 rounded-lg bg-[#2f5597] hover:bg-[#274a85] text-white text-sm font-medium transition-colors cursor-pointer disabled:opacity-50"
+                      >
+                        {saving ? 'กำลังบันทึก...' : editingRecordId ? 'บันทึกการแก้ไข' : 'บันทึกเวชระเบียนใหม่'}
+                      </button>
+                    </div>
+                  </form>
+                </div>
+
+                {/* ประวัติการรักษาเดิมย้อนหลัง */}
+                <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
+                  <div className="p-4 border-b border-slate-100 flex items-center justify-between">
+                    <div className="flex items-center gap-2.5">
+                      <span className="w-8 h-8 rounded-lg bg-[#e9eff7] text-[#2f5597] flex items-center justify-center">
+                        <Icon d={icons.history} />
+                      </span>
+                      <h3 className="text-sm font-semibold text-slate-900">ประวัติการรักษาเดิมทั้งหมด</h3>
+                    </div>
+                    <span className="text-xs text-slate-400">{selectedPatient.medicalRecords?.length || 0} ครั้ง</span>
+                  </div>
+
+                  {!selectedPatient.medicalRecords || selectedPatient.medicalRecords.length === 0 ? (
+                    <p className="text-sm text-slate-400 py-12 px-6 text-center">
+                      ยังไม่มีประวัติการบันทึกเวชระเบียนสำหรับผู้ป่วยรายนี้
+                    </p>
+                  ) : (
+                    <ul className="divide-y divide-slate-100">
+                      {selectedPatient.medicalRecords.map((rec) => {
+                        const isEditing = editingRecordId === rec.id;
+                        return (
+                          <li
+                            key={rec.id}
+                            className={`relative px-5 py-4 transition-colors ${isEditing ? 'bg-[#f1f5fb]' : ''}`}
+                          >
+                            {isEditing && <span className="absolute left-0 top-0 bottom-0 w-[3px] bg-[#2f5597]" />}
+
+                            <div className="flex items-center justify-between gap-3">
+                              <span className="inline-flex items-center gap-1.5 text-xs text-slate-500">
+                                <Icon d={icons.calendar} className="w-3.5 h-3.5" />
+                                {new Date(rec.createdAt).toLocaleString('th-TH', {
+                                  dateStyle: 'medium',
+                                  timeStyle: 'short',
+                                })}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => handleStartEdit(rec)}
+                                disabled={isEditing}
+                                className="inline-flex items-center gap-1 text-xs font-medium text-[#2f5597] hover:text-[#1e3a6e] transition-colors cursor-pointer disabled:text-slate-400 disabled:cursor-default"
+                              >
+                                <Icon d={icons.edit} className="w-3.5 h-3.5" />
+                                {isEditing ? 'กำลังแก้ไข' : 'แก้ไข'}
+                              </button>
+                            </div>
+
+                            <dl className="mt-3 space-y-3 text-sm">
+                              <div>
+                                <dt className="text-xs text-slate-500">การวินิจฉัย</dt>
+                                <dd className="mt-0.5 font-semibold text-slate-900">{rec.diagnosis}</dd>
+                              </div>
+                              <div>
+                                <dt className="text-xs text-slate-500">การสั่งจ่ายยา / คำแนะนำ</dt>
+                                <dd className="mt-0.5 font-medium text-slate-900 whitespace-pre-wrap">
+                                  {rec.prescription || '-'}
+                                </dd>
+                              </div>
+                            </dl>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
+                </div>
+              </>
+            )}
+          </section>
         </div>
       </main>
     </div>
   );
-}
-
-function QueueCard({
-  item,
-  busy,
-  onChange,
-}: {
-  item: Appointment;
-  busy: boolean;
-  onChange: (item: Appointment, status: string) => void;
-}) {
-  const date = new Date(item.appointmentDate);
-  const isToday = date.toDateString() === new Date().toDateString();
-  const done = item.status === 'COMPLETED' || item.status === 'CANCELLED';
-
-  const primary = 'px-3 py-2 rounded-lg text-xs font-medium text-white transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-wait';
-  const outline = 'px-3 py-2 rounded-lg text-xs font-medium border border-[#2f5597]/40 text-[#2f5597] hover:bg-[#e9eff7] transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-wait';
-
-  return (
-    <article className={`bg-white rounded-lg border border-slate-200 p-4 shadow-[0_1px_2px_rgba(15,23,42,0.04)] ${done ? 'opacity-80' : ''}`}>
-      {/* เวลา + สถานะ */}
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <div className="text-xl font-semibold text-[#1e3a6e] tabular-nums leading-none">{item.timeSlot}</div>
-          <div className="mt-1.5 text-xs text-slate-500">
-            {isToday ? (
-              <span className="font-medium text-[#2f5597]">วันนี้</span>
-            ) : (
-              date.toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: '2-digit' })
-            )}
-          </div>
-        </div>
-        <div className="flex flex-col items-end gap-1.5">
-          <StatusBadge status={item.status} />
-          <span className="text-[11px] text-slate-400 tabular-nums">คิว #{item.id}</span>
-        </div>
-      </div>
-
-      {/* ผู้ป่วย */}
-      <div className="mt-3.5 pt-3.5 border-t border-slate-100">
-        <div className="text-[15px] font-semibold text-slate-900">
-          {item.patient?.firstName || 'คนไข้'} {item.patient?.lastName || ''}
-        </div>
-        <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500">
-          <span className="inline-flex items-center gap-1 tabular-nums">
-            <Icon d={icons.phone} className="w-3 h-3" />
-            {item.patient?.phone || '-'}
-          </span>
-          {item.department?.name && <span>{item.department.name}</span>}
-        </div>
-        <p className="mt-2 text-sm text-slate-600 line-clamp-2">
-          <span className="text-slate-400">อาการ: </span>
-          {item.symptoms || 'ระบุทั่วไป'}
-        </p>
-      </div>
-
-      {/* ปุ่มดำเนินการ */}
-      <div className="mt-4 flex flex-wrap items-center gap-2">
-        {item.status === 'PENDING' && (
-          <>
-            <button onClick={() => onChange(item, 'CONFIRMED')} disabled={busy} className={outline}>
-              ยืนยันนัด
-            </button>
-            <button onClick={() => onChange(item, 'IN_PROGRESS')} disabled={busy} className={`${primary} bg-[#2f5597] hover:bg-[#274a85]`}>
-              เรียกเข้าตรวจ
-            </button>
-          </>
-        )}
-        {item.status === 'CONFIRMED' && (
-          <button onClick={() => onChange(item, 'IN_PROGRESS')} disabled={busy} className={`${primary} bg-[#2f5597] hover:bg-[#274a85]`}>
-            เรียกเข้าตรวจ
-          </button>
-        )}
-        {item.status === 'IN_PROGRESS' && (
-          <button onClick={() => onChange(item, 'COMPLETED')} disabled={busy} className={`${primary} bg-[#1e3a6e] hover:bg-[#162c55]`}>
-            ตรวจเสร็จสิ้น
-          </button>
-        )}
-        {item.status === 'COMPLETED' && (
-          <>
-            <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-500">
-              <Icon d={icons.check} className="w-3.5 h-3.5 text-emerald-600" />
-              ตรวจเรียบร้อย
-            </span>
-            <button
-              onClick={() => onChange(item, 'IN_PROGRESS')}
-              disabled={busy}
-              className="ml-auto text-xs text-slate-400 hover:text-[#2f5597] transition-colors cursor-pointer disabled:opacity-40"
-            >
-              กลับไปกำลังตรวจ
-            </button>
-          </>
-        )}
-        {item.status === 'CANCELLED' && (
-          <button onClick={() => onChange(item, 'CONFIRMED')} disabled={busy} className={outline}>
-            ยืนยันนัดอีกครั้ง
-          </button>
-        )}
-      </div>
-    </article>
-  );
-}
-
-function StatusBadge({ status }: { status: string }) {
-  const base = 'inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium border';
-  switch (status) {
-    case 'PENDING':
-      return (
-        <span className={`${base} bg-amber-50 text-amber-700 border-amber-200`}>
-          <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-          รออนุมัติ
-        </span>
-      );
-    case 'CONFIRMED':
-      return (
-        <span className={`${base} bg-[#e9eff7] text-[#2f5597] border-[#d6e0ee]`}>
-          <span className="w-1.5 h-1.5 rounded-full bg-[#2f5597]" />
-          ยืนยันแล้ว
-        </span>
-      );
-    case 'IN_PROGRESS':
-      return (
-        <span className={`${base} bg-[#2f5597] text-white border-[#2f5597]`}>
-          <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
-          กำลังตรวจ
-        </span>
-      );
-    case 'COMPLETED':
-      return (
-        <span className={`${base} bg-emerald-50 text-emerald-700 border-emerald-200`}>
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-          ตรวจเสร็จ
-        </span>
-      );
-    case 'CANCELLED':
-      return (
-        <span className={`${base} bg-slate-100 text-slate-500 border-slate-200`}>
-          <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
-          ยกเลิก
-        </span>
-      );
-    default:
-      return <span className={`${base} bg-slate-100 text-slate-600 border-slate-200`}>{status}</span>;
-  }
 }
