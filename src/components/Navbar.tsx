@@ -220,7 +220,7 @@ function UserMenuDropdown({
             {isAdmin ? (
               <>
                 <Link
-                  href="/admin"
+                  href="/admin/main"
                   onClick={() => setIsOpen(false)}
                   className="flex items-center gap-2.5 p-2.5 rounded-xl bg-amber-50 text-amber-900 hover:bg-amber-100 transition font-bold"
                 >
