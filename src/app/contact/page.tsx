@@ -317,7 +317,7 @@ const handleSubmit = async (e: React.FormEvent) => {
               <div className="space-y-1 text-xs md:text-sm text-slate-700">
                 <p className="font-bold text-slate-900">โรงพยาบาลโนวาเลีย (สำนักงานใหญ่)</p>
                 <p className="text-slate-600 leading-relaxed">
-                  999 ถนนพุทธมณฑล สาย 4 ตำบลศาลายา อำเภอพุทธมณฑล จังหวัดนครปฐม 73170
+                 123 ถนนสุขุมวิท แขวงคลองเหนือ เขตวัตนา กรุงเทพฯ 10260
                 </p>
               </div>
 
@@ -339,7 +339,7 @@ const handleSubmit = async (e: React.FormEvent) => {
                   <div>
                     <strong className="text-slate-800">รถยนต์ส่วนบุคคล:</strong>
                     <p className="text-xs text-slate-500 mt-0.5">
-                      ถนนบรมราชชนนี มุ่งหน้าศาลายา เลี้ยวเข้าถนนพุทธมณฑล สาย 4 (มีอาคารจอดรถรองรับ)
+                      ถนนสุขุมวิท มุ่งหน้าคลองเหนือ เลี้ยวเข้าถนนสุขุมวิท (มีอาคารจอดรถรองรับ)
                     </p>
                   </div>
                 </div>

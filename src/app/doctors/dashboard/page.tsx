@@ -16,7 +16,7 @@ interface Appointment {
   timeSlot: string;
   status: string;
   symptoms?: string;
-  patient?: { firstName: string; lastName: string; phone: string; email: string };
+  patient?: { id: number; firstName: string; lastName: string; phone: string; email: string };
   department?: { name: string };
   doctorId?: number;
   doctor?: { userId: number; id: number };
@@ -88,7 +88,6 @@ export default function DoctorDashboardPage() {
       const list = Array.isArray(result) ? result : result.appointments || result.data || [];
 
       if (user.role === 'DOCTOR') {
-        // เงื่อนไขการกรองครอบคลุมทั้ง doctorId และ relations
         const filtered = list.filter(
           (item: any) =>
             item.doctorId === user.id ||
@@ -106,11 +105,12 @@ export default function DoctorDashboardPage() {
     }
   };
 
-  // 2. อัปเดตสถานะการรักษา
-  const handleStatusChange = async (appointmentId: number, newStatus: string) => {
-    setUpdatingId(appointmentId);
+  // 2. อัปเดตสถานะการรักษา พร้อมบันทึกเวชระเบียนอัตโนมัติเมื่อตรวจเสร็จ
+  const handleStatusChange = async (appointment: Appointment, newStatus: string) => {
+    setUpdatingId(appointment.id);
     try {
-      const res = await fetch(`/api/appointments/${appointmentId}`, {
+      // 1. อัปเดตสถานะนัดหมายตามปกติ
+      const res = await fetch(`/api/appointments/${appointment.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: newStatus }),
@@ -118,8 +118,23 @@ export default function DoctorDashboardPage() {
       const result = await res.json();
 
       if (res.ok) {
+        // 2. ถ้าเปลี่ยนสถานะเป็น COMPLETED (ตรวจเสร็จสิ้น) ให้บันทึกเวชระเบียนลงประวัติอัตโนมัติ
+        if (newStatus === 'COMPLETED' && appointment.patient?.id && doctorUser) {
+          const docId = doctorUser.id || doctorUser.doctorId;
+          await fetch('/api/doctors/patients', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              doctorId: docId,
+              patientId: appointment.patient.id,
+              diagnosis: appointment.symptoms ? `อาการเบื้องต้น: ${appointment.symptoms}` : 'ตรวจรักษาเรียบร้อยตามนัด',
+              prescription: 'รับประทานยาตามอาการและปฏิบัติตามคำแนะนำของแพทย์',
+            }),
+          }).catch((err) => console.error('Auto save medical record error:', err));
+        }
+
         setStatusMessage({
-          text: `อัปเดตนัดหมาย #${appointmentId} เป็น "${LABELS[newStatus] || newStatus}" เรียบร้อยแล้ว`,
+          text: `อัปเดตนัดหมาย #${appointment.id} เป็น "${LABELS[newStatus] || newStatus}" เรียบร้อยแล้ว`,
           type: newStatus,
         });
         if (doctorUser) fetchDoctorData(doctorUser);
@@ -285,7 +300,7 @@ function QueueCard({
 }: {
   item: Appointment;
   busy: boolean;
-  onChange: (id: number, status: string) => void;
+  onChange: (item: Appointment, status: string) => void;
 }) {
   const date = new Date(item.appointmentDate);
   const isToday = date.toDateString() === new Date().toDateString();
@@ -336,21 +351,21 @@ function QueueCard({
       <div className="mt-4 flex flex-wrap items-center gap-2">
         {item.status === 'PENDING' && (
           <>
-            <button onClick={() => onChange(item.id, 'CONFIRMED')} disabled={busy} className={outline}>
+            <button onClick={() => onChange(item, 'CONFIRMED')} disabled={busy} className={outline}>
               ยืนยันนัด
             </button>
-            <button onClick={() => onChange(item.id, 'IN_PROGRESS')} disabled={busy} className={`${primary} bg-[#2f5597] hover:bg-[#274a85]`}>
+            <button onClick={() => onChange(item, 'IN_PROGRESS')} disabled={busy} className={`${primary} bg-[#2f5597] hover:bg-[#274a85]`}>
               เรียกเข้าตรวจ
             </button>
           </>
         )}
         {item.status === 'CONFIRMED' && (
-          <button onClick={() => onChange(item.id, 'IN_PROGRESS')} disabled={busy} className={`${primary} bg-[#2f5597] hover:bg-[#274a85]`}>
+          <button onClick={() => onChange(item, 'IN_PROGRESS')} disabled={busy} className={`${primary} bg-[#2f5597] hover:bg-[#274a85]`}>
             เรียกเข้าตรวจ
           </button>
         )}
         {item.status === 'IN_PROGRESS' && (
-          <button onClick={() => onChange(item.id, 'COMPLETED')} disabled={busy} className={`${primary} bg-[#1e3a6e] hover:bg-[#162c55]`}>
+          <button onClick={() => onChange(item, 'COMPLETED')} disabled={busy} className={`${primary} bg-[#1e3a6e] hover:bg-[#162c55]`}>
             ตรวจเสร็จสิ้น
           </button>
         )}
@@ -361,7 +376,7 @@ function QueueCard({
               ตรวจเรียบร้อย
             </span>
             <button
-              onClick={() => onChange(item.id, 'IN_PROGRESS')}
+              onClick={() => onChange(item, 'IN_PROGRESS')}
               disabled={busy}
               className="ml-auto text-xs text-slate-400 hover:text-[#2f5597] transition-colors cursor-pointer disabled:opacity-40"
             >
@@ -370,7 +385,7 @@ function QueueCard({
           </>
         )}
         {item.status === 'CANCELLED' && (
-          <button onClick={() => onChange(item.id, 'CONFIRMED')} disabled={busy} className={outline}>
+          <button onClick={() => onChange(item, 'CONFIRMED')} disabled={busy} className={outline}>
             ยืนยันนัดอีกครั้ง
           </button>
         )}

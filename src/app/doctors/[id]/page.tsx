@@ -228,7 +228,7 @@ export default function DoctorDetailPage() {
   }
 
   const doctorImgSrc = doctorImageMap[doctor.id] || doctorImageMap[doctor.userId];
-  const doctorName = `${doctor.user?.gender === 'FEMALE' ? 'พญ.' : 'นพ.'} ${doctor.user?.firstName} ${doctor.user?.lastName}`;
+  const doctorName = `$ ${doctor.user?.firstName} ${doctor.user?.lastName}`;
 
   return (
     <div className="bg-[#FAFAFA] min-h-screen pb-24 font-sans text-slate-800 space-y-8 relative">
