@@ -601,7 +601,7 @@ export default function Navbar({ selectedBranch: propBranch, onSelectBranch }: N
                 {isAdmin ? (
                   <div className="pt-2 border-t border-amber-200/50">
                     <Link
-                      href="/admin"
+                      href="/admin/main"
                       onClick={() => setIsMobileMenuOpen(false)}
                       className="block w-full py-2 rounded-xl bg-amber-600 text-center text-white font-bold text-xs shadow-2xs hover:bg-amber-700 transition"
                     >
