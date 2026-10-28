@@ -63,7 +63,7 @@ export async function GET(
   }
 }
 
-// 2. PATCH: อัปเดตข้อมูล/สถานะการนัดหมาย (รองรับการ Assign แพทย์, เปลี่ยนสถานะ, แก้ไขอาการ และสร้างเวชระเบียนอัตโนมัติเมื่อตรวจเสร็จ)
+// 2. PATCH: อัปเดตข้อมูล/สถานะการนัดหมาย (พร้อมระบบป้องกันการบันทึกเวชระเบียนเบิ้ลซ้ำ)
 export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -132,23 +132,27 @@ export async function PATCH(
       },
     });
 
-    // 🟢 เพิ่มระบบอัตโนมัติ: ถ้าสถานะเปลี่ยนเป็น COMPLETED (ตรวจเสร็จสิ้น) ให้บันทึกเวชระเบียนลงตาราง medical_records ทันที
+    // 🟢 ระบบอัตโนมัติ: ถ้าสถานะเปลี่ยนเป็น COMPLETED (ตรวจเสร็จสิ้น) ให้บันทึกเวชระเบียนลงตาราง medical_records
     if (status === 'COMPLETED' && updatedAppointment.patientId && updatedAppointment.doctorId) {
-      // ตรวจสอบก่อนว่าเคยบันทึกเวชระเบียนของนัดหมายนี้ไปหรือยัง เพื่อป้องกันการเบิ้ลซ้ำ
-      const existingRecord = await prisma.medicalRecord.findFirst({
+      // ป้องกันการเบิ้ลซ้ำ: เช็กว่าในช่วง 10 วินาทีที่ผ่านมา เคยมีการสร้างเวชระเบียนของแพทย์และคนไข้คู่นี้ไปแล้วหรือยัง
+      const tenSecondsAgo = new Date(Date.now() - 10000);
+
+      const recentRecord = await prisma.medicalRecord.findFirst({
         where: {
           patientId: updatedAppointment.patientId,
           doctorId: updatedAppointment.doctorId,
-          diagnosis: updatedAppointment.symptoms || '',
+          createdAt: {
+            gte: tenSecondsAgo, // ป้องกันการยิงซ้ำติดๆ กันใน 10 วิ
+          },
         },
       });
 
-      if (!existingRecord) {
+      if (!recentRecord) {
         await prisma.medicalRecord.create({
           data: {
             doctorId: updatedAppointment.doctorId,
             patientId: updatedAppointment.patientId,
-            diagnosis: updatedAppointment.symptoms || 'ตรวจรักษาเรียบร้อย', // ดึงอาการที่คนไข้กรอกมาตรงๆ
+            diagnosis: updatedAppointment.symptoms || '', // ดึงอาการที่คนไข้กรอกมาตรงๆ
             prescription: '', // ปล่อยว่างไว้ตามที่ต้องการ
           },
         });

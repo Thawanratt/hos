@@ -97,7 +97,8 @@ export default function CartPage() {
     showToast('ลบรายการออกจากตะกร้าแล้ว', 'info');
   };
 
-  const handleCheckout = () => {
+
+   const handleCheckout = () => {
     // 1. เช็กว่าเข้าสู่ระบบหรือยัง
     if (!isLoggedIn) {
       showToast('กรุณาเข้าสู่ระบบหรือสมัครสมาชิกก่อนทำการสั่งซื้อ', 'error');
@@ -128,6 +129,10 @@ export default function CartPage() {
     };
 
     localStorage.setItem('novaria_checkout_data', JSON.stringify(checkoutData));
+
+    // 💡 จุดที่เพิ่ม: เคลียร์สินค้าในตะกร้าทิ้งทันทีเมื่อกดชำระเงิน เพื่อไม่ให้ของค้างในตะกร้าเวลาeligibleกลับมาดูใหม่
+    localStorage.removeItem('novaria_cart');
+    window.dispatchEvent(new Event('cartUpdated'));
 
     // ไปหน้า /checkout
     router.push('/checkout');

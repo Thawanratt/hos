@@ -105,11 +105,10 @@ export default function DoctorDashboardPage() {
     }
   };
 
-// 2. อัปเดตสถานะการรักษา พร้อมบันทึกเวชระเบียนอัตโนมัติ (ดึงตามที่คนไข้กรอกจริงเป๊ะๆ)
+  // 2. อัปเดตสถานะการรักษา (ให้ API หลังบ้านจัดการสร้างเวชระเบียนอัตโนมัติเพียงที่เดียวเพื่อป้องกันการเบิ้ลซ้ำ)
   const handleStatusChange = async (appointment: Appointment, newStatus: string) => {
     setUpdatingId(appointment.id);
     try {
-      // 1. อัปเดตสถานะนัดหมายตามปกติ
       const res = await fetch(`/api/appointments/${appointment.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -118,21 +117,6 @@ export default function DoctorDashboardPage() {
       const result = await res.json();
 
       if (res.ok) {
-        // 2. ถ้าเปลี่ยนสถานะเป็น COMPLETED (ตรวจเสร็จสิ้น) ให้บันทึกเวชระเบียนลงฐานข้อมูลอัตโนมัติทันที
-        if (newStatus === 'COMPLETED' && appointment.patient?.id && doctorUser) {
-          const docId = doctorUser.id || doctorUser.doctorId;
-          await fetch('/api/doctors/patients', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              doctorId: docId,
-              patientId: appointment.patient.id,
-              diagnosis: appointment.symptoms || '-', // ดึงข้อความอาการที่คนไข้กรอกมาตรงๆ
-              prescription: '', // ปล่อยว่างไว้ตามที่ต้องการ
-            }),
-          }).catch((err) => console.error('Auto save medical record error:', err));
-        }
-
         setStatusMessage({
           text: `อัปเดตนัดหมาย #${appointment.id} เป็น "${LABELS[newStatus] || newStatus}" เรียบร้อยแล้ว`,
           type: newStatus,

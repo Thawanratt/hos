@@ -237,7 +237,7 @@ function PromptPaySection({ totalPrice }: { readonly totalPrice: number }) {
   );
 }
 
-// Sub-component: Credit Card Form (จำกัดกรอกเฉพาะตัวเลขและความยาวที่ถูกต้อง)
+// Sub-component: Credit Card Form
 function CreditCardSection({ cardName, setCardName, cardNumber, setCardNumber, cardExpiry, setCardExpiry, cardCvc, setCardCvc }: any) {
   return (
     <div className="space-y-4 text-xs">
@@ -411,12 +411,13 @@ export default function CheckoutPage() {
       return;
     }
 
-    setBookingRef(generateBookingRef());
-    setIsCompleted(true);
-
+    // 💡 ป้องกันการเบิ้ลซ้ำ: ทำการเคลียร์ตะกร้าและข้อมูล Checkout ทันทีเมื่อกดยืนยันชำระเงิน
     localStorage.removeItem('novaria_cart');
     localStorage.removeItem('novaria_checkout_data');
     window.dispatchEvent(new Event('cartUpdated'));
+
+    setBookingRef(generateBookingRef());
+    setIsCompleted(true);
   };
 
   const handlePrint = () => {
