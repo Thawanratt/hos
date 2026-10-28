@@ -4,6 +4,15 @@ import React, { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { BRANCHES_DATA } from '@/app/api/branches/branches';
 
+interface DoctorSchedule {
+  id: number;
+  dayOfWeek: number;
+  startTime: string;
+  endTime: string;
+  maxSlots: number;
+  isAvailable: boolean; 
+}
+
 interface Doctor {
   id: number;
   specialization: string;
@@ -16,6 +25,7 @@ interface Doctor {
     id: number;
     name: string;
   };
+  schedules: DoctorSchedule[]; 
 }
 
 interface Department {
@@ -179,7 +189,7 @@ function StepOneDoctorSelection({
               setBookingData({
                 ...bookingData,
                 doctorId: selectedId,
-                doctorName: doc ? `นพ./พญ. ${doc.user.firstName} ${doc.user.lastName}` : 'แพทย์ท่านใดก็ได้'
+                doctorName: doc ? `${doc.user.firstName} ${doc.user.lastName}` : 'แพทย์ท่านใดก็ได้'
               });
             }}
             className={`w-full p-3.5 rounded-2xl border text-xs text-slate-700 bg-white outline-none transition-all ${
@@ -189,13 +199,13 @@ function StepOneDoctorSelection({
             <option value={0}>-- โปรดเลือกแพทย์ผู้ตรวจ --</option>
             {filteredDoctors.map((doc) => (
               <option key={doc.id} value={doc.id}>
-                นพ./พญ. {doc.user.firstName} {doc.user.lastName} ({doc.specialization})
+                {doc.user.firstName} {doc.user.lastName} ({doc.specialization})
               </option>
             ))}
           </select>
           {doctorError && (
             <p className="text-[11px] text-rose-600 font-medium pl-1 animate-fadeIn">
-              * กรุณาเลือกแพทย์ผู้ตรวจก่อนดำเนินการต่อ
+              - กรุณาเลือกแพทย์ผู้ตรวจก่อนดำเนินการต่อ
             </p>
           )}
         </div>
@@ -226,10 +236,10 @@ function BookingContent() {
   const [doctorSelectionType, setDoctorSelectionType] = useState<'auto' | 'manual'>('auto');
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 
-  // States สำหรับเช็ค Error ใต้ฟิลด์
   const [doctorError, setDoctorError] = useState(false);
   const [dateError, setDateError] = useState(false);
   const [timeError, setTimeError] = useState(false);
+  const [availabilityErrorMsg, setAvailabilityErrorMsg] = useState<string | null>(null);
 
   const getInitialDepartmentId = () => {
     if (preSelectedDepartmentId) return Number(preSelectedDepartmentId);
@@ -260,7 +270,6 @@ function BookingContent() {
     symptoms: ''
   });
 
-  // 1. ตรวจสอบสิทธิ์การเข้าใช้งาน
   useEffect(() => {
     let isMounted = true;
     try {
@@ -299,7 +308,6 @@ function BookingContent() {
     };
   }, [router, searchParams]);
 
-  // 2. ดึงข้อมูลแผนกทั้งหมดจาก API ฐานข้อมูล
   useEffect(() => {
     async function fetchDepartments() {
       try {
@@ -324,7 +332,6 @@ function BookingContent() {
     fetchDepartments();
   }, [preSelectedDepartmentId, serviceType]);
 
-  // 3. ดึงข้อมูลแพทย์ตามแผนกที่เลือก
   useEffect(() => {
     async function fetchDoctors() {
       try {
@@ -340,7 +347,7 @@ function BookingContent() {
               setBookingData((prev) => ({
                 ...prev,
                 doctorId: foundDoc.id,
-                doctorName: `นพ./พญ. ${foundDoc.user.firstName} ${foundDoc.user.lastName}`,
+                doctorName: ` ${foundDoc.user.firstName} ${foundDoc.user.lastName}`,
                 departmentId: foundDoc.departmentId,
                 departmentName: foundDoc.department.name
               }));
@@ -362,12 +369,39 @@ function BookingContent() {
       return;
     }
     setDateError(false);
+    setAvailabilityErrorMsg(null);
     setBookingData((prev) => ({ ...prev, date: selectedDate }));
+  };
+
+  // 🟢 ตรวจสอบสถานะ isAvailable แบบเจาะจงรายช่วงเวลาที่ผู้ใช้เลือก
+  const validateDoctorAvailability = () => {
+    if (doctorSelectionType === 'manual' && bookingData.doctorId && bookingData.time) {
+      const selectedDoc = doctors.find((d) => d.id === Number(bookingData.doctorId));
+      if (selectedDoc && selectedDoc.schedules && selectedDoc.schedules.length > 0) {
+        const targetDateObj = new Date(bookingData.date);
+        const targetDayOfWeek = targetDateObj.getDay();
+
+        const matchingSchedule = selectedDoc.schedules.find(
+          (s) => s.dayOfWeek === targetDayOfWeek && `${s.startTime} - ${s.endTime}` === bookingData.time
+        );
+
+        if (matchingSchedule && !matchingSchedule.isAvailable) {
+          setAvailabilityErrorMsg('แพทย์ท่านนี้งดออกตรวจในช่วงเวลาดังกล่าว กรุณาเลือกช่วงเวลาอื่น');
+          return false;
+        }
+      }
+    }
+    setAvailabilityErrorMsg(null);
+    return true;
   };
 
   const handleConfirmBooking = async () => {
     if (bookingData.date < todayStr) {
       setDateError(true);
+      return;
+    }
+
+    if (!validateDoctorAvailability()) {
       return;
     }
 
@@ -428,6 +462,9 @@ function BookingContent() {
     return bookingData.departmentName || 'ทำนัดหมายแพทย์';
   };
 
+  const selectedDoctorObj = doctors.find((d) => d.id === Number(bookingData.doctorId));
+  const targetDayOfWeek = new Date(bookingData.date).getDay();
+
   if (isCheckingAuth) {
     return (
       <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center text-xs text-slate-500">
@@ -475,7 +512,6 @@ function BookingContent() {
                 <button
                   type="button"
                   onClick={() => {
-                    // ตรวจสอบกรณีเลือกแบบ manual แต่ยังไม่เลือกแพทย์
                     if (doctorSelectionType === 'manual' && (!bookingData.doctorId || bookingData.doctorId === 0)) {
                       setDoctorError(true);
                       return;
@@ -518,37 +554,94 @@ function BookingContent() {
                   </div>
                   {dateError && (
                     <p className="text-[11px] text-rose-600 font-medium pl-1">
-                      * กรุณาเลือกวันที่ปัจจุบันหรือวันที่ในอนาคต (ไม่อนุญาตให้เลือกวันที่ย้อนหลัง)
+                      - กรุณาเลือกวันที่ปัจจุบันหรือวันที่ในอนาคต (ไม่อนุญาตให้เลือกวันที่ย้อนหลัง)
+                    </p>
+                  )}
+                  {availabilityErrorMsg && (
+                    <p className="text-[11px] text-rose-600 font-bold pl-1 mt-1 animate-fadeIn">
+                      - {availabilityErrorMsg}
                     </p>
                   )}
                 </div>
 
                 <div className="space-y-2 pt-2">
                   <p className="text-xs font-semibold text-slate-700">เลือกรอบเวลา</p>
+                  
+                  {/* 🟢 แสดงรอบเวลาตามจริงและเช็กสถานะ isAvailable แยกตามช่วงเวลา */}
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                    {['09:00 - 10:00', '10:30 - 11:30', '13:00 - 14:00', '14:30 - 15:30'].map((time) => (
-                      <button
-                        key={time}
-                        type="button"
-                        onClick={() => {
-                          setTimeError(false);
-                          setBookingData({ ...bookingData, time });
-                        }}
-                        className={`p-3.5 rounded-2xl border text-center text-xs font-semibold transition-all cursor-pointer ${
-                          bookingData.time === time
-                            ? 'border-[#1a2b6d] bg-[#1a2b6d] text-white shadow-xs'
-                            : timeError
-                            ? 'border-rose-300 text-slate-600 bg-rose-50/20'
-                            : 'border-slate-200 text-slate-600 bg-white hover:border-slate-300'
-                        }`}
-                      >
-                        {time} น.
-                      </button>
-                    ))}
+                    {(() => {
+                      if (doctorSelectionType === 'manual' && selectedDoctorObj && selectedDoctorObj.schedules) {
+                        const doctorSchedules = selectedDoctorObj.schedules.filter(
+                          (s) => s.dayOfWeek === targetDayOfWeek
+                        );
+
+                        if (doctorSchedules.length === 0) {
+                          return (
+                            <div className="col-span-full py-3 px-4 bg-amber-50 border border-amber-200 rounded-xl text-center text-xs text-amber-700 font-medium">
+                              แพทย์ท่านนี้ไม่มีรอบเวลาออกตรวจในวันที่ท่านเลือก กรุณาเปลี่ยนวันนัดหมาย
+                            </div>
+                          );
+                        }
+
+                        return doctorSchedules.map((sched) => {
+                          const timeLabel = `${sched.startTime} - ${sched.endTime}`;
+                          const isSelected = bookingData.time === timeLabel;
+                          const isAvailable = sched.isAvailable; // 🟢 สถานะแยกตามช่วงเวลา
+
+                          return (
+                            <button
+                              key={sched.id}
+                              type="button"
+                              disabled={!isAvailable}
+                              onClick={() => {
+                                if (!isAvailable) return;
+                                setTimeError(false);
+                                setBookingData({ ...bookingData, time: timeLabel });
+                              }}
+                              className={`p-3.5 rounded-2xl border text-center text-xs font-semibold transition-all ${
+                                !isAvailable
+                                  ? 'bg-red-50/60 border-red-200 text-red-400 opacity-60 cursor-not-allowed line-through'
+                                  : isSelected
+                                  ? 'border-[#1a2b6d] bg-[#1a2b6d] text-white shadow-xs cursor-pointer'
+                                  : 'border-slate-200 text-slate-700 bg-white hover:border-slate-300 cursor-pointer'
+                              }`}
+                            >
+                              {timeLabel} น.
+                              {!isAvailable && (
+                                <span className="block text-[10px] text-red-500 font-bold mt-0.5 no-underline">
+                                  [งดออกตรวจ]
+                                </span>
+                              )}
+                            </button>
+                          );
+                        });
+                      }
+
+                      return ['09:00 - 10:00', '10:30 - 11:30', '13:00 - 14:00', '14:30 - 15:30'].map((time) => (
+                        <button
+                          key={time}
+                          type="button"
+                          onClick={() => {
+                            setTimeError(false);
+                            setBookingData({ ...bookingData, time });
+                          }}
+                          className={`p-3.5 rounded-2xl border text-center text-xs font-semibold transition-all cursor-pointer ${
+                            bookingData.time === time
+                              ? 'border-[#1a2b6d] bg-[#1a2b6d] text-white shadow-xs'
+                              : timeError
+                              ? 'border-rose-300 text-slate-600 bg-rose-50/20'
+                              : 'border-slate-200 text-slate-600 bg-white hover:border-slate-300'
+                          }`}
+                        >
+                          {time} น.
+                        </button>
+                      ));
+                    })()}
                   </div>
+
                   {timeError && (
                     <p className="text-[11px] text-rose-600 font-medium pl-1">
-                      * กรุณาเลือกรอบเวลาก่อนดำเนินการต่อ
+                      - กรุณาเลือกรอบเวลาก่อนดำเนินการต่อ
                     </p>
                   )}
                 </div>
@@ -588,10 +681,16 @@ function BookingContent() {
                       setTimeError(true);
                       hasError = true;
                     }
+
+                    if (!validateDoctorAvailability()) {
+                      hasError = true;
+                    }
+
                     if (hasError) return;
 
                     setDateError(false);
                     setTimeError(false);
+                    setAvailabilityErrorMsg(null);
                     setStep(3);
                   }}
                   className="bg-[#1a2b6d] text-white px-8 py-3 rounded-xl text-xs font-semibold hover:bg-[#0f1a42] transition shadow-xs cursor-pointer"

@@ -142,7 +142,7 @@ export default function AppointmentsPage() {
 
                       <p className="text-slate-600">
                         {item.doctor
-                          ? `แพทย์: นพ./พญ. ${item.doctor.user.firstName} ${item.doctor.user.lastName}`
+                          ? `แพทย์: ${item.doctor.user.firstName} ${item.doctor.user.lastName}`
                           : `อาการ/รายละเอียด: ${item.symptoms || '-'}`}
                       </p>
 

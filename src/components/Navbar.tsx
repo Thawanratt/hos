@@ -42,11 +42,10 @@ function EmergencyStrip() {
 }
 
 // 2. เมนูหลักฝั่ง Desktop & Tablet 
-function DesktopNavigation({ pathname, isAdmin, onPrimaryAction }: { pathname: string; isAdmin: boolean; onPrimaryAction: () => void }) {
+function DesktopNavigation({ pathname, isAdmin, isDoctor, onPrimaryAction }: { pathname: string; isAdmin: boolean; isDoctor: boolean; onPrimaryAction: () => void }) {
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const navRef = useRef<HTMLDivElement>(null);
 
-  // ปิดเมนูดรอปดาวน์เมื่อคลิกพื้นที่ด้านนอก
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (navRef.current && !navRef.current.contains(event.target as Node)) {
@@ -67,7 +66,6 @@ function DesktopNavigation({ pathname, isAdmin, onPrimaryAction }: { pathname: s
         หน้าหลัก
       </Link>
 
-      {/* เมนู: บริการ */}
       <div className="relative py-2">
         <button
           onClick={() => toggleDropdown('services')}
@@ -96,7 +94,7 @@ function DesktopNavigation({ pathname, isAdmin, onPrimaryAction }: { pathname: s
               </div>
               <div className="pt-2 border-t border-slate-100 space-y-1 text-xs font-bold text-slate-700">
                 <Link href="/doctors" onClick={() => setActiveDropdown(null)} className="flex items-center gap-2 p-2 rounded-lg hover:bg-slate-50 hover:text-[#1a2b6d] transition">ค้นหาแพทย์</Link>
-                {!isAdmin && (
+                {!isAdmin && !isDoctor && (
                   <button onClick={() => { setActiveDropdown(null); onPrimaryAction(); }} className="w-full flex items-center gap-2 p-2 rounded-lg hover:bg-slate-50 text-[#1a2b6d] transition cursor-pointer text-left">
                     ทำนัดหมายออนไลน์
                   </button>
@@ -108,7 +106,6 @@ function DesktopNavigation({ pathname, isAdmin, onPrimaryAction }: { pathname: s
         )}
       </div>
 
-      {/* เมนู: ข้อมูลผู้เข้ารับบริการ */}
       <div className="relative py-2">
         <button
           onClick={() => toggleDropdown('patient')}
@@ -130,7 +127,6 @@ function DesktopNavigation({ pathname, isAdmin, onPrimaryAction }: { pathname: s
         )}
       </div>
 
-      {/* เมนู: ข้อมูลสุขภาพ */}
       <div className="relative py-2">
         <button
           onClick={() => toggleDropdown('health')}
@@ -151,7 +147,6 @@ function DesktopNavigation({ pathname, isAdmin, onPrimaryAction }: { pathname: s
         )}
       </div>
 
-      {/* เมนู: เกี่ยวกับเรา */}
       <div className="relative py-2">
         <button
           onClick={() => toggleDropdown('about')}
@@ -181,39 +176,41 @@ function UserMenuDropdown({
   user,
   userName,
   isAdmin,
+  isDoctor,
   isOpen,
   setIsOpen,
   onLogout,
   dropdownRef
 }: any) {
+  const badgeText = isAdmin ? 'ADMINISTRATOR' : isDoctor ? 'DOCTOR' : 'PATIENT';
+  const badgeBg = isAdmin ? 'bg-amber-50/80 border-amber-200/80 text-amber-900 hover:bg-amber-100/80' : isDoctor ? 'bg-emerald-50/80 border-emerald-200/80 text-emerald-900 hover:bg-emerald-100/80' : 'bg-blue-50/80 border-blue-200/80 text-[#1a2b6d] hover:bg-blue-100/80';
+  const avatarBg = isAdmin ? 'bg-amber-600' : isDoctor ? 'bg-emerald-600' : 'bg-[#1a2b6d]';
+  const chevronColor = isAdmin ? 'text-amber-700' : isDoctor ? 'text-emerald-700' : 'text-[#1a2b6d]';
+
   return (
     <div className="relative" ref={dropdownRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className={`flex items-center space-x-2.5 pl-2 pr-3 py-1.5 rounded-full border transition cursor-pointer shadow-2xs ${
-          isAdmin
-            ? 'bg-amber-50/80 border-amber-200/80 text-amber-900 hover:bg-amber-100/80'
-            : 'bg-blue-50/80 border-blue-200/80 text-[#1a2b6d] hover:bg-blue-100/80'
-        }`}
+        className={`flex items-center space-x-2.5 pl-2 pr-3 py-1.5 rounded-full border transition cursor-pointer shadow-2xs ${badgeBg}`}
       >
-        <div className={`w-7 h-7 rounded-full flex items-center justify-center text-white font-bold text-xs shadow-2xs ${isAdmin ? 'bg-amber-600' : 'bg-[#1a2b6d]'}`}>
+        <div className={`w-7 h-7 rounded-full flex items-center justify-center text-white font-bold text-xs shadow-2xs ${avatarBg}`}>
           {userName.charAt(0).toUpperCase()}
         </div>
         <div className="flex flex-col text-left">
           <span className="text-[10px] uppercase tracking-wider font-extrabold opacity-70 leading-none">
-            {isAdmin ? 'ADMINISTRATOR' : 'PATIENT'}
+            {badgeText}
           </span>
-          <span className="text-xs font-bold truncate max-w-[100px] leading-tight">
+          <span className="text-xs font-bold truncate max-w-[120px] leading-tight">
             {userName}
           </span>
         </div>
-        <svg className={`w-3.5 h-3.5 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''} ${isAdmin ? 'text-amber-700' : 'text-[#1a2b6d]'}`} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+        <svg className={`w-3.5 h-3.5 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''} ${chevronColor}`} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
         </svg>
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-56 bg-white text-slate-800 shadow-xl rounded-2xl p-2 border border-slate-100 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+        <div className="absolute right-0 mt-2 w-60 bg-white text-slate-800 shadow-xl rounded-2xl p-2 border border-slate-100 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
           <div className="px-3 py-2.5 bg-slate-50 rounded-xl mb-1 border border-slate-100">
             <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">เข้าสู่ระบบโดย</p>
             <p className="text-xs font-bold text-slate-800 truncate">{user.email || userName}</p>
@@ -223,11 +220,22 @@ function UserMenuDropdown({
             {isAdmin ? (
               <>
                 <Link
-                  href="/status(admin)/dashboard"
+                  href="/admin/main"
                   onClick={() => setIsOpen(false)}
                   className="flex items-center gap-2.5 p-2.5 rounded-xl bg-amber-50 text-amber-900 hover:bg-amber-100 transition font-bold"
                 >
-                  ดูสถานะคิว
+                  หน้าหลักแอดมิน
+                </Link>
+                <div className="border-t border-slate-100 my-1"></div>
+              </>
+            ) : isDoctor ? (
+              <>
+                <Link
+                  href="/doctors/main"
+                  onClick={() => setIsOpen(false)}
+                  className="flex items-center gap-2.5 p-2.5 rounded-xl bg-emerald-50 text-emerald-900 hover:bg-emerald-100 transition font-bold"
+                >
+                  แดชบอร์ดแพทย์ / จัดการคิว
                 </Link>
                 <div className="border-t border-slate-100 my-1"></div>
               </>
@@ -338,7 +346,8 @@ export default function Navbar({ selectedBranch: propBranch, onSelectBranch }: N
   };
 
   const isAdmin = user?.role === 'ADMIN' || user?.role === 'admin' || user?.email === 'admin@novaria.com';
-  const userName = user?.firstName || user?.name || (isAdmin ? 'Admin' : 'ผู้ป่วย');
+  const isDoctor = user?.role === 'DOCTOR' || user?.role === 'doctor' || (user?.email && user.email.includes('doctor'));
+  const userName = user?.firstName || user?.name || (isAdmin ? 'Admin' : isDoctor ? 'Doctor' : 'ผู้ป่วย');
 
   const handlePrimaryAction = () => {
     setIsMobileMenuOpen(false);
@@ -377,7 +386,7 @@ export default function Navbar({ selectedBranch: propBranch, onSelectBranch }: N
           </div>
         </Link>
 
-        <DesktopNavigation pathname={pathname} isAdmin={isAdmin} onPrimaryAction={handlePrimaryAction} />
+        <DesktopNavigation pathname={pathname} isAdmin={isAdmin} isDoctor={isDoctor} onPrimaryAction={handlePrimaryAction} />
 
         <div className="flex items-center space-x-2 shrink-0">
           <Link
@@ -413,6 +422,7 @@ export default function Navbar({ selectedBranch: propBranch, onSelectBranch }: N
                   user={user}
                   userName={userName}
                   isAdmin={isAdmin}
+                  isDoctor={isDoctor}
                   isOpen={isUserDropdownOpen}
                   setIsOpen={setIsUserDropdownOpen}
                   onLogout={handleLogout}
@@ -432,7 +442,7 @@ export default function Navbar({ selectedBranch: propBranch, onSelectBranch }: N
             </div>
           )}
 
-          {!isAdmin && (
+          {!isAdmin && !isDoctor && (
             <div className="hidden sm:block shrink-0">
               <button
                 onClick={handlePrimaryAction}
@@ -485,7 +495,6 @@ export default function Navbar({ selectedBranch: propBranch, onSelectBranch }: N
               หน้าหลัก
             </Link>
 
-            {/* หมวดหมู่: บริการ */}
             <div>
               <button
                 onClick={() => toggleSubmenu('services')}
@@ -512,7 +521,6 @@ export default function Navbar({ selectedBranch: propBranch, onSelectBranch }: N
               )}
             </div>
 
-            {/* หมวดหมู่: ข้อมูลผู้เข้ารับบริการ */}
             <div>
               <button
                 onClick={() => toggleSubmenu('patient-info')}
@@ -532,7 +540,6 @@ export default function Navbar({ selectedBranch: propBranch, onSelectBranch }: N
               )}
             </div>
 
-            {/* หมวดหมู่: ข้อมูลสุขภาพ */}
             <div>
               <button
                 onClick={() => toggleSubmenu('health-info')}
@@ -551,7 +558,6 @@ export default function Navbar({ selectedBranch: propBranch, onSelectBranch }: N
               )}
             </div>
 
-            {/* หมวดหมู่: เกี่ยวกับเรา */}
             <div>
               <button
                 onClick={() => toggleSubmenu('about')}
@@ -574,15 +580,15 @@ export default function Navbar({ selectedBranch: propBranch, onSelectBranch }: N
 
           <div className="pt-3 border-t border-slate-100 flex flex-col space-y-2">
             {user ? (
-              <div className={`p-3.5 rounded-2xl border flex flex-col space-y-3 ${isAdmin ? 'bg-amber-50/80 border-amber-200/80' : 'bg-blue-50/80 border-blue-200/80'}`}>
+              <div className={`p-3.5 rounded-2xl border flex flex-col space-y-3 ${isAdmin ? 'bg-amber-50/80 border-amber-200/80' : isDoctor ? 'bg-emerald-50/80 border-emerald-200/80' : 'bg-blue-50/80 border-blue-200/80'}`}>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2.5">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-xs shadow-2xs ${isAdmin ? 'bg-amber-600' : 'bg-[#1a2b6d]'}`}>
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-xs shadow-2xs ${isAdmin ? 'bg-amber-600' : isDoctor ? 'bg-emerald-600' : 'bg-[#1a2b6d]'}`}>
                       {userName.charAt(0).toUpperCase()}
                     </div>
                     <div className="flex flex-col">
                       <span className="text-[10px] uppercase font-extrabold text-slate-500">
-                        {isAdmin ? 'ADMIN' : 'PATIENT'}
+                        {isAdmin ? 'ADMIN' : isDoctor ? 'DOCTOR' : 'PATIENT'}
                       </span>
                       <span className="text-xs font-bold text-slate-800">{userName}</span>
                     </div>
@@ -592,7 +598,17 @@ export default function Navbar({ selectedBranch: propBranch, onSelectBranch }: N
                   </button>
                 </div>
 
-                {!isAdmin && (
+                {isDoctor ? (
+                  <div className="pt-2 border-t border-emerald-200/50">
+                    <Link
+                      href="/doctors/main"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className="block w-full py-2 rounded-xl bg-emerald-600 text-center text-white font-bold text-xs shadow-2xs"
+                    >
+                      แดชบอร์ดแพทย์ / จัดการคิว
+                    </Link>
+                  </div>
+                ) : !isAdmin && (
                   <div className="grid grid-cols-2 gap-2 pt-2 border-t border-blue-200/50 text-xs font-bold">
                     <Link
                       href="/profile"
@@ -621,7 +637,7 @@ export default function Navbar({ selectedBranch: propBranch, onSelectBranch }: N
               </Link>
             )}
 
-            {!isAdmin && (
+            {!isAdmin && !isDoctor && (
               <button
                 onClick={handlePrimaryAction}
                 className="w-full text-center py-2.5 font-bold rounded-xl text-xs text-white bg-[#1a2b6d]"

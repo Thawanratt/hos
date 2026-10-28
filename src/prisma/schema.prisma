@@ -2,6 +2,7 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
 generator client {
   provider = "prisma-client-js"
 }
@@ -14,21 +15,21 @@ enum Gender {
 
 // 2. ตารางผู้ใช้งานและสิทธิ์
 model User {
-  id        Int      @id @default(autoincrement())
-  firstName String   @map("first_name")
-  lastName  String   @map("last_name")
-  idCard    String   @unique @map("id_card")
-  phone     String
-  email     String   @unique
-  password  String
-  gender    Gender?  @default(MALE) 
-  role      Role     @default(PATIENT)
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  id           Int      @id @default(autoincrement())
+  firstName    String   @map("first_name")
+  lastName     String   @map("last_name")
+  idCard       String   @unique @map("id_card")
+  phone        String
+  email        String   @unique
+  password     String
+  gender       Gender?  // 🟢 เอา default ออกแล้ว รองรับค่า null (ไม่ระบุ) ตามความจริง
+  role         Role     @default(PATIENT)
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
 
-  doctor         Doctor?
-  appointments   Appointment[]   @relation("PatientAppointments")
-
+  doctor           Doctor?
+  appointments     Appointment[]   @relation("PatientAppointments")
+  medicalRecords   MedicalRecord[] @relation("PatientMedicalRecords")
 
   @@map("users")
 }
@@ -59,6 +60,7 @@ model Doctor {
   licenseNumber    String   @unique @map("license_number")
   specialization   String
   bio              String?
+  imageUrl         String?  @map("image_url")
   isInstantBooking Boolean  @default(false) @map("is_instant_booking")
   createdAt        DateTime @default(now()) @map("created_at")
 
@@ -66,19 +68,20 @@ model Doctor {
   department     Department       @relation(fields: [departmentId], references: [id])
   schedules      DoctorSchedule[]
   appointments   Appointment[]
- 
+  medicalRecords MedicalRecord[]  @relation("DoctorMedicalRecords")
 
   @@map("doctors")
 }
 
 // 5. ตารางเวลาเข้าตรวจของแพทย์
 model DoctorSchedule {
-  id        Int    @id @default(autoincrement())
-  doctorId  Int    @map("doctor_id")
-  dayOfWeek Int    @map("day_of_week") // 0=Sun, 1=Mon, ..., 6=Sat
-  startTime String @map("start_time")  // เช่น "09:00"
-  endTime   String @map("end_time")    // เช่น "16:00"
-  maxSlots  Int    @default(20) @map("max_slots")
+  id          Int      @id @default(autoincrement())
+  doctorId    Int      @map("doctor_id")
+  dayOfWeek   Int      @map("day_of_week") // 0=Sun, 1=Mon, ..., 6=Sat
+  startTime   String   @map("start_time")  // เช่น "09:00"
+  endTime     String   @map("end_time")    // เช่น "16:00"
+  maxSlots    Int      @default(20) @map("max_slots")
+  isAvailable Boolean  @default(true) @map("is_available") // แพทย์กดเปิด-ปิดสถานะได้
 
   doctor Doctor @relation(fields: [doctorId], references: [id], onDelete: Cascade)
 
@@ -87,22 +90,21 @@ model DoctorSchedule {
 
 // 6. ตารางการนัดหมาย / จองคิว
 model Appointment {
-  id              Int               @id @default(autoincrement())
-  patientId       Int               @map("patient_id")
-  doctorId        Int?              @map("doctor_id")
-  departmentId    Int               @map("department_id")
-  branch          String            @default("novaria-main") @map("branch") 
-  appointmentDate DateTime          @db.Date @map("appointment_date") 
-  timeSlot        String            @map("time_slot")                   
-  symptoms        String?
-  status          AppointmentStatus @default(PENDING)
-  createdAt       DateTime          @default(now()) @map("created_at")
-  updatedAt       DateTime          @updatedAt @map("updated_at")
+  id               Int               @id @default(autoincrement())
+  patientId        Int               @map("patient_id")
+  doctorId         Int?              @map("doctor_id")
+  departmentId     Int               @map("department_id")
+  branch           String            @default("novaria-main") @map("branch") 
+  appointmentDate  DateTime          @db.Date @map("appointment_date") 
+  timeSlot         String            @map("time_slot")                     
+  symptoms         String?
+  status           AppointmentStatus @default(PENDING)
+  createdAt        DateTime          @default(now()) @map("created_at")
+  updatedAt        DateTime          @updatedAt @map("updated_at")
 
-  patient       User        @relation("PatientAppointments", fields: [patientId], references: [id])
-  doctor        Doctor?     @relation(fields: [doctorId], references: [id])
-  department    Department  @relation(fields: [departmentId], references: [id])
-  
+  patient      User        @relation("PatientAppointments", fields: [patientId], references: [id])
+  doctor       Doctor?     @relation(fields: [doctorId], references: [id])
+  department   Department  @relation(fields: [departmentId], references: [id])
 
   @@map("appointments")
 }
@@ -137,6 +139,7 @@ model Package {
 
   @@map("packages")
 }
+
 model MentalHealthAssessment {
   id           String   @id @default(uuid())
   refId        String   @unique
@@ -162,18 +165,35 @@ model MentalHealthAssessment {
 
 // 7. ตารางเก็บข้อความติดต่อจากหน้า Contact Us
 model ContactMessage {
-  id        String   @id @default(uuid())
-  fullName  String   @map("full_name")
+  id        String        @id @default(uuid())
+  fullName  String        @map("full_name")
   phone     String
   email     String?
-  category  String   // เช่น general, appointment, insurance ฯลฯ
+  category  String        // เช่น general, appointment, insurance ฯลฯ
   subject   String
-  message   String   @db.Text
+  message   String        @db.Text
   status    ContactStatus @default(PENDING) // สถานะการติดต่อ
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  createdAt DateTime      @default(now()) @map("created_at")
+  updatedAt DateTime      @updatedAt @map("updated_at")
 
   @@map("contact_messages")
+}
+
+// ตารางเก็บบันทึกเวชระเบียนและผลการรักษา (เชื่อมกับคนไข้และแพทย์ผู้ตรวจ)
+model MedicalRecord {
+  id           Int      @id @default(autoincrement())
+  patientId    Int      @map("patient_id")    // อ้างอิงถึง User ที่เป็นคนไข้ (role: PATIENT)
+  doctorId     Int      @map("doctor_id")     // อ้างอิงถึง Doctor ที่ทำการตรวจ
+  diagnosis    String   // ผลการวินิจฉัยโรค
+  prescription String?  @db.Text // รายการยา / คำสั่งการรักษา
+  notes        String?  @db.Text // บันทึกเพิ่มเติมของแพทย์
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  patient User   @relation("PatientMedicalRecords", fields: [patientId], references: [id], onDelete: Cascade)
+  doctor  Doctor @relation("DoctorMedicalRecords", fields: [doctorId], references: [id], onDelete: Cascade)
+
+  @@map("medical_records")
 }
 
 // สถานะของข้อความติดต่อ
@@ -184,9 +204,9 @@ enum ContactStatus {
 }
 
 enum AppointmentStatus {
-  PENDING
-  CONFIRMED
-  CANCELLED
-  COMPLETED
+  PENDING      // รอการยืนยัน
+  CONFIRMED    // ยืนยันนัดหมายแล้ว
+  IN_PROGRESS  // กำลังตรวจ 
+  COMPLETED    // ตรวจเสร็จสิ้น
+  CANCELLED    // ยกเลิกนัดหมาย
 }
-

@@ -1,5 +1,3 @@
-//ตรวจสอบและเข้าสู่ระบบ
-
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
@@ -39,7 +37,7 @@ export async function POST(request: Request) {
       );
     }
 
-    // 4. ส่งข้อมูลผู้ใช้กลับไปเมื่อเข้าสู่ระบบสำเร็จ (ตัดฟิลด์ password ออกก่อนส่ง)
+    // 4. ส่งข้อมูลผู้ใช้กลับไปเมื่อเข้าสู่ระบบสำเร็จ (รวมถึง role และตัด password ออก)
     const { password: _, ...userWithoutPassword } = user;
     return NextResponse.json(
       { 

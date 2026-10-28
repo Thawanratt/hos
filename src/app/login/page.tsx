@@ -19,9 +19,9 @@ function LoginForm() {
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
-  const [successMessage, setSuccessMessage] = useState(''); // 🟢 เพิ่ม State ข้อความสำเร็จ
+  const [successMessage, setSuccessMessage] = useState('');
 
-  // ฟังก์ชันล็อกอินแบบธรรมดา
+  // ฟังก์ชันล็อกอินแบบธรรมดา (ใช้พาท /api/auth/login ให้ตรงกับ Backend)
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage('');
@@ -36,7 +36,7 @@ function LoginForm() {
 
       const data = await res.json();
 
-      if (res.ok) {
+      if (res.ok && data.success) {
         handleLoginSuccess(data);
       } else {
         setErrorMessage(data.message || 'อีเมลหรือรหัสผ่านไม่ถูกต้อง');
@@ -48,7 +48,7 @@ function LoginForm() {
     }
   };
 
-  // 🟢 ฟังก์ชันจัดการเมื่อล็อกอินสำเร็จแบบ Smooth UX
+  // ฟังก์ชันจัดการเมื่อล็อกอินสำเร็จ
   const handleLoginSuccess = (data: any) => {
     const userData = data.user || data.data || data;
     if (userData) {
@@ -57,26 +57,25 @@ function LoginForm() {
     }
 
     window.dispatchEvent(new Event('storage'));
-
-    // แสดง Toast สั้นๆ บอกสถานะ
-    setSuccessMessage('เข้าสู่ระบบสำเร็จ! กำลังพาท่านไปยังหน้าหลัก...');
+    setSuccessMessage('เข้าสู่ระบบสำเร็จ! กำลังพาท่านไปยังระบบ...');
 
     const userRole = userData?.role || data.role;
-    let targetUrl = '/'; // 🟢 เปลี่ยนจาก /branches เป็นหน้าหลัก (/) เพื่อ UX ที่เป็นธรรมชาติ
+    let targetUrl = '/';
     
     if (userRole === 'ADMIN') {
-      targetUrl = '/status(admin)/dashboard';
+      targetUrl = '/admin/main';
+    } else if (userRole === 'DOCTOR') {
+      targetUrl = '/doctors/main'; 
     } else if (redirectTo) {
       targetUrl = decodeURIComponent(redirectTo);
     }
 
-    // หน่วงเวลา 1.2 วินาทีแล้วเปลี่ยนหน้าแบบนุ่มนวล
     setTimeout(() => {
       router.push(targetUrl);
     }, 1200);
   };
 
-  // 🟢 ฟังก์ชันล็อกอินด้วย Google SDK
+  // ฟังก์ชันล็อกอินด้วย Google SDK
   const handleGoogleLogin = useGoogleLogin({
     onSuccess: async (tokenResponse) => {
       setGoogleLoading(true);
@@ -134,14 +133,12 @@ function LoginForm() {
         <p className="text-xs text-gray-500">ยินดีต้อนรับกลับ เข้าสู่ระบบเพื่อจัดการการนัดหมาย</p>
       </div>
 
-      {/* 🔴 ข้อความ Error */}
       {errorMessage && (
         <div className="bg-red-50 text-red-600 border border-red-200 text-xs py-2 px-4 rounded-xl">
           {errorMessage}
         </div>
       )}
 
-      {/* 🟢 ข้อความแจ้งเตือนเมื่อสำเร็จ */}
       {successMessage && (
         <div className="bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 animate-fade-in">
           <svg className="w-4 h-4 text-emerald-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -197,13 +194,11 @@ function LoginForm() {
         </div>
       </form>
 
-      {/* 🔴 เส้นแบ่ง หรือ */}
       <div className="relative flex items-center justify-center my-4">
         <div className="border-t border-gray-300 w-full"></div>
         <span className="bg-[#fff9ed] px-3 text-[11px] text-gray-500 uppercase tracking-wider absolute">หรือ</span>
       </div>
 
-      {/* 🔴 ปุ่ม GOOGLE LOGIN */}
       <button
         type="button"
         onClick={() => handleGoogleLogin()}

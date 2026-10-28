@@ -1,104 +1,162 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Role } from '@prisma/client';
+import bcrypt from 'bcrypt';
 
-// ป้องกันการสร้าง PrismaClient ซ้ำซ้อนตอน Hot Reload
 const globalForPrisma = global as unknown as { prisma: PrismaClient };
 export const prisma = globalForPrisma.prisma || new PrismaClient();
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
 
-// Helper: สร้างเงื่อนไขช่วงเวลา
-function getTimeSlotFilter(timeSlot: string | null) {
-  if (!timeSlot || timeSlot === 'ALL') return null;
-  if (timeSlot === 'morning') return { gte: '08:00', lte: '12:00' };
-  if (timeSlot === 'afternoon') return { gte: '12:00', lte: '16:00' };
-  if (timeSlot === 'evening') return { gte: '16:00', lte: '20:00' };
-  return null;
-}
-
-// Helper: สร้างเงื่อนไขสำหรับ Query ทั้งหมด
-function buildWhereCondition(searchParams: URLSearchParams) {
-  const search = searchParams.get('search') || '';
-  const departmentId = searchParams.get('departmentId');
-  const gender = searchParams.get('gender');
-  const dayOfWeek = searchParams.get('dayOfWeek');
-  const timeSlot = searchParams.get('timeSlot');
-  const isInstantBooking = searchParams.get('isInstantBooking');
-
-  const whereCondition: any = {};
-
-  if (departmentId && departmentId !== 'ALL') {
-    whereCondition.departmentId = Number.parseInt(departmentId, 10);
-  }
-
-  if (isInstantBooking === 'true') {
-    whereCondition.isInstantBooking = true;
-  }
-
-  const userCondition: any = gender && gender !== 'ALL' ? { gender } : {};
-
-  if (search) {
-    whereCondition.OR = [
-      { user: { ...userCondition, firstName: { contains: search, mode: 'insensitive' } } },
-      { user: { ...userCondition, lastName: { contains: search, mode: 'insensitive' } } },
-      { specialization: { contains: search, mode: 'insensitive' } },
-    ];
-  } else if (Object.keys(userCondition).length > 0) {
-    whereCondition.user = userCondition;
-  }
-
-  const scheduleFilter: any = {};
-  if (dayOfWeek && dayOfWeek !== 'ALL') {
-    scheduleFilter.dayOfWeek = Number.parseInt(dayOfWeek, 10);
-  }
-
-  const timeFilter = getTimeSlotFilter(timeSlot);
-  if (timeFilter) {
-    scheduleFilter.startTime = timeFilter;
-  }
-
-  if (Object.keys(scheduleFilter).length > 0) {
-    whereCondition.schedules = { some: scheduleFilter };
-  }
-
-  return whereCondition;
-}
-
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
-    const whereCondition = buildWhereCondition(searchParams);
-
     const doctors = await prisma.doctor.findMany({
-      where: whereCondition,
       include: {
-        user: {
-          select: {
-            firstName: true,
-            lastName: true,
-            gender: true,
-            email: true,
-            phone: true,
-          },
-        },
-        department: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
+        user: { select: { firstName: true, lastName: true, gender: true, email: true, phone: true } },
+        department: { select: { id: true, name: true } },
         schedules: true,
       },
-      orderBy: {
-        id: 'asc',
-      },
+      orderBy: { id: 'asc' },
     });
-
     return NextResponse.json({ success: true, data: doctors });
   } catch (error) {
-    console.error('Error fetching doctors:', error);
-    return NextResponse.json(
-      { success: false, message: 'Failed to fetch doctors' },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, message: 'Failed to fetch doctors' }, { status: 500 });
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const { firstName, lastName, email, password, phone, idCard, departmentId, licenseNumber, specialization, bio, imageUrl, isInstantBooking, schedules } = body;
+
+    if (!firstName || !lastName || !email || !password || !licenseNumber) {
+      return NextResponse.json({ success: false, message: 'กรุณากรอกข้อมูลสำคัญให้ครบถ้วน' }, { status: 400 });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    let createdUserId: number;
+
+    const newDoctor = await prisma.$transaction(async (tx: any) => {
+      const user = await tx.user.create({
+        data: {
+          firstName,
+          lastName,
+          email,
+          password: hashedPassword,
+          phone: phone || '-',
+          idCard: idCard || `DOC-${Math.floor(100000000 + Math.random() * 900000000)}`,
+          role: Role.DOCTOR,
+        },
+      });
+
+      createdUserId = user.id;
+
+      // 🟢 บันทึก Doctor พร้อม schedules และค่าเริ่มต้น isAvailable: true
+      const doctor = await tx.doctor.create({
+        data: {
+          user: { connect: { id: createdUserId } },
+          department: { connect: { id: Number(departmentId) } },
+          licenseNumber,
+          specialization: specialization || 'แพทย์ทั่วไป',
+          bio: bio || null,
+          imageUrl: imageUrl || null,
+          isInstantBooking: Boolean(isInstantBooking),
+          schedules: schedules && schedules.length > 0 ? {
+            create: schedules.map((sch: any) => ({
+              dayOfWeek: Number(sch.dayOfWeek),
+              startTime: sch.startTime,
+              endTime: sch.endTime,
+              maxSlots: Number(sch.maxSlots || 10),
+              isAvailable: true, // 🟢 กำหนดค่าเริ่มต้นให้เปิดให้บริการ
+            }))
+          } : undefined,
+        },
+        include: { user: true, department: true, schedules: true },
+      });
+
+      return doctor;
+    });
+
+    return NextResponse.json({ success: true, data: newDoctor }, { status: 201 });
+  } catch (error: any) {
+    console.error('Error creating doctor:', error);
+    if (error.code === 'P2002') {
+      return NextResponse.json({ success: false, message: 'อีเมลหรือเลขใบประกอบวิชาชีพนี้มีอยู่ในระบบแล้ว' }, { status: 400 });
+    }
+    return NextResponse.json({ success: false, message: 'ไม่สามารถเพิ่มแพทย์ได้' }, { status: 500 });
+  }
+}
+
+export async function PATCH(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const { doctorId, firstName, lastName, email, phone, departmentId, licenseNumber, specialization, bio, imageUrl, isInstantBooking, schedules } = body;
+
+    if (!doctorId) {
+      return NextResponse.json({ success: false, message: 'ไม่พบรหัสแพทย์' }, { status: 400 });
+    }
+
+    const doctorRecord = await prisma.doctor.findUnique({ where: { id: Number(doctorId) } });
+    if (!doctorRecord) {
+      return NextResponse.json({ success: false, message: 'ไม่พบข้อมูลแพทย์' }, { status: 404 });
+    }
+
+    await prisma.$transaction(async (tx: any) => {
+      await tx.user.update({
+        where: { id: doctorRecord.userId },
+        data: { firstName, lastName, email, phone },
+      });
+
+      // 🟢 เคลียร์ตารางออกตรวจเก่าออก แล้วสร้างใหม่ตามที่แอดมินเลือก
+      await tx.doctorSchedule.deleteMany({
+        where: { doctorId: Number(doctorId) },
+      });
+
+      await tx.doctor.update({
+        where: { id: Number(doctorId) },
+        data: {
+          department: departmentId ? { connect: { id: Number(departmentId) } } : undefined,
+          licenseNumber,
+          specialization,
+          bio,
+          imageUrl,
+          isInstantBooking,
+          schedules: schedules && schedules.length > 0 ? {
+            create: schedules.map((sch: any) => ({
+              dayOfWeek: Number(sch.dayOfWeek),
+              startTime: sch.startTime,
+              endTime: sch.endTime,
+              maxSlots: Number(sch.maxSlots || 10),
+              isAvailable: true, // 🟢 กำหนดค่าเริ่มต้นให้เปิดให้บริการเมื่อแอดมินตั้งค่าใหม่
+            }))
+          } : undefined,
+        },
+      });
+    });
+
+    return NextResponse.json({ success: true, message: 'แก้ไขข้อมูลสำเร็จ' });
+  } catch (error) {
+    console.error('Error updating doctor:', error);
+    return NextResponse.json({ success: false, message: 'แก้ไขข้อมูลไม่สำเร็จ' }, { status: 500 });
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const doctorId = searchParams.get('doctor_id') || searchParams.get('doctorId');
+
+    if (!doctorId) {
+      return NextResponse.json({ success: false, message: 'ไม่พบรหัสแพทย์' }, { status: 400 });
+    }
+
+    const doctorRecord = await prisma.doctor.findUnique({ where: { id: Number(doctorId) } });
+    if (!doctorRecord) {
+      return NextResponse.json({ success: false, message: 'ไม่พบข้อมูลแพทย์' }, { status: 404 });
+    }
+
+    await prisma.user.delete({ where: { id: doctorRecord.userId } });
+
+    return NextResponse.json({ success: true, message: 'ลบข้อมูลสำเร็จ' });
+  } catch (error) {
+    return NextResponse.json({ success: false, message: 'ไม่สามารถลบได้' }, { status: 500 });
   }
 }

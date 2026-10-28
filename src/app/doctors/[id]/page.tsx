@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 
@@ -11,6 +11,7 @@ interface DoctorSchedule {
   startTime: string;
   endTime: string;
   maxSlots: number;
+  isAvailable: boolean; 
 }
 
 interface DoctorDetail {
@@ -139,12 +140,21 @@ export default function DoctorDetailPage() {
     setSelectedDate(chosenDate);
   };
 
-  // ฟังก์ชันเมื่อผู้ใช้คลิกเลือกช่องตารางออกตรวจ
-  const handleScheduleClick = (slotValue: string) => {
+  // ฟังก์ชันเมื่อผู้ใช้คลิกเลือกช่องตารางออกตรวจ (พร้อมเช็ก isAvailable)
+  const handleScheduleClick = (sched: DoctorSchedule) => {
+    // 🟢 ถ้าแพทย์งดออกตรวจ ห้ามกดเลือก
+    if (!sched.isAvailable) {
+      alert('แพทย์ท่านนี้งดออกตรวจในช่วงเวลานี้ ไม่สามารถเลือกจองคิวได้');
+      return;
+    }
+
     if (!isLoggedIn) {
       setShowLoginModal(true);
       return;
     }
+
+    // 🟢 แก้ไขรูปแบบ string เวลาให้อยู่ในบรรทัดเดียวกันถูกต้อง
+    const slotValue = `วัน${getDayName(sched.dayOfWeek)} (${sched.startTime} - ${sched.endTime})`;
     setSelectedTimeSlot(slotValue);
   };
 
@@ -398,28 +408,36 @@ export default function DoctorDetailPage() {
                 {doctor.schedules.map((sched) => {
                   const slotValue = `วัน${getDayName(sched.dayOfWeek)} (${sched.startTime} - ${sched.endTime})`;
                   const isSelected = selectedTimeSlot === slotValue;
+                  const isAvailable = sched.isAvailable; // 🟢 ตรวจสอบสถานะเปิด/ปิดตรวจ
 
                   return (
                     <div
                       key={sched.id}
-                      onClick={() => handleScheduleClick(slotValue)}
-                      className={`p-3.5 border rounded-xl text-center space-y-1 cursor-pointer transition-all duration-200 ${
-                        isSelected 
-                          ? 'bg-[#1a2b6d] text-white border-[#1a2b6d] shadow-md scale-[1.02]' 
-                          : 'bg-slate-50 hover:bg-blue-50/50 border-slate-200 text-slate-700'
+                      onClick={() => handleScheduleClick(sched)}
+                      className={`p-3.5 border rounded-xl text-center space-y-1 transition-all duration-200 ${
+                        !isAvailable 
+                          ? 'bg-red-50/60 border-red-200 text-red-400 opacity-75 cursor-not-allowed line-through' // 🟢 สไตล์เมื่อแพทย์งดออกตรวจ
+                          : isSelected 
+                          ? 'bg-[#1a2b6d] text-white border-[#1a2b6d] shadow-md scale-[1.02] cursor-pointer' 
+                          : 'bg-slate-50 hover:bg-blue-50/50 border-slate-200 text-slate-700 cursor-pointer'
                       }`}
                     >
-                      <span className={`text-xs font-bold block ${isSelected ? 'text-white' : 'text-[#1a2b6d]'}`}>
+                      <span className={`text-xs font-bold block ${!isAvailable ? 'text-red-400 line-through' : isSelected ? 'text-white' : 'text-[#1a2b6d]'}`}>
                         วัน{getDayName(sched.dayOfWeek)}
                       </span>
-                      <span className={`text-[11px] block ${isSelected ? 'text-blue-100' : 'text-slate-600'}`}>
+                      <span className={`text-[11px] block ${!isAvailable ? 'text-red-400 line-through' : isSelected ? 'text-blue-100' : 'text-slate-600'}`}>
                         {sched.startTime} - {sched.endTime} น.
                       </span>
-                      {isSelected && (
+
+                      {!isAvailable ? (
+                        <span className="text-[10px] bg-red-100 text-red-600 px-2 py-0.5 rounded-md inline-block mt-1 font-semibold no-underline">
+                          [งดออกตรวจ]
+                        </span>
+                      ) : isSelected ? (
                         <span className="text-[10px] bg-white/20 px-2 py-0.5 rounded-md inline-block mt-1">
                           ✓ เลือกแล้ว
                         </span>
-                      )}
+                      ) : null}
                     </div>
                   );
                 })}

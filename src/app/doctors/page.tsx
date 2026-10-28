@@ -10,6 +10,7 @@ interface DoctorSchedule {
   startTime: string;
   endTime: string;
   maxSlots: number;
+  isAvailable: boolean;
 }
 
 interface DoctorData {
@@ -19,7 +20,9 @@ interface DoctorData {
   licenseNumber: string;
   specialization: string;
   bio?: string | null;
+  imageUrl?: string | null;
   isInstantBooking: boolean;
+  isAvailable: boolean;
   user: {
     firstName: string;
     lastName: string;
@@ -39,19 +42,18 @@ interface DepartmentData {
   name: string;
 }
 
-// Mapping รูปภาพแพทย์ฝั่ง Frontend อ้างอิงตาม doctor.id
-const doctorImageMap: Record<number, string> = { 
-  2: '/images/สมชาย.jpg', 
+// Mapping รูปภาพแพทย์ฝั่ง Frontend อ้างอิงตาม doctor.id (เก็บไว้ตามเดิมเพื่อความสมบูรณ์)
+const doctorImageMap: Record<number, string> = {
+  2: '/images/สมชาย.jpg',
   3: '/images/22.jpeg',
-  4: '/images/8.jpeg', 
-  5: '/images/10.jpeg', 
-  6: '/images/77.jpeg', 
+  4: '/images/8.jpeg',
+  5: '/images/10.jpeg',
+  6: '/images/77.jpeg',
   7: '/images/666.jpg',
   8: '/images/55.jpg',
   9: '/images/11.jpeg',
   10: '/images/12.jpeg',
   11: '/images/13.jpeg',
-  201: '/images/14.jpeg',
 };
 
 export default function DoctorsPage() {
@@ -82,7 +84,7 @@ export default function DoctorsPage() {
   const [doctorsList, setDoctorsList] = useState<DoctorData[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
 
-  // 🟢 เพิ่ม State สำหรับเก็บข้อมูลข่าวสารจริงจาก API หลังบ้าน
+  // State สำหรับเก็บข้อมูลข่าวสารจริงจาก API หลังบ้าน
   const [healthArticles, setHealthArticles] = useState<any[]>([]);
 
   // States สำหรับ Pagination & News Slide
@@ -132,7 +134,7 @@ export default function DoctorsPage() {
     }
   }, [searchQuery, selectedDeptId, selectedGender, selectedDay, selectedTime, instantBookingOnly]);
 
-  // 🟢 ดึงข้อมูลข่าวสารจาก API หลังบ้าน (/api/admin) เมื่อโหลดหน้าเว็บ
+  // ดึงข้อมูลข่าวสารจาก API หลังบ้าน (/api/admin) เมื่อโหลดหน้าเว็บ
   useEffect(() => {
     const fetchArticles = async () => {
       try {
@@ -192,11 +194,11 @@ export default function DoctorsPage() {
 
   return (
     <div className="bg-[#f8fafc] min-h-screen pb-24 font-sans text-slate-800 space-y-10">
-      
+
       {/* HEADER BANNER */}
       <section className="bg-white border-b border-slate-200/80 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 md:px-8 py-8 space-y-6">
-          
+
           <div className="space-y-3">
             <nav className="text-[11px] text-slate-400 font-medium tracking-wider uppercase flex items-center gap-1.5">
               <Link href="/" className="hover:text-[#1a2b6d] transition-colors">หน้าแรก</Link>
@@ -223,7 +225,7 @@ export default function DoctorsPage() {
           {/* Search Box & Filter Controls */}
           <div className="bg-slate-50/70 rounded-xl border border-slate-200/80 p-3.5 md:p-4 space-y-3 shadow-inner">
             <div className="flex flex-col lg:flex-row gap-3 items-center justify-between">
-              
+
               <div className="w-full lg:flex-1 relative">
                 <input
                   type="text"
@@ -238,7 +240,7 @@ export default function DoctorsPage() {
                   </svg>
                 </span>
                 {searchQuery && (
-                  <button 
+                  <button
                     onClick={() => setSearchQuery('')}
                     className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600 text-xs bg-slate-100 rounded-full w-5 h-5 flex items-center justify-center transition"
                   >
@@ -250,11 +252,10 @@ export default function DoctorsPage() {
               <div className="flex items-center gap-3 w-full lg:w-auto justify-end">
                 <button
                   onClick={() => setShowFilterPanel(!showFilterPanel)}
-                  className={`px-4 py-2.5 rounded-lg text-xs font-medium tracking-wide flex items-center gap-2 border transition cursor-pointer shadow-sm ${
-                    showFilterPanel || activeFiltersCount > 0
-                      ? 'bg-[#1a2b6d] text-white border-[#1a2b6d] hover:bg-[#121f52]' 
-                      : 'bg-white text-slate-700 hover:bg-slate-100 border-slate-300'
-                  }`}
+                  className={`px-4 py-2.5 rounded-lg text-xs font-medium tracking-wide flex items-center gap-2 border transition cursor-pointer shadow-sm ${showFilterPanel || activeFiltersCount > 0
+                    ? 'bg-[#1a2b6d] text-white border-[#1a2b6d] hover:bg-[#121f52]'
+                    : 'bg-white text-slate-700 hover:bg-slate-100 border-slate-300'
+                    }`}
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 18H7.5M3.75 12h16.5" />
@@ -275,7 +276,7 @@ export default function DoctorsPage() {
             {showFilterPanel && (
               <div className="pt-4 border-t border-slate-200/80 space-y-4 animate-fadeIn">
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
-                  
+
                   <div className="space-y-1.5">
                     <label className="text-slate-600 font-semibold">แผนกการรักษา</label>
                     <select
@@ -390,7 +391,8 @@ export default function DoctorsPage() {
         ) : displayedDoctors.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {displayedDoctors.map((doc) => {
-              const doctorImgSrc = doctorImageMap[doc.id] || doctorImageMap[doc.userId];
+              // 🟢 เพิ่มการดึง doc.imageUrl จากหลังบ้าน (ถ้าไม่มีจะดึงจาก doctorImageMap เดิม)
+              const doctorImgSrc = doc.imageUrl || doctorImageMap[doc.id] || doctorImageMap[doc.userId];
 
               return (
                 <div
@@ -406,8 +408,8 @@ export default function DoctorsPage() {
                     </div>
                   )}
 
-                  <Link 
-                    href={`/doctors/${doc.id}`} 
+                  <Link
+                    href={`/doctors/${doc.id}`}
                     className="block h-60 bg-gradient-to-b from-slate-100 to-slate-200/60 relative overflow-hidden border-b border-slate-100 group-hover:opacity-95 transition-all"
                   >
                     {doctorImgSrc ? (
@@ -435,7 +437,7 @@ export default function DoctorsPage() {
                       </span>
                       <Link href={`/doctors/${doc.id}`}>
                         <h3 className="font-semibold text-base md:text-lg text-slate-900 group-hover:text-[#1a2b6d] transition-colors leading-snug">
-                          {doc.user?.gender === 'FEMALE' ? 'พญ.' : 'นพ.'} {doc.user?.firstName} {doc.user?.lastName}
+                          {doc.user?.firstName} {doc.user?.lastName}
                         </h3>
                       </Link>
                       <p className="text-xs text-slate-600 line-clamp-2 leading-relaxed">
@@ -448,8 +450,15 @@ export default function DoctorsPage() {
                       {doc.schedules && doc.schedules.length > 0 ? (
                         <div className="flex flex-wrap gap-1">
                           {doc.schedules.map((sched) => (
-                            <span key={sched.id} className="text-[10px] bg-slate-50 text-slate-700 border border-slate-200/80 px-2 py-0.5 rounded-md font-medium">
-                              วัน{getDayName(sched.dayOfWeek)} ({sched.startTime}-{sched.endTime})
+                            <span
+                              key={sched.id}
+                              className={`text-[10px] px-2 py-0.5 rounded-md font-medium border ${sched.isAvailable
+                                  ? 'bg-slate-50 text-slate-700 border-slate-200/80'
+                                  : 'bg-red-50 text-red-600 border-red-200 line-through' // 🟢 ถ้าปิดรับตรวจจะขึ้นสีแดงและขีดเส้นทับ
+                                }`}
+                              title={sched.isAvailable ? 'เปิดให้บริการปกติ' : 'แพทย์งดออกตรวจในเวลานี้'}
+                            >
+                              วัน{getDayName(sched.dayOfWeek)} ({sched.startTime}-{sched.endTime}) {!sched.isAvailable && '[งดออกตรวจ]'}
                             </span>
                           ))}
                         </div>
@@ -510,11 +519,10 @@ export default function DoctorsPage() {
               <button
                 key={page}
                 onClick={() => setCurrentPage(page)}
-                className={`w-8.5 h-8.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
-                  currentPage === page
-                    ? 'bg-[#1a2b6d] text-white shadow-md'
-                    : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 shadow-sm'
-                }`}
+                className={`w-8.5 h-8.5 rounded-lg text-xs font-semibold transition cursor-pointer ${currentPage === page
+                  ? 'bg-[#1a2b6d] text-white shadow-md'
+                  : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 shadow-sm'
+                  }`}
               >
                 {page}
               </button>
@@ -531,7 +539,7 @@ export default function DoctorsPage() {
         )}
       </section>
 
-      {/* 🟢 NEWS SECTION - เชื่อมโยงข้อมูลจริงจาก API หลังบ้าน */}
+      {/* NEWS SECTION */}
       <section className="max-w-7xl mx-auto px-4 md:px-8 pt-4 space-y-6">
         <div className="flex justify-between items-baseline border-b border-slate-200/80 pb-3">
           <div>
@@ -550,8 +558,8 @@ export default function DoctorsPage() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {healthArticles.slice(newsSlide * 2, newsSlide * 2 + 2).map((article) => (
-              <Link 
-                key={article.id} 
+              <Link
+                key={article.id}
                 href={`/news/${article.id}`}
                 className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-sm hover:shadow-md transition flex space-x-4 items-center group"
               >
@@ -583,13 +591,13 @@ export default function DoctorsPage() {
 
         {healthArticles.length > 2 && (
           <div className="flex justify-center space-x-2 pt-1">
-            <button 
-              onClick={() => setNewsSlide(0)} 
+            <button
+              onClick={() => setNewsSlide(0)}
               aria-label="Slide 1"
               className={`w-2.5 h-2.5 rounded-full transition cursor-pointer ${newsSlide === 0 ? 'bg-[#1a2b6d] w-5' : 'bg-slate-300'}`}
             ></button>
-            <button 
-              onClick={() => setNewsSlide(1)} 
+            <button
+              onClick={() => setNewsSlide(1)}
               aria-label="Slide 2"
               className={`w-2.5 h-2.5 rounded-full transition cursor-pointer ${newsSlide === 1 ? 'bg-[#1a2b6d] w-5' : 'bg-slate-300'}`}
             ></button>

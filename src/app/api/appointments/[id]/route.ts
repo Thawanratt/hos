@@ -62,7 +62,7 @@ export async function GET(
   }
 }
 
-// 2. PATCH: อัปเดตข้อมูล/สถานะการนัดหมาย (เช่น ยกเลิกคิว)
+// 2. PATCH: อัปเดตข้อมูล/สถานะการนัดหมาย (รองรับการ Assign แพทย์, เปลี่ยนสถานะ, แก้ไขอาการ)
 export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -79,13 +79,54 @@ export async function PATCH(
     }
 
     const body = await request.json();
-    const { status, symptoms } = body;
+    const { status, symptoms, doctorId } = body; 
+
+    // ดึงข้อมูลนัดหมายเดิมมาตรวจสอบก่อนอัปเดต
+    const existingAppointment = await prisma.appointment.findUnique({
+      where: { id: appointmentId },
+    });
+
+    if (!existingAppointment) {
+      return NextResponse.json(
+        { success: false, message: 'ไม่พบข้อมูลการนัดหมาย' },
+        { status: 404 }
+      );
+    }
+
+    // 🟢 ตรวจสอบสถานะความพร้อม (isAvailable) หากมีการยืนยันนัดหมาย (CONFIRMED) หรือเปลี่ยนแพทย์
+    const targetDoctorId = doctorId !== undefined ? (doctorId ? Number(doctorId) : null) : existingAppointment.doctorId;
+    
+    if (status === 'CONFIRMED' && targetDoctorId) {
+      const appointmentDateObj = new Date(existingAppointment.appointmentDate);
+      const dayOfWeek = appointmentDateObj.getDay();
+
+      const doctorSchedule = await prisma.doctorSchedule.findFirst({
+        where: {
+          doctorId: targetDoctorId,
+          dayOfWeek: dayOfWeek,
+        },
+      });
+
+      // ถ้าแพทย์กดปิดสถานะการออกตรวจ (isAvailable: false) ห้ามยืนยันนัดหมาย
+      if (doctorSchedule && !doctorSchedule.isAvailable) {
+        return NextResponse.json(
+          { success: false, message: 'ไม่สามารถยืนยันนัดหมายได้ เนื่องจากแพทย์งดออกตรวจในวันดังกล่าว' },
+          { status: 400 }
+        );
+      }
+    }
 
     const updatedAppointment = await prisma.appointment.update({
       where: { id: appointmentId },
       data: {
-        ...(status && { status }), // เช่น CANCELLED
+        ...(status && { status }), 
         ...(symptoms && { symptoms }),
+        ...(doctorId !== undefined && { doctorId: targetDoctorId }), 
+      },
+      include: {
+        patient: true,
+        doctor: { include: { user: true } },
+        department: true,
       },
     });
 

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
-// 1. POST: บันทึกการจองคิวใหม่ (พร้อมระบบเช็กคิวชนกัน)
+// 1. POST: บันทึกการจองคิวใหม่ (พร้อมระบบเช็กคิวชนกันและเช็กสถานะงดออกตรวจของแพทย์)
 export async function POST(request: Request) {
   try {
     const body = await request.json();
@@ -26,8 +26,33 @@ export async function POST(request: Request) {
       );
     }
 
-    // 🔒 1. เช็กว่าหมอติดคิวในวันและเวลานี้แล้วหรือยัง (เช็กเฉพาะกรณีที่มีการเลือกแพทย์)
+    // 🔒 1. เช็กว่าแพทย์งดออกตรวจในช่วงเวลานี้หรือไม่ (เช็กเฉพาะกรณีที่มีการเลือกแพทย์)
     if (validDoctorId) {
+      const targetDayOfWeek = formattedDate.getDay(); // 0 = วันอาทิตย์, 1 = วันจันทร์, ...
+
+      // ค้นหาตารางออกตรวจของแพทย์ในช่วงเวลานั้น
+      const doctorSchedule = await prisma.doctorSchedule.findFirst({
+        where: {
+          doctorId: validDoctorId,
+          dayOfWeek: targetDayOfWeek,
+          startTime: {
+            lte: timeSlot.substring(0, 5), // เทียบเวลาเริ่มต้น เช่น "09:00"
+          },
+          endTime: {
+            gte: timeSlot.substring(8, 13), // เทียบเวลาสิ้นสุด เช่น "10:00"
+          },
+        },
+      });
+
+      // ถ้ามีการตั้งตารางไว้แต่แพทย์กดงดออกตรวจ (isAvailable: false)
+      if (doctorSchedule && !doctorSchedule.isAvailable) {
+        return NextResponse.json(
+          { success: false, message: 'แพทย์ท่านนี้งดออกตรวจในช่วงเวลานี้ ไม่สามารถจองคิวได้' },
+          { status: 400 }
+        );
+      }
+
+      // เช็กว่าแพทย์ติดนัดหมายอื่นในช่วงเวลานี้แล้วหรือยัง
       const existingDoctorAppointment = await prisma.appointment.findFirst({
         where: {
           doctorId: validDoctorId,
@@ -41,7 +66,7 @@ export async function POST(request: Request) {
 
       if (existingDoctorAppointment) {
         return NextResponse.json(
-          { success: false, message: 'ช่วงเวลานี้แพทย์ติดนัดหมายแล้ว กรุณาเลือกช่วงเวลาอื่น' },
+          { success: false, message: 'ช่วงเวลานี้แพทย์มีนัดหมายอื่นแล้ว กรุณาเลือกช่วงเวลาอื่น' },
           { status: 400 }
         );
       }

@@ -4,10 +4,10 @@ import { prisma } from '@/lib/prisma';
 // ใช้ db อ้างอิงเพื่อป้องกันปัญหา TypeScript ขีดแดง
 const db = prisma as any;
 
-// 1. GET: ดึงรายการนัดหมาย, ข่าวสาร และแพ็กเกจทั้งหมด สำหรับหน้า Admin Dashboard
+// 1. GET: ดึงรายการนัดหมาย, ข่าวสาร, แพ็กเกจ และผู้ใช้งานทั้งหมด สำหรับหน้า Admin
 export async function GET() {
   try {
-    const [appointments, newsList, packagesList] = await Promise.all([
+    const [appointments, newsList, packagesList, usersList] = await Promise.all([
       // ดึงรายการนัดหมาย
       prisma.appointment.findMany({
         include: {
@@ -25,6 +25,19 @@ export async function GET() {
       db.package.findMany({
         orderBy: { createdAt: 'desc' },
       }),
+      // ดึงรายชื่อผู้ใช้งานในระบบ
+      prisma.user.findMany({
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          email: true,
+          phone: true,
+          role: true,
+          createdAt: true,
+        },
+        orderBy: { createdAt: 'desc' },
+      }),
     ]);
 
     return NextResponse.json({
@@ -33,6 +46,7 @@ export async function GET() {
         appointments,
         news: newsList,
         packages: packagesList, 
+        users: usersList, // เพิ่มข้อมูลผู้ใช้งานกลับไปให้หน้าบ้าน
       },
     });
   } catch (error) {
@@ -231,20 +245,31 @@ async function handleDeleteAppointment(appointmentId: string) {
   return NextResponse.json({ success: true, message: 'ลบรายการนัดหมายเรียบร้อยแล้ว' });
 }
 
-// 4. DELETE: ลบข่าวสาร, ลบแพ็กเกจ หรือ ลบรายการนัดหมาย
+async function handleDeleteUser(userId: string) {
+  const id = Number(userId);
+  if (isNaN(id)) {
+    return NextResponse.json({ success: false, message: 'userId ไม่ถูกต้อง' }, { status: 400 });
+  }
+  await prisma.user.delete({ where: { id } });
+  return NextResponse.json({ success: true, message: 'ลบผู้ใช้งานเรียบร้อยแล้ว' });
+}
+
+// 4. DELETE: ลบข่าวสาร, แพ็กเกจ, นัดหมาย หรือ ผู้ใช้งาน
 export async function DELETE(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const newsId = searchParams.get('newsId');
     const packageId = searchParams.get('packageId');
     const appointmentId = searchParams.get('appointmentId');
+    const userId = searchParams.get('userId');
 
     if (packageId) return await handleDeletePackage(packageId);
     if (newsId) return await handleDeleteNews(newsId);
     if (appointmentId) return await handleDeleteAppointment(appointmentId);
+    if (userId) return await handleDeleteUser(userId);
 
     return NextResponse.json(
-      { success: false, message: 'กรุณาระบุ newsId, packageId หรือ appointmentId ที่ต้องการลบ' },
+      { success: false, message: 'กรุณาระบุ newsId, packageId, appointmentId หรือ userId ที่ต้องการลบ' },
       { status: 400 }
     );
   } catch (error) {
