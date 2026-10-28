@@ -2,7 +2,17 @@ import { NextRequest, NextResponse } from 'next/server';
 import { writeFile, mkdir } from 'fs/promises';
 import path from 'path';
 
+
+export const config = {
+  api: {
+    bodyParser: {
+      sizeLimit: '20mb',
+    },
+  },
+};
+
 export async function POST(request: NextRequest) {
+
   try {
     const formData = await request.formData();
     const file = formData.get('file') as File | null;
