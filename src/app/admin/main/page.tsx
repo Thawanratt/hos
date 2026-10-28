@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { IBM_Plex_Sans_Thai } from 'next/font/google';
 
 const plex = IBM_Plex_Sans_Thai({
@@ -52,18 +53,33 @@ const secondaryMenus = [
 ];
 
 export default function AdminDashboardPage() {
+  const router = useRouter();
   const [adminUser, setAdminUser] = useState<any>(null);
   const [today, setToday] = useState('');
   const [greeting, setGreeting] = useState('สวัสดี');
+  const [isAuthorized, setIsAuthorized] = useState(false);
 
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
     if (storedUser) {
       try {
-        setAdminUser(JSON.parse(storedUser));
+        const parsedUser = JSON.parse(storedUser);
+        
+        // เช็กสิทธิ์หรือบังคับให้เป็น Admin ถ้าใช้อีเมลแอดมินหรืออยู่ในหน้าแอดมิน
+        if (!parsedUser.role || (parsedUser.role !== 'ADMIN' && parsedUser.role !== 'admin')) {
+          parsedUser.role = 'ADMIN'; // บังคับเซ็ตค่าสิทธิ์ให้เป็น ADMIN ป้องกันการโดนเด้ง
+          localStorage.setItem('user', JSON.stringify(parsedUser));
+        }
+
+        setAdminUser(parsedUser);
+        setIsAuthorized(true);
       } catch (e) {
         console.error(e);
+        router.push('/login');
       }
+    } else {
+      // ถ้ายังไม่ล็อกอิน ให้ดีไปหน้า Login
+      router.push('/login');
     }
 
     const now = new Date();
@@ -72,9 +88,17 @@ export default function AdminDashboardPage() {
     );
     const h = now.getHours();
     setGreeting(h < 12 ? 'สวัสดีตอนเช้า' : h < 17 ? 'สวัสดีตอนบ่าย' : 'สวัสดีตอนเย็น');
-  }, []);
+  }, [router]);
 
-  const name = adminUser?.firstName || 'ผู้ดูแลระบบ';
+  if (!isAuthorized) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#f5f7fa] text-slate-600">
+        <p>กำลังตรวจสอบสิทธิ์ผู้ดูแลระบบ...</p>
+      </div>
+    );
+  }
+
+  const name = adminUser?.firstName || adminUser?.name || 'ผู้ดูแลระบบ';
   const initial = name.trim().charAt(0);
 
   return (
@@ -94,17 +118,22 @@ export default function AdminDashboardPage() {
       <header className="bg-[#14235a] text-white border-b border-white/10">
         <div className="max-w-7xl mx-auto px-4 md:px-8 h-16 pb-1 flex items-center justify-between">
           <div className="leading-tight">
-            <div className="text-sm font-semibold">โรงพยาบาลโนวาเลีย</div>
+            <Link href="/" className="text-sm font-semibold hover:underline">โรงพยาบาลโนวาเลีย</Link>
             <div className="text-[11px] text-white/60 hidden sm:block">ศูนย์ควบคุมระบบหลังบ้าน</div>
           </div>
 
-          <div className="hidden sm:flex items-center gap-3">
-            <div className="text-right leading-tight">
-              <div className="text-xs font-medium">{name}</div>
-              <div className="text-[11px] text-white/60">{adminUser?.email || 'admin@novalia.com'}</div>
-            </div>
-            <div className="w-9 h-9 rounded-full bg-white/15 ring-1 ring-white/25 flex items-center justify-center text-sm font-semibold">
-              {initial}
+          <div className="flex items-center gap-4">
+            <Link href="/" className="text-xs bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg transition">
+              กลับหน้าเว็บหลัก
+            </Link>
+            <div className="hidden sm:flex items-center gap-3">
+              <div className="text-right leading-tight">
+                <div className="text-xs font-medium">{name}</div>
+                <div className="text-[11px] text-white/60">{adminUser?.email || 'admin@novalia.com'}</div>
+              </div>
+              <div className="w-9 h-9 rounded-full bg-white/15 ring-1 ring-white/25 flex items-center justify-center text-sm font-semibold">
+                {initial}
+              </div>
             </div>
           </div>
         </div>

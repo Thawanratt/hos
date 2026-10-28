@@ -46,7 +46,7 @@ export async function GET() {
         appointments,
         news: newsList,
         packages: packagesList, 
-        users: usersList, // เพิ่มข้อมูลผู้ใช้งานกลับไปให้หน้าบ้าน
+        users: usersList,
       },
     });
   } catch (error) {
