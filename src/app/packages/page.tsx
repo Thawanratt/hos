@@ -46,8 +46,6 @@ export default function PackagesPage() {
     setTimeout(() => setToast({ show: false, message: '', type: 'info' }), 3500);
   };
 
-  const getCartStorageKey = (user: any) => (user?.id ? `novaria_cart_${user.id}` : 'novaria_cart');
-
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const storedUser = localStorage.getItem('user');
@@ -85,11 +83,12 @@ export default function PackagesPage() {
       return;
     }
 
-    const cartKey = getCartStorageKey(currentUser);
+    // 💡 ใช้คีย์กลาง 'novaria_cart' ร่วมกัน เพื่อป้องกันการบันทึกข้อมูลซ้ำซ้อนหลายที่
+    const cartKey = 'novaria_cart';
     let currentCart: CartItem[] = [];
 
     if (typeof window !== 'undefined') {
-      const stored = localStorage.getItem(cartKey) || localStorage.getItem('novaria_cart');
+      const stored = localStorage.getItem(cartKey);
       if (stored) {
         try {
           currentCart = JSON.parse(stored);
@@ -111,8 +110,8 @@ export default function PackagesPage() {
     }
 
     if (typeof window !== 'undefined') {
+      // 💡 บันทึกลง 'novaria_cart' เพียงที่เดียวเพื่อให้หน้าร้านและหน้า Checkout ลบข้อมูลง่ายและเคลียร์เกลี้ยง
       localStorage.setItem(cartKey, JSON.stringify(updatedCart));
-      localStorage.setItem('novaria_cart', JSON.stringify(updatedCart));
       window.dispatchEvent(new Event('cartUpdated'));
     }
 
@@ -207,7 +206,7 @@ export default function PackagesPage() {
                       <Link href={`/packages/${item.id}`} className="px-3 py-1.5 bg-slate-100 hover:bg-[#1a2b6d] hover:text-white text-slate-700 text-xs font-bold rounded-xl transition">
                         ดูรายละเอียด
                       </Link>
-                      <button onClick={() => handleAddToCart(item)} className="px-4 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-xl transition">
+                      <button onClick={() => handleAddToCart(item)} className="px-4 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-xl transition cursor-pointer">
                         เพิ่มลงตะกร้า
                       </button>
                     </div>

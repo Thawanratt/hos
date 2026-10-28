@@ -55,26 +55,21 @@ export default function PackageDetailPage({ params }: { readonly params: Promise
     }, 3500);
   };
 
-  const getCartStorageKey = (user: any) => {
-    return user?.id ? `novaria_cart_${user.id}` : 'novaria_cart';
-  };
-
-  // โหลดข้อมูลผู้ใช้และตะกร้าสินค้าจาก localStorage
+  // โหลดข้อมูลผู้ใช้และตะกร้าสินค้าจาก localStorage (ใช้คีย์กลาง 'novaria_cart')
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const storedUser = localStorage.getItem('user');
-      let activeUser = null;
       if (storedUser) {
         try {
-          activeUser = JSON.parse(storedUser);
+          const activeUser = JSON.parse(storedUser);
           setCurrentUser(activeUser);
         } catch (e) {
           console.error('Failed to parse user:', e);
         }
       }
 
-      const cartKey = getCartStorageKey(activeUser);
-      const storedCart = localStorage.getItem(cartKey) || localStorage.getItem('novaria_cart');
+      const cartKey = 'novaria_cart';
+      const storedCart = localStorage.getItem(cartKey);
       if (storedCart) {
         try {
           setCart(JSON.parse(storedCart));
@@ -123,9 +118,8 @@ export default function PackageDetailPage({ params }: { readonly params: Promise
   const updateCart = (newCart: CartItem[]) => {
     setCart(newCart);
     if (typeof window !== 'undefined') {
-      const cartKey = getCartStorageKey(currentUser);
+      const cartKey = 'novaria_cart';
       localStorage.setItem(cartKey, JSON.stringify(newCart));
-      localStorage.setItem('novaria_cart', JSON.stringify(newCart));
       window.dispatchEvent(new Event('cartUpdated'));
     }
   };
@@ -139,11 +133,11 @@ export default function PackageDetailPage({ params }: { readonly params: Promise
       return;
     }
 
-    const cartKey = getCartStorageKey(currentUser);
+    const cartKey = 'novaria_cart';
     let currentCart: CartItem[] = [];
 
     if (typeof window !== 'undefined') {
-      const stored = localStorage.getItem(cartKey) || localStorage.getItem('novaria_cart');
+      const stored = localStorage.getItem(cartKey);
       if (stored) {
         try {
           currentCart = JSON.parse(stored);

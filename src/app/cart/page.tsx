@@ -28,14 +28,15 @@ export default function CartPage() {
   };
 
   useEffect(() => {
-    // 💡 เคลียร์ข้อมูลชำระเงินและตะกร้าเก่าทิ้งทันทีหากมีการทำรายการเสร็จสิ้นไปแล้ว เพื่อป้องกันของเก่าวนกลับมา
-    const isPaidSuccess = localStorage.getItem('novaria_order_completed');
-    if (isPaidSuccess) {
+    // 💡 เช็กว่ามีการทำรายการชำระเงินเสร็จสิ้นจากหน้า checkout หรือไม่ ถ้ามีให้ล้างตะกร้าทิ้งทันที
+    const isCompleted = localStorage.getItem('novaria_order_completed');
+    if (isCompleted === 'true') {
       localStorage.removeItem('novaria_cart');
       localStorage.removeItem('novaria_checkout_data');
       localStorage.removeItem('novaria_order_completed');
       setCartItems([]);
     } else {
+      // โหลดข้อมูลตะกร้าปกติ
       const savedCart = localStorage.getItem('novaria_cart');
       if (savedCart) {
         try {
@@ -46,7 +47,7 @@ export default function CartPage() {
       }
     }
 
-    // ล้างข้อมูล checkout data เก่าที่ค้างคา
+    // ล้างข้อมูล checkout data เก่าที่ค้างคาป้องกันการดึงซ้ำ
     localStorage.removeItem('novaria_checkout_data');
 
     // ดึงข้อมูลผู้ใช้สิทธิ์สมาชิกลงชื่อเข้าใช้
@@ -136,9 +137,10 @@ export default function CartPage() {
     };
 
     localStorage.setItem('novaria_checkout_data', JSON.stringify(checkoutData));
-
-    // 💡 ตั้งค่า Flag บอกว่ากำลังดำเนินการสั่งซื้อ เพื่อให้หน้าร้านเคลียร์ของเก่าทิ้งแน่นอน
-    localStorage.setItem('novaria_order_completed', 'true');
+    
+    // 💡 เคลียร์สินค้าในตะกร้าหลักทันทีเมื่อกดส่งข้อมูลมาหน้าชำระเงิน
+    localStorage.removeItem('novaria_cart');
+    window.dispatchEvent(new Event('cartUpdated'));
 
     // ไปหน้า /checkout
     router.push('/checkout');
