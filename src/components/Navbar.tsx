@@ -220,7 +220,7 @@ function UserMenuDropdown({
             {isAdmin ? (
               <>
                 <Link
-                  href="/admin/main"
+                  href="/admin"
                   onClick={() => setIsOpen(false)}
                   className="flex items-center gap-2.5 p-2.5 rounded-xl bg-amber-50 text-amber-900 hover:bg-amber-100 transition font-bold"
                 >
@@ -598,7 +598,17 @@ export default function Navbar({ selectedBranch: propBranch, onSelectBranch }: N
                   </button>
                 </div>
 
-                {isDoctor ? (
+                {isAdmin ? (
+                  <div className="pt-2 border-t border-amber-200/50">
+                    <Link
+                      href="/admin"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className="block w-full py-2 rounded-xl bg-amber-600 text-center text-white font-bold text-xs shadow-2xs hover:bg-amber-700 transition"
+                    >
+                      หน้าหลักแอดมิน
+                    </Link>
+                  </div>
+                ) : isDoctor ? (
                   <div className="pt-2 border-t border-emerald-200/50">
                     <Link
                       href="/doctors/main"
@@ -608,7 +618,7 @@ export default function Navbar({ selectedBranch: propBranch, onSelectBranch }: N
                       แดชบอร์ดแพทย์ / จัดการคิว
                     </Link>
                   </div>
-                ) : !isAdmin && (
+                ) : (
                   <div className="grid grid-cols-2 gap-2 pt-2 border-t border-blue-200/50 text-xs font-bold">
                     <Link
                       href="/profile"
@@ -631,7 +641,7 @@ export default function Navbar({ selectedBranch: propBranch, onSelectBranch }: N
               <Link
                 href={`/login?redirect=${encodeURIComponent(pathname)}`}
                 onClick={() => setIsMobileMenuOpen(false)}
-                className="w-full text-center py-2.5 bg-slate-100 font-bold rounded-xl text-xs text-slate-700"
+                className="w-full text-center py-2.5 bg-slate-100 font-bold rounded-xl text-xs text-slate-700 block"
               >
                 เข้าสู่ระบบ
               </Link>
