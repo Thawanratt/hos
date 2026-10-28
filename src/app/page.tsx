@@ -57,8 +57,17 @@ export default function HomePage() {
 
   // 1. ระบบแบนเนอร์สไลด์
   const heroBanners = [
-    {
+     {
       id: 1,
+      title: 'ทีมแพทย์ผู้เชี่ยวชาญเฉพาะทางมาตรฐานสากล',
+      subtitle: 'Center of Medical Excellence & Specialist Doctors',
+      desc: 'มั่นใจในทุกการรักษาด้วยทีมแพทย์ผู้ทรงคุณวุฒิ ประสบการณ์สูง และพร้อมดูแลเอาใจใส่คุณเสมือนคนในครับครัว',
+      imageUrl: '/images/friend.jpg',
+      tag: 'แพทย์ผู้เชี่ยวชาญเฉพาะทาง',
+      bgGradient: 'from-[#1A569E] via-[#2563EA] to-[#3B82F6]',
+    },
+    {
+      id: 2,
       title: 'ไม่ใช่แค่ผ่าซ่อม แต่ลดโอกาส "ผ่าซ้ำ"',
       subtitle: 'Revision Services',
       desc: 'ด้วยทีมแพทย์ผู้เชี่ยวชาญเฉพาะทางและเทคโนโลยีหุ่นยนต์ช่วยผ่าตัด ยกระดับความปลอดภัย แม่นยำ และฟื้นตัวได้อย่างมั่นใจ',
@@ -67,7 +76,7 @@ export default function HomePage() {
       bgGradient: 'from-[#1a2b6d] via-[#122054] to-[#0a1233]',
     },
     {
-      id: 2,
+      id: 3,
       title: 'ศูนย์หัวใจและหลอดเลือดครบวงจร',
       subtitle: 'Heart & Vascular Center',
       desc: 'พร้อมดูแลตลอด 24 ชั่วโมง ด้วยทีมแพทย์เฉพาะทางและเทคโนโลยีการรักษาทันสมัยระดับสากล',
@@ -76,7 +85,7 @@ export default function HomePage() {
       bgGradient: 'from-[#003B71] via-[#005596] to-[#0080B8]',
     },
     {
-      id: 3,
+      id: 4,
       title: 'ศูนย์มะเร็งแห่งความเลิศทางการรักษา',
       subtitle: 'Comprehensive Cancer Center',
       desc: 'การวินิจฉัยและวางแผนการรักษาเฉพาะบุคคลด้วยเทคโนโลยีรังสีรักษาและเคมีบำบัดตรงจุด',
@@ -84,6 +93,7 @@ export default function HomePage() {
       tag: 'การรักษาระดับสากล',
       bgGradient: 'from-[#064E3B] via-[#047857] to-[#0D9488]',
     },
+   
   ];
 
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -224,21 +234,21 @@ export default function HomePage() {
                 </button>
 
                 {/* แถบสิทธิพิเศษ โทนน้ำเงินพรีเมียม */}
-<div className="rounded-xl p-3.5 border border-sky-200/50 bg-gradient-to-r from-[#1a2b6d] to-[#253880] text-white flex items-center justify-between shadow-sm">
-  <div className="space-y-0.5">
-    <span className="text-[9px] font-bold uppercase tracking-widest text-sky-200 bg-white/10 px-2 py-0.5 rounded border border-white/10">
-      Exclusive
-    </span>
-    <span className="text-xs font-semibold text-white block mt-1">Novaria Elite & VIP</span>
-  </div>
-  <Link 
-    href="/vip-privileges" 
-    className="text-xs font-bold text-[#1a2b6d] bg-white hover:bg-sky-50 px-3.5 py-2 rounded-lg transition-all shadow-2xs shrink-0 flex items-center gap-1"
-  >
-    <span>สิทธิพิเศษ</span>
-    <Chevron className="w-3.5 h-3.5" />
-  </Link>
-</div>
+                <div className="rounded-xl p-3.5 border border-sky-200/50 bg-gradient-to-r from-[#1a2b6d] to-[#253880] text-white flex items-center justify-between shadow-sm">
+                  <div className="space-y-0.5">
+                    <span className="text-[9px] font-bold uppercase tracking-widest text-sky-200 bg-white/10 px-2 py-0.5 rounded border border-white/10">
+                      Exclusive
+                    </span>
+                    <span className="text-xs font-semibold text-white block mt-1">Novaria Elite & VIP</span>
+                  </div>
+                  <Link
+                    href="/vip-privileges"
+                    className="text-xs font-bold text-[#1a2b6d] bg-white hover:bg-sky-50 px-3.5 py-2 rounded-lg transition-all shadow-2xs shrink-0 flex items-center gap-1"
+                  >
+                    <span>สิทธิพิเศษ</span>
+                    <Chevron className="w-3.5 h-3.5" />
+                  </Link>
+                </div>
 
                 {/* 4 ปุ่มบริการด่วน */}
                 <div className="grid grid-cols-2 gap-2.5">

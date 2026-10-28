@@ -83,7 +83,7 @@ function ExecutiveCard({ person }: { person: Executive }) {
   return (
     <div className="bg-white border border-slate-200/80 rounded-2xl p-6 md:p-8 shadow-2xs hover:shadow-sm transition-shadow flex flex-col md:flex-row items-start gap-6">
       
-      {/* 🖼️ รูปโปรไฟล์วงกลมด้านซ้าย (รองรับทั้งรูปภาพ และ Fallback Icon) */}
+      {/* 🖼️ รูปโปรไฟล์วงกลมด้านซ้าย */}
       <div className="w-28 h-28 md:w-32 md:h-32 rounded-full bg-slate-100 border border-slate-200 shrink-0 flex items-center justify-center text-slate-400 overflow-hidden mx-auto md:mx-0 relative">
         {person.imageSrc && !imgError ? (
           <img
@@ -122,12 +122,10 @@ function ExecutiveCard({ person }: { person: Executive }) {
           </p>
 
           {!isExpanded ? (
-            /* สภาพย่อ (Short View) */
             <p className="text-xs md:text-sm text-slate-600 leading-relaxed">
               {person.shortMessage}
             </p>
           ) : (
-            /* สภาพขยายเต็ม (Expanded View) */
             <div className="space-y-3 text-xs md:text-sm text-slate-600 leading-relaxed pt-1">
               {person.fullMessage.paragraphs.map((p, idx) => (
                 <p key={idx}>{p}</p>
@@ -162,15 +160,39 @@ function ExecutiveCard({ person }: { person: Executive }) {
 
 export default function ExecutivesPage() {
   return (
-    <div className="space-y-6">
-      {/* Title */}
-      <div className="border-b border-slate-200 pb-3">
-        <h2 className="text-2xl font-bold text-[#1a2b6d]">ทีมบริหาร</h2>
+    <div className="space-y-8 pb-10">
+      
+      {/* 🌟 HERO BANNER: รูปทีมรวมกลุ่มใหญ่เห็นหน้าครบทุกคน */}
+      <div className="relative w-full h-[320px] md:h-[450px] rounded-3xl overflow-hidden shadow-lg bg-slate-900 flex items-center justify-center">
+        <img
+          src="/images/friend.jpg"
+          alt="ทีมผู้บริหารและบุคลากรทางการแพทย์โรงพยาบาลโนวาเลีย"
+          className="w-full h-full object-cover object-center opacity-90"
+        />
+        {/* Gradient Overlay ช่วยให้ข้อความด้านล่างอ่านง่ายและดูพรีเมียม */}
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/40 to-transparent flex items-end p-6 md:p-10">
+          <div className="max-w-3xl text-white space-y-2">
+            <span className="inline-block bg-[#1a2b6d]/90 text-blue-200 text-[10px] md:text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider border border-white/20">
+              Leadership Team & Medical Experts
+            </span>
+            <h1 className="text-2xl md:text-4xl font-bold tracking-tight">
+              คณะผู้บริหารและทีมแพทย์ <span className="text-blue-300">โรงพยาบาลโนวาเลีย</span>
+            </h1>
+            <p className="text-xs md:text-sm text-slate-300 font-light leading-relaxed max-w-2xl">
+              มุ่งมั่นบริหารจัดการด้วยวิสัยทัศน์ที่ก้าวไกล พร้อมขับเคลื่อนมาตรฐานการดูแลสุขภาพที่ดีที่สุดเพื่อรอยยิ้มและความปลอดภัยของทุกคน
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Title ส่วนหัวข้อรายชื่อผู้บริหาร */}
+      <div className="border-b border-slate-200 pb-3 pt-2">
+        <h2 className="text-xl md:text-2xl font-bold text-[#1a2b6d]">ทำเนียบผู้บริหาร</h2>
         <div className="h-0.5 w-16 bg-[#1a2b6d] mt-2"></div>
       </div>
 
       {/* List การ์ดผู้บริหารแนวดิ่ง */}
-      <div className="space-y-4 pt-2">
+      <div className="space-y-4">
         {executivesData.map((person) => (
           <ExecutiveCard key={person.id} person={person} />
         ))}
