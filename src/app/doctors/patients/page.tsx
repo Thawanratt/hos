@@ -69,7 +69,7 @@ export default function DoctorPatientsPage() {
   };
 
   useEffect(() => {
-    const storedUser = localStorage.getItem('user');
+    const storedUser = localStorage.getItem('user'); // ดึงข้อมูลผู้ใช้จาก localStorage
     if (storedUser) {
       try {
         const user = JSON.parse(storedUser);
