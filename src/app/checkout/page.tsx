@@ -47,29 +47,29 @@ function getPatientNameFromUser(): string {
   }
 }
 
-function getCartItemsAndTotal(checkout: any) {
+// 💡 ปรับปรุงใหม่: ดึงข้อมูลจาก Checkout Data แค่รอบแรก แล้วเคลียร์ทิ้งทันทีเพื่อไม่ให้ข้อมูลวนกลับมาค้าง
+function loadCartAndUserData() {
+  const checkout = parseSavedCheckout();
+  
   if (checkout) {
     const items = Array.isArray(checkout.items) ? checkout.items : [];
     const calculatedTotal = checkout.totalPrice ?? 0;
-    return { items, calculatedTotal };
+    const fetchedPaymentMethod = checkout.paymentMethod || 'qr';
+    const fetchedPatientName = checkout.patientName || getPatientNameFromUser();
+
+    // เคลียร์ข้อมูล checkout ทิ้งทันทีหลังดึงมาใช้ เพื่อป้องกันการรีเฟรชแล้วดึงของเก่าซ้ำ
+    localStorage.removeItem('novaria_checkout_data');
+
+    return { items, calculatedTotal, fetchedPaymentMethod, fetchedPatientName };
   }
 
+  // ถ้าไม่มี checkout data ให้ดึงจากตะกร้าปกติ
   const items = parseSavedCart();
   const calculatedTotal = items.reduce(
     (sum: number, item: any) => sum + parsePrice(item.price) * (item.quantity || 1),
     0
   );
-  return { items, calculatedTotal };
-}
-
-// Helper หลัก: ดึงข้อมูลและคำนวณตะกร้าสินค้า
-function loadCartAndUserData() {
-  const checkout = parseSavedCheckout();
-  const { items, calculatedTotal } = getCartItemsAndTotal(checkout);
-  const fetchedPaymentMethod = checkout?.paymentMethod || 'qr';
-  const fetchedPatientName = checkout?.patientName || getPatientNameFromUser();
-
-  return { items, calculatedTotal, fetchedPaymentMethod, fetchedPatientName };
+  return { items, calculatedTotal, fetchedPaymentMethod: 'qr', fetchedPatientName: getPatientNameFromUser() };
 }
 
 // Helper สุ่มรหัสการจองอย่างปลอดภัยด้วย Web Crypto API
@@ -411,7 +411,7 @@ export default function CheckoutPage() {
       return;
     }
 
-    // 💡 ป้องกันการเบิ้ลซ้ำ: ทำการเคลียร์ตะกร้าและข้อมูล Checkout ทันทีเมื่อกดยืนยันชำระเงิน
+    // 💡 เคลียร์ข้อมูลทุกอย่างทิ้งทันทีเมื่อกดชำระเงินสำเร็จ เพื่อป้องกันข้อมูลเก่าค้าง
     localStorage.removeItem('novaria_cart');
     localStorage.removeItem('novaria_checkout_data');
     window.dispatchEvent(new Event('cartUpdated'));

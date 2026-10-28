@@ -28,17 +28,26 @@ export default function CartPage() {
   };
 
   useEffect(() => {
-    // 💡 จุดที่เพิ่ม: เคลียร์ข้อมูลคำสั่งซื้อเก่าทิ้งทันทีเมื่อเข้ามาหน้าตะกร้า เพื่อป้องกันข้อมูลเก่าค้าง
-    localStorage.removeItem('novaria_checkout_data');
-
-    const savedCart = localStorage.getItem('novaria_cart');
-    if (savedCart) {
-      try {
-        setCartItems(JSON.parse(savedCart));
-      } catch (e) {
-        setCartItems([]);
+    // 💡 เคลียร์ข้อมูลชำระเงินและตะกร้าเก่าทิ้งทันทีหากมีการทำรายการเสร็จสิ้นไปแล้ว เพื่อป้องกันของเก่าวนกลับมา
+    const isPaidSuccess = localStorage.getItem('novaria_order_completed');
+    if (isPaidSuccess) {
+      localStorage.removeItem('novaria_cart');
+      localStorage.removeItem('novaria_checkout_data');
+      localStorage.removeItem('novaria_order_completed');
+      setCartItems([]);
+    } else {
+      const savedCart = localStorage.getItem('novaria_cart');
+      if (savedCart) {
+        try {
+          setCartItems(JSON.parse(savedCart));
+        } catch (e) {
+          setCartItems([]);
+        }
       }
     }
+
+    // ล้างข้อมูล checkout data เก่าที่ค้างคา
+    localStorage.removeItem('novaria_checkout_data');
 
     // ดึงข้อมูลผู้ใช้สิทธิ์สมาชิกลงชื่อเข้าใช้
     const user = localStorage.getItem('user');
@@ -46,7 +55,6 @@ export default function CartPage() {
       try {
         const parsedUser = JSON.parse(user);
         setIsLoggedIn(true);
-        // ดึงชื่อ นามสกุล หรือชื่อผู้ใช้อัตโนมัติ
         const fullName = parsedUser.firstName && parsedUser.lastName 
           ? `${parsedUser.firstName} ${parsedUser.lastName}` 
           : parsedUser.firstName || parsedUser.name || '';
@@ -97,8 +105,7 @@ export default function CartPage() {
     showToast('ลบรายการออกจากตะกร้าแล้ว', 'info');
   };
 
-
-   const handleCheckout = () => {
+  const handleCheckout = () => {
     // 1. เช็กว่าเข้าสู่ระบบหรือยัง
     if (!isLoggedIn) {
       showToast('กรุณาเข้าสู่ระบบหรือสมัครสมาชิกก่อนทำการสั่งซื้อ', 'error');
@@ -130,9 +137,8 @@ export default function CartPage() {
 
     localStorage.setItem('novaria_checkout_data', JSON.stringify(checkoutData));
 
-    // 💡 จุดที่เพิ่ม: เคลียร์สินค้าในตะกร้าทิ้งทันทีเมื่อกดชำระเงิน เพื่อไม่ให้ของค้างในตะกร้าเวลาeligibleกลับมาดูใหม่
-    localStorage.removeItem('novaria_cart');
-    window.dispatchEvent(new Event('cartUpdated'));
+    // 💡 ตั้งค่า Flag บอกว่ากำลังดำเนินการสั่งซื้อ เพื่อให้หน้าร้านเคลียร์ของเก่าทิ้งแน่นอน
+    localStorage.setItem('novaria_order_completed', 'true');
 
     // ไปหน้า /checkout
     router.push('/checkout');
