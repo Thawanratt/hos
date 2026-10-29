@@ -68,7 +68,6 @@ export default function DoctorDetailPage() {
   const [doctor, setDoctor] = useState<DoctorDetail | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   
-  // 🟢 ใช้ปฏิทินเลือกวันที่เป็นหลัก
   const [selectedDate, setSelectedDate] = useState<string>(todayStr);
   const [selectedSchedule, setSelectedSchedule] = useState<DoctorSchedule | null>(null);
   const [symptoms, setSymptoms] = useState<string>('');
@@ -130,7 +129,7 @@ export default function DoctorDetailPage() {
       return;
     }
     setSelectedDate(chosenDate);
-    setSelectedSchedule(null); // รีเซ็ตเวลาที่เลือกเมื่อเปลี่ยนวัน
+    setSelectedSchedule(null);
   };
 
   const handleTimeSlotClick = (sched: DoctorSchedule) => {
@@ -216,10 +215,8 @@ export default function DoctorDetailPage() {
   const doctorImgSrc = doctor.imageUrl || doctorImageMap[doctor.id] || doctorImageMap[doctor.userId];
   const doctorName = `${doctor.user?.firstName} ${doctor.user?.lastName}`;
 
-  // 🟢 คำนวณหาวันในสัปดาห์ (0-6) จากวันที่ผู้ใช้เลือกในปฏิทิน
   const selectedDayOfWeek = selectedDate ? new Date(selectedDate).getDay() : null;
 
-  // 🟢 กรองตารางออกตรวจของแพทย์ให้ตรงกับวันในสัปดาห์ที่ผู้ใช้เลือกจากปฏิทิน
   const availableSchedulesForDate = doctor.schedules?.filter(
     (sched) => sched.dayOfWeek === selectedDayOfWeek
   ) || [];
@@ -262,7 +259,7 @@ export default function DoctorDetailPage() {
               <div className="flex justify-between border-b border-slate-200/60 pb-1.5">
                 <span className="text-slate-500">ช่วงเวลา:</span>
                 <span className="font-bold text-[#1a2b6d]">
-                  {selectedSchedule ? `${selectedSchedule.startTime} - ${selectedSchedule.endTime} น.` : ''}
+                  {selectedSchedule ? `${selectedSchedule.startTime}-${selectedSchedule.endTime} น.` : ''}
                 </span>
               </div>
               {symptoms && (
@@ -387,14 +384,13 @@ export default function DoctorDetailPage() {
       <section id="appointment" className="max-w-6xl mx-auto px-4 md:px-8 pt-4">
         <div className="bg-white rounded-2xl border border-slate-200 p-6 md:p-8 shadow-sm space-y-6">
           <div className="border-b border-slate-100 pb-4 text-center">
-            <h2 className="text-lg font-bold text-slate-900">เลือกวันที่และรอบเวลาออกตรวจ</h2>
+            <h2 className="text-lg font-bold text-slate-900">ตารางออกตรวจและนัดหมายแพทย์</h2>
             <p className="text-xs text-slate-500 mt-0.5">เลือกวันที่ต้องการจากปฏิทิน ระบบจะแสดงรอบเวลาออกตรวจของแพทย์ในวันนั้นๆ ทันที</p>
           </div>
 
-          {/* 1. เลือกวันที่จากปฏิทิน */}
           <div className="max-w-md mx-auto space-y-2 text-xs">
             <label htmlFor="calendar-date-input" className="text-slate-700 font-semibold block text-center">
-              📅 เลือกวันที่ต้องการเข้ารับบริการ
+              เลือกวันที่ต้องการเข้ารับบริการ
             </label>
             <input
               id="calendar-date-input"
@@ -406,7 +402,6 @@ export default function DoctorDetailPage() {
             />
           </div>
 
-          {/* 2. แสดงรอบเวลาตามวันที่เลือก */}
           <div className="space-y-3 pt-2">
             <span className="text-xs font-semibold text-slate-700 block text-center">
               รอบเวลาออกตรวจประจำ <span className="text-[#1a2b6d] underline">วัน{selectedDayOfWeek !== null ? getDayName(selectedDayOfWeek) : ''} ({selectedDate})</span>:
@@ -443,7 +438,7 @@ export default function DoctorDetailPage() {
                       className={`p-4 border rounded-xl text-center space-y-1 transition-all duration-200 outline-none focus:ring-2 focus:ring-[#1a2b6d] ${cardClass}`}
                     >
                       <span className={`text-sm font-bold block ${timeColorClass}`}>
-                        {sched.startTime} - {sched.endTime} น.
+                        {sched.startTime}-{sched.endTime} น.
                       </span>
 
                       {!isAvailable ? (
@@ -463,13 +458,12 @@ export default function DoctorDetailPage() {
               </div>
             ) : (
               <div className="text-center py-10 bg-amber-50/60 rounded-2xl border border-amber-200/80 space-y-1 text-xs">
-                <p className="font-semibold text-amber-800 text-sm">❌ วันนี้แพทย์ไม่มีตารางออกตรวจ</p>
-                <p className="text-amber-600">กรุณาเลือกเปลี่ยนวันที่อื่นในปฏิทินด้านบน เพื่อดูรอบเวลาที่แพทย์เปิดให้บริการ</p>
+                <p className="font-semibold text-amber-800 text-sm">ไม่มีตารางออกตรวจในวันนี้</p>
+                <p className="text-amber-600">กรุณาเปลี่ยนวันที่อื่นในปฏิทินด้านบนเพื่อดูรอบเวลาที่แพทย์เปิดให้บริการ</p>
               </div>
             )}
           </div>
 
-          {/* ฟอร์มยืนยันการจอง */}
           <form onSubmit={handleBookingSubmit} className="pt-4 border-t border-slate-100 space-y-4">
             <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider">ฟอร์มยืนยันการนัดหมาย</h3>
             
@@ -489,7 +483,7 @@ export default function DoctorDetailPage() {
               <div>
                 <span className="text-slate-500 block">ช่วงเวลาออกตรวจ:</span>
                 <span className="font-bold text-[#1a2b6d] text-sm">
-                  {selectedSchedule ? `${selectedSchedule.startTime} - ${selectedSchedule.endTime} น.` : 'ยังไม่ได้เลือกช่วงเวลา'}
+                  {selectedSchedule ? `${selectedSchedule.startTime}-${selectedSchedule.endTime} น.` : 'ยังไม่ได้เลือกช่วงเวลา'}
                 </span>
               </div>
             </div>
