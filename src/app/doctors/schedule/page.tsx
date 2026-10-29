@@ -17,14 +17,13 @@ interface DoctorScheduleItem {
   endTime: string;
   maxSlots: number;
   isAvailable: boolean;
-  roomNumber?: string; 
+  roomNumber?: string;
 }
 
 const DAYS_MAP = ['วันอาทิตย์', 'วันจันทร์', 'วันอังคาร', 'วันพุธ', 'วันพฤหัสบดี', 'วันศุกร์', 'วันเสาร์'];
 
 export default function DoctorSchedulePage() {
   const router = useRouter();
-  const [doctorUser, setDoctorUser] = useState<any>(null);
   const [schedules, setSchedules] = useState<DoctorScheduleItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
@@ -46,7 +45,6 @@ export default function DoctorSchedulePage() {
       router.push('/');
       return;
     }
-    setDoctorUser(user);
     fetchSchedules(user);
   }, [router]);
 
@@ -56,12 +54,15 @@ export default function DoctorSchedulePage() {
       const res = await fetch(`/api/doctors/schedule?doctorId=${user.id || user.doctorId}`);
       const result = await res.json();
       if (result.success) {
-        // 🟢 สมมุติห้องตรวจให้แต่ละเรคอร์ดถ้ายังไม่มีใน API (เช่น ห้องตรวจ 101, 102 ตามไอดี)
-        const dataWithRooms = (result.data || []).map((item: any, index: number) => ({
+        // 🟢 กำหนดห้องตรวจประจำตัว (เช่น NR-290) ให้เป็นห้องเดียวกันทุกวันตาม ID ของแพทย์
+        const docId = user.id || user.doctorId || 1;
+        const fixedRoom = `NR-${280 + (docId % 20)}`; // จะได้เลขห้องประจำคงที่ เช่น NR-290, NR-291 ตามหมอแต่ละคน
+
+        const dataWithFixedRoom = (result.data || []).map((item: any) => ({
           ...item,
-          roomNumber: item.roomNumber || `ห้องตรวจ ${101 + (item.id % 5)}`, 
+          roomNumber: fixedRoom, 
         }));
-        setSchedules(dataWithRooms);
+        setSchedules(dataWithFixedRoom);
       }
     } catch (error) {
       console.error('Failed to fetch schedules:', error);
@@ -129,9 +130,9 @@ export default function DoctorSchedulePage() {
 
         <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
           <div className="px-5 py-4 border-b border-slate-100">
-            <h2 className="text-base font-semibold text-slate-900">ตารางออกตรวจและความพร้อม</h2>
+            <h2 className="text-base font-semibold text-slate-900">ตารางออกตรวจและห้องตรวจประจำ</h2>
             <p className="text-xs text-slate-500 mt-1">
-              ตรวจสอบวันเวลาปฏิบัติงาน ห้องตรวจประจำ และสลับสถานะเปิด/ปิดรับคิวได้ทันที
+              แสดงห้องตรวจประจำ (เช่น NR-290) และเวลาปฏิบัติงานของท่าน สามารถสลับสถานะเปิด/ปิดรับคิวได้ทันที
             </p>
           </div>
 
@@ -148,7 +149,7 @@ export default function DoctorSchedulePage() {
                   <tr className="bg-slate-50 border-b border-slate-200 text-xs text-slate-500 font-semibold">
                     <th className="py-3 px-5">วันประจำสัปดาห์</th>
                     <th className="py-3 px-5">เวลาปฏิบัติงาน</th>
-                    <th className="py-3 px-5">ห้องตรวจประจำ</th> {/* 🟢 เพิ่มหัวข้อคอลัมน์ห้องตรวจ */}
+                    <th className="py-3 px-5">ห้องตรวจประจำ</th>
                     <th className="py-3 px-5">จำนวนคิวสูงสุด</th>
                     <th className="py-3 px-5">สถานะปัจจุบัน</th>
                     <th className="py-3 px-5 text-center">เปิด / ปิดรับคิว</th>
@@ -166,10 +167,10 @@ export default function DoctorSchedulePage() {
                       <td className="py-4 px-5 text-slate-700 tabular-nums whitespace-nowrap">
                         {item.startTime} – {item.endTime} น.
                       </td>
-                      {/* 🟢 แสดงข้อมูลห้องตรวจ */}
+                      {/* 🟢 แสดงห้องตรวจประจำแบบฟอร์แมตสมจริง เช่น NR-290 */}
                       <td className="py-4 px-5 font-medium text-[#14235a] whitespace-nowrap">
-                        <span className="bg-blue-50 text-[#14235a] px-2.5 py-1 rounded-md text-xs border border-blue-100">
-                          {item.roomNumber || 'ห้องตรวจ 101'}
+                        <span className="bg-blue-50 text-[#14235a] px-3 py-1 rounded-md text-xs font-bold border border-blue-100 shadow-2xs">
+                          {item.roomNumber}
                         </span>
                       </td>
                       <td className="py-4 px-5 text-slate-700 tabular-nums whitespace-nowrap">{item.maxSlots} คิว</td>
@@ -193,7 +194,7 @@ export default function DoctorSchedulePage() {
                           aria-label={`${item.isAvailable ? 'งดออกตรวจ' : 'เปิดให้บริการ'} ${DAYS_MAP[item.dayOfWeek]}`}
                           disabled={togglingId === item.id}
                           onClick={() => handleToggleStatus(item.id, item.isAvailable)}
-                          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-wait focus:outline-none ${
+                          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors cursor-pointer disabled:opacity-50 focus:outline-none ${
                             item.isAvailable ? 'bg-[#14235a]' : 'bg-slate-300'
                           }`}
                         >
