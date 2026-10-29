@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient, Role } from '@prisma/client';
-import bcrypt from 'bcrypt';
-import crypto from 'node:crypto';
+import bcrypt from 'bcrypt'; //เอาไว้ใช้แฮชรหัสผ่านก่อนบันทึกในdatabase
+import crypto from 'node:crypto'; //เอาไว้สุ่มเลข
 
 const globalForPrisma = global as unknown as { prisma: PrismaClient };
 export const prisma = globalForPrisma.prisma || new PrismaClient();
@@ -9,7 +9,56 @@ if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
 
 export async function GET(request: NextRequest) {
   try {
+    const { searchParams } = new URL(request.url);
+    const search = searchParams.get('search') || '';
+    const departmentId = searchParams.get('departmentId');
+    const gender = searchParams.get('gender');
+    const dayOfWeek = searchParams.get('dayOfWeek');
+    const timeSlot = searchParams.get('timeSlot');
+    const isInstantBooking = searchParams.get('isInstantBooking');
+
+    // 🟢 สร้างเงื่อนไข Where สำหรับ Prisma ตามตัวกรองที่ส่งมาจากหน้าบ้าน
+    const whereCondition: any = {};
+
+    // 1. ค้นหาจากชื่อ, นามสกุล หรือสาขาความเชี่ยวชาญ
+    if (search) {
+      whereCondition.OR = [
+        { specialization: { contains: search, mode: 'insensitive' } },
+        { user: { firstName: { contains: search, mode: 'insensitive' } } },
+        { user: { lastName: { contains: search, mode: 'insensitive' } } },
+      ];
+    }
+
+    // 2. กรองตามแผนก
+    if (departmentId && departmentId !== 'ALL') {
+      whereCondition.departmentId = Number(departmentId);
+    }
+
+    // 3. กรองตามเพศแพทย์
+    if (gender && gender !== 'ALL') {
+      whereCondition.user = {
+        ...whereCondition.user,
+        gender: gender,
+      };
+    }
+
+    // 4. กรองตาม Instant Booking
+    if (isInstantBooking === 'true') {
+      whereCondition.isInstantBooking = true;
+    }
+
+    // 5. กรองตามวันออกตรวจ (dayOfWeek) ใน schedules
+    if (dayOfWeek && dayOfWeek !== 'ALL') {
+      whereCondition.schedules = {
+        some: {
+          dayOfWeek: Number(dayOfWeek),
+        },
+      };
+    }
+
+    // ดึงข้อมูลจากฐานข้อมูลตามเงื่อนไข
     const doctors = await prisma.doctor.findMany({
+      where: whereCondition,
       include: {
         user: { select: { firstName: true, lastName: true, gender: true, email: true, phone: true } },
         department: { select: { id: true, name: true } },
@@ -17,8 +66,24 @@ export async function GET(request: NextRequest) {
       },
       orderBy: { id: 'asc' },
     });
-    return NextResponse.json({ success: true, data: doctors });
+
+    // 6. กรองตามช่วงเวลาเพิ่มเติม (Morning, Afternoon, Evening)
+    let filteredDoctors = doctors;
+    if (timeSlot && timeSlot !== 'ALL') {
+      filteredDoctors = doctors.filter((doc) => {
+        return doc.schedules.some((sched) => {
+          const startHour = Number.parseInt(sched.startTime.split(':')[0], 10);
+          if (timeSlot === 'morning') return startHour >= 8 && startHour < 12;
+          if (timeSlot === 'afternoon') return startHour >= 12 && startHour < 16;
+          if (timeSlot === 'evening') return startHour >= 16 && timeSlot === 'evening' ? startHour >= 16 && startHour < 20 : startHour >= 16 && startHour < 20;
+          return true;
+        });
+      });
+    }
+
+    return NextResponse.json({ success: true, data: filteredDoctors });
   } catch (error) {
+    console.error('Failed to fetch doctors:', error);
     return NextResponse.json({ success: false, message: 'Failed to fetch doctors' }, { status: 500 });
   }
 }
@@ -36,7 +101,6 @@ export async function POST(request: NextRequest) {
     let createdUserId: number;
 
     const newDoctor = await prisma.$transaction(async (tx: any) => {
-      // 🟢 ใช้ crypto.randomInt แทน Math.random() เพื่อป้องกัน Security Hotspots
       const randomNum = crypto.randomInt(100000000, 1000000000);
 
       const user = await tx.user.create({
@@ -53,7 +117,6 @@ export async function POST(request: NextRequest) {
 
       createdUserId = user.id;
 
-      // 🟢 บันทึก Doctor พร้อม schedules และค่าเริ่มต้น isAvailable: true
       const doctor = await tx.doctor.create({
         data: {
           user: { connect: { id: createdUserId } },
@@ -69,7 +132,7 @@ export async function POST(request: NextRequest) {
               startTime: sch.startTime,
               endTime: sch.endTime,
               maxSlots: Number(sch.maxSlots || 10),
-              isAvailable: true, // 🟢 กำหนดค่าเริ่มต้นให้เปิดให้บริการ
+              isAvailable: true,
             }))
           } : undefined,
         },
@@ -109,7 +172,6 @@ export async function PATCH(request: NextRequest) {
         data: { firstName, lastName, email, phone },
       });
 
-      // 🟢 เคลียร์ตารางออกตรวจเก่าออก แล้วสร้างใหม่ตามที่แอดมินเลือก
       await tx.doctorSchedule.deleteMany({
         where: { doctorId: Number(doctorId) },
       });
@@ -129,7 +191,7 @@ export async function PATCH(request: NextRequest) {
               startTime: sch.startTime,
               endTime: sch.endTime,
               maxSlots: Number(sch.maxSlots || 10),
-              isAvailable: true, // 🟢 กำหนดค่าเริ่มต้นให้เปิดให้บริการเมื่อแอดมินตั้งค่าใหม่
+              isAvailable: true,
             }))
           } : undefined,
         },
