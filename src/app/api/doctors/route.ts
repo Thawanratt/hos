@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient, Role } from '@prisma/client';
 import bcrypt from 'bcrypt';
+import crypto from 'node:crypto';
 
 const globalForPrisma = global as unknown as { prisma: PrismaClient };
 export const prisma = globalForPrisma.prisma || new PrismaClient();
@@ -35,6 +36,9 @@ export async function POST(request: NextRequest) {
     let createdUserId: number;
 
     const newDoctor = await prisma.$transaction(async (tx: any) => {
+      // 🟢 ใช้ crypto.randomInt แทน Math.random() เพื่อป้องกัน Security Hotspots
+      const randomNum = crypto.randomInt(100000000, 1000000000);
+
       const user = await tx.user.create({
         data: {
           firstName,
@@ -42,7 +46,7 @@ export async function POST(request: NextRequest) {
           email,
           password: hashedPassword,
           phone: phone || '-',
-          idCard: idCard || `DOC-${Math.floor(100000000 + Math.random() * 900000000)}`,
+          idCard: idCard || `DOC-${randomNum}`,
           role: Role.DOCTOR,
         },
       });

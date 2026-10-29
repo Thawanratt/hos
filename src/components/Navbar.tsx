@@ -9,8 +9,8 @@ import Image from 'next/image';
 import SearchModal from './SearchModal';
 
 interface NavbarProps {
-  selectedBranch?: Branch | null;
-  onSelectBranch?: (branch: Branch) => void;
+  readonly selectedBranch?: Branch | null;
+  readonly onSelectBranch?: (branch: Branch) => void;
 }
 
 // 1. แถบแจ้งเหตุฉุกเฉิน 
@@ -42,7 +42,7 @@ function EmergencyStrip() {
 }
 
 // 2. เมนูหลักฝั่ง Desktop & Tablet 
-function DesktopNavigation({ pathname, isAdmin, isDoctor, onPrimaryAction }: { pathname: string; isAdmin: boolean; isDoctor: boolean; onPrimaryAction: () => void }) {
+function DesktopNavigation({ pathname, isAdmin, isDoctor, onPrimaryAction }: { readonly pathname: string; readonly isAdmin: boolean; readonly isDoctor: boolean; readonly onPrimaryAction: () => void }) {
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const navRef = useRef<HTMLDivElement>(null);
 
@@ -171,7 +171,62 @@ function DesktopNavigation({ pathname, isAdmin, isDoctor, onPrimaryAction }: { p
   );
 }
 
-// 3. User Dropdown Menu Component (Desktop)
+function renderUserMenuItems(isAdmin: boolean, isDoctor: boolean, setIsOpen: (open: boolean) => void, onLogout: () => void) {
+  if (isAdmin) {
+    return (
+      <>
+        <Link href="/admin/main" onClick={() => setIsOpen(false)} className="flex items-center gap-2.5 p-2.5 rounded-xl bg-amber-50 text-amber-900 hover:bg-amber-100 transition font-bold">
+          หน้าหลักแอดมิน
+        </Link>
+        <div className="border-t border-slate-100 my-1"></div>
+        <button onClick={onLogout} className="w-full flex items-center gap-2.5 p-2.5 rounded-xl text-red-600 hover:bg-red-50 transition cursor-pointer text-left">
+          ออกจากระบบ
+        </button>
+      </>
+    );
+  }
+
+  if (isDoctor) {
+    return (
+      <>
+        <Link href="/doctors/main" onClick={() => setIsOpen(false)} className="flex items-center gap-2.5 p-2.5 rounded-xl bg-emerald-50 text-emerald-900 hover:bg-emerald-100 transition font-bold">
+          แดชบอร์ดแพทย์ / จัดการคิว
+        </Link>
+        <div className="border-t border-slate-100 my-1"></div>
+        <button onClick={onLogout} className="w-full flex items-center gap-2.5 p-2.5 rounded-xl text-red-600 hover:bg-red-50 transition cursor-pointer text-left">
+          ออกจากระบบ
+        </button>
+      </>
+    );
+  }
+
+  return (
+    <>
+      <Link href="/profile" onClick={() => setIsOpen(false)} className="flex items-center gap-2.5 p-2.5 rounded-xl hover:bg-sky-50 hover:text-[#1a2b6d] transition">
+        ข้อมูลส่วนตัวผู้ป่วย
+      </Link>
+      <Link href="/appointments" onClick={() => setIsOpen(false)} className="flex items-center gap-2.5 p-2.5 rounded-xl hover:bg-sky-50 hover:text-[#1a2b6d] transition">
+        ประวัตินัดหมาย
+      </Link>
+      <div className="border-t border-slate-100 my-1"></div>
+      <button onClick={onLogout} className="w-full flex items-center gap-2.5 p-2.5 rounded-xl text-red-600 hover:bg-red-50 transition cursor-pointer text-left">
+        ออกจากระบบ
+      </button>
+    </>
+  );
+}
+
+interface UserMenuDropdownProps {
+  readonly user: any;
+  readonly userName: string;
+  readonly isAdmin: boolean;
+  readonly isDoctor: boolean;
+  readonly isOpen: boolean;
+  readonly setIsOpen: (open: boolean) => void;
+  readonly onLogout: () => void;
+  readonly dropdownRef: React.RefObject<HTMLDivElement | null>;
+}
+
 function UserMenuDropdown({
   user,
   userName,
@@ -181,11 +236,29 @@ function UserMenuDropdown({
   setIsOpen,
   onLogout,
   dropdownRef
-}: any) {
+}: UserMenuDropdownProps) {
   const badgeText = isAdmin ? 'ADMINISTRATOR' : isDoctor ? 'DOCTOR' : 'PATIENT';
-  const badgeBg = isAdmin ? 'bg-amber-50/80 border-amber-200/80 text-amber-900 hover:bg-amber-100/80' : isDoctor ? 'bg-emerald-50/80 border-emerald-200/80 text-emerald-900 hover:bg-emerald-100/80' : 'bg-blue-50/80 border-blue-200/80 text-[#1a2b6d] hover:bg-blue-100/80';
-  const avatarBg = isAdmin ? 'bg-amber-600' : isDoctor ? 'bg-emerald-600' : 'bg-[#1a2b6d]';
-  const chevronColor = isAdmin ? 'text-amber-700' : isDoctor ? 'text-emerald-700' : 'text-[#1a2b6d]';
+  
+  let badgeBg = 'bg-blue-50/80 border-blue-200/80 text-[#1a2b6d] hover:bg-blue-100/80';
+  if (isAdmin) {
+    badgeBg = 'bg-amber-50/80 border-amber-200/80 text-amber-900 hover:bg-amber-100/80';
+  } else if (isDoctor) {
+    badgeBg = 'bg-emerald-50/80 border-emerald-200/80 text-emerald-900 hover:bg-emerald-100/80';
+  }
+
+  let avatarBg = 'bg-[#1a2b6d]';
+  if (isAdmin) {
+    avatarBg = 'bg-amber-600';
+  } else if (isDoctor) {
+    avatarBg = 'bg-emerald-600';
+  }
+
+  let chevronColor = 'text-[#1a2b6d]';
+  if (isAdmin) {
+    chevronColor = 'text-amber-700';
+  } else if (isDoctor) {
+    chevronColor = 'text-emerald-700';
+  }
 
   return (
     <div className="relative" ref={dropdownRef}>
@@ -217,57 +290,265 @@ function UserMenuDropdown({
           </div>
 
           <div className="space-y-0.5 text-xs font-semibold text-slate-700">
-            {isAdmin ? (
-              <>
-                <Link
-                  href="/admin/main"
-                  onClick={() => setIsOpen(false)}
-                  className="flex items-center gap-2.5 p-2.5 rounded-xl bg-amber-50 text-amber-900 hover:bg-amber-100 transition font-bold"
-                >
-                  หน้าหลักแอดมิน
-                </Link>
-                <div className="border-t border-slate-100 my-1"></div>
-              </>
-            ) : isDoctor ? (
-              <>
-                <Link
-                  href="/doctors/main"
-                  onClick={() => setIsOpen(false)}
-                  className="flex items-center gap-2.5 p-2.5 rounded-xl bg-emerald-50 text-emerald-900 hover:bg-emerald-100 transition font-bold"
-                >
-                  แดชบอร์ดแพทย์ / จัดการคิว
-                </Link>
-                <div className="border-t border-slate-100 my-1"></div>
-              </>
-            ) : (
-              <>
-                <Link
-                  href="/profile"
-                  onClick={() => setIsOpen(false)}
-                  className="flex items-center gap-2.5 p-2.5 rounded-xl hover:bg-sky-50 hover:text-[#1a2b6d] transition"
-                >
-                  ข้อมูลส่วนตัวผู้ป่วย
-                </Link>
-                <Link
-                  href="/appointments"
-                  onClick={() => setIsOpen(false)}
-                  className="flex items-center gap-2.5 p-2.5 rounded-xl hover:bg-sky-50 hover:text-[#1a2b6d] transition"
-                >
-                  ประวัตินัดหมาย
-                </Link>
-                <div className="border-t border-slate-100 my-1"></div>
-              </>
-            )}
-
-            <button
-              onClick={onLogout}
-              className="w-full flex items-center gap-2.5 p-2.5 rounded-xl text-red-600 hover:bg-red-50 transition cursor-pointer text-left"
-            >
-              ออกจากระบบ
-            </button>
+            {renderUserMenuItems(isAdmin, isDoctor, setIsOpen, onLogout)}
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+interface SubmenuProps {
+  readonly isOpen: boolean;
+  readonly setIsMobileMenuOpen: (open: boolean) => void;
+}
+
+function MobileServicesSubmenu({ isOpen, setIsMobileMenuOpen }: SubmenuProps) {
+  if (!isOpen) return null;
+  return (
+    <div className="pl-4 pr-2 py-2 space-y-1 bg-slate-50/60 rounded-lg my-1 text-xs font-semibold text-slate-600">
+      <p className="text-[10px] uppercase font-bold text-slate-400 pt-1 pb-0.5">ศูนย์เฉพาะทาง</p>
+      <Link href="/services/heart" onClick={() => setIsMobileMenuOpen(false)} className="block p-1.5 hover:text-[#1a2b6d]">ศูนย์หัวใจ</Link>
+      <Link href="/services/cancer" onClick={() => setIsMobileMenuOpen(false)} className="block p-1.5 hover:text-[#1a2b6d]">ศูนย์มะเร็ง</Link>
+      <Link href="/services/bone" onClick={() => setIsMobileMenuOpen(false)} className="block p-1.5 hover:text-[#1a2b6d]">ศูนย์กระดูก</Link>
+      <Link href="/services/brain" onClick={() => setIsMobileMenuOpen(false)} className="block p-1.5 hover:text-[#1a2b6d]">ศูนย์สมอง</Link>
+      <Link href="/services/checkup" onClick={() => setIsMobileMenuOpen(false)} className="block p-1.5 hover:text-[#1a2b6d]">ตรวจสุขภาพ</Link>
+      <Link href="/services" onClick={() => setIsMobileMenuOpen(false)} className="block p-1.5 text-sky-600 font-bold">ศูนย์ทั้งหมด ➔</Link>
+      <div className="border-t border-slate-200/60 my-1"></div>
+      <Link href="/doctors" onClick={() => setIsMobileMenuOpen(false)} className="block p-1.5 font-bold text-slate-700">ค้นหาแพทย์</Link>
+      <Link href="/packages" onClick={() => setIsMobileMenuOpen(false)} className="block p-1.5 font-bold text-slate-700">แพ็กเกจและโปรโมชั่น</Link>
+    </div>
+  );
+}
+
+function MobilePatientInfoSubmenu({ isOpen, setIsMobileMenuOpen }: SubmenuProps) {
+  if (!isOpen) return null;
+  return (
+    <div className="pl-4 pr-2 py-2 space-y-1 bg-slate-50/60 rounded-lg my-1 text-xs font-semibold text-slate-600">
+      <Link href="/rooms" onClick={() => setIsMobileMenuOpen(false)} className="block p-1.5 hover:text-[#1a2b6d]">ห้องพักผู้ป่วย (Inpatient Rooms)</Link>
+      <Link href="/map" onClick={() => setIsMobileMenuOpen(false)} className="block p-1.5 hover:text-[#1a2b6d]">แผนที่และการเดินทาง</Link>
+      <Link href="/insurance" onClick={() => setIsMobileMenuOpen(false)} className="block p-1.5 hover:text-[#1a2b6d]">ประกัน และสิทธิการรักษา</Link>
+    </div>
+  );
+}
+
+function MobileHealthInfoSubmenu({ isOpen, setIsMobileMenuOpen }: SubmenuProps) {
+  if (!isOpen) return null;
+  return (
+    <div className="pl-4 pr-2 py-2 space-y-1 bg-slate-50/60 rounded-lg my-1 text-xs font-semibold text-slate-600">
+      <Link href="/health" onClick={() => setIsMobileMenuOpen(false)} className="block p-1.5 hover:text-[#1a2b6d]">บทความสุขภาพ</Link>
+      <Link href="/mental-health" onClick={() => setIsMobileMenuOpen(false)} className="block p-1.5 hover:text-[#1a2b6d]">แบบประเมินสุขภาพใจ</Link>
+    </div>
+  );
+}
+
+function MobileAboutSubmenu({ isOpen, setIsMobileMenuOpen }: SubmenuProps) {
+  if (!isOpen) return null;
+  return (
+    <div className="pl-4 pr-2 py-2 space-y-1 bg-slate-50/60 rounded-lg my-1 text-xs font-semibold text-slate-600">
+      <Link href="/about" onClick={() => setIsMobileMenuOpen(false)} className="block p-1.5 hover:text-[#1a2b6d]">ประวัติโรงพยาบาล</Link>
+      <Link href="/news" onClick={() => setIsMobileMenuOpen(false)} className="block p-1.5 hover:text-[#1a2b6d]">ข่าวสารและกิจกรรม</Link>
+      <Link href="/contact" onClick={() => setIsMobileMenuOpen(false)} className="block p-1.5 hover:text-[#1a2b6d]">ติดต่อสอบถาม</Link>
+    </div>
+  );
+}
+
+interface MobileUserSectionProps {
+  readonly isAdmin: boolean;
+  readonly isDoctor: boolean;
+  readonly user: any;
+  readonly userName: string;
+  readonly handleLogout: () => void;
+  readonly setIsMobileMenuOpen: (open: boolean) => void;
+  readonly pathname: string;
+  readonly handlePrimaryAction: () => void;
+}
+
+function MobileUserSection({ isAdmin, isDoctor, user, userName, handleLogout, setIsMobileMenuOpen, pathname, handlePrimaryAction }: MobileUserSectionProps) {
+  if (!user) {
+    return (
+      <div className="pt-3 border-t border-slate-100 flex flex-col space-y-2">
+        <Link
+          href={`/login?redirect=${encodeURIComponent(pathname)}`}
+          onClick={() => setIsMobileMenuOpen(false)}
+          className="w-full text-center py-2.5 bg-slate-100 font-bold rounded-xl text-xs text-slate-700 block"
+        >
+          เข้าสู่ระบบ
+        </Link>
+        <button
+          onClick={handlePrimaryAction}
+          className="w-full text-center py-2.5 font-bold rounded-xl text-xs text-white bg-[#1a2b6d] cursor-pointer"
+        >
+          ทำนัดหมายออนไลน์
+        </button>
+      </div>
+    );
+  }
+
+  let badgeBg = 'bg-blue-50/80 border-blue-200/80';
+  if (isAdmin) {
+    badgeBg = 'bg-amber-50/80 border-amber-200/80';
+  } else if (isDoctor) {
+    badgeBg = 'bg-emerald-50/80 border-emerald-200/80';
+  }
+
+  let avatarBg = 'bg-[#1a2b6d]';
+  if (isAdmin) {
+    avatarBg = 'bg-amber-600';
+  } else if (isDoctor) {
+    avatarBg = 'bg-emerald-600';
+  }
+
+  const roleName = isAdmin ? 'ADMIN' : isDoctor ? 'DOCTOR' : 'PATIENT';
+
+  return (
+    <div className="pt-3 border-t border-slate-100 flex flex-col space-y-2">
+      <div className={`p-3.5 rounded-2xl border flex flex-col space-y-3 ${badgeBg}`}>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-2.5">
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-xs shadow-2xs ${avatarBg}`}>
+              {userName.charAt(0).toUpperCase()}
+            </div>
+            <div className="flex flex-col">
+              <span className="text-[10px] uppercase font-extrabold text-slate-500">{roleName}</span>
+              <span className="text-xs font-bold text-slate-800">{userName}</span>
+            </div>
+          </div>
+          <button onClick={handleLogout} className="text-xs text-red-600 font-bold hover:underline cursor-pointer">
+            ออกจากระบบ
+          </button>
+        </div>
+
+        {isAdmin ? (
+          <div className="pt-2 border-t border-amber-200/50">
+            <Link href="/admin/main" onClick={() => setIsMobileMenuOpen(false)} className="block w-full py-2 rounded-xl bg-amber-600 text-center text-white font-bold text-xs shadow-2xs hover:bg-amber-700 transition">
+              หน้าหลักแอดมิน
+            </Link>
+          </div>
+        ) : isDoctor ? (
+          <div className="pt-2 border-t border-emerald-200/50">
+            <Link href="/doctors/main" onClick={() => setIsMobileMenuOpen(false)} className="block w-full py-2 rounded-xl bg-emerald-600 text-center text-white font-bold text-xs shadow-2xs">
+              แดชบอร์ดแพทย์ / จัดการคิว
+            </Link>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-2 pt-2 border-t border-blue-200/50 text-xs font-bold">
+            <Link href="/profile" onClick={() => setIsMobileMenuOpen(false)} className="p-2 rounded-xl bg-white text-center text-[#1a2b6d] border border-blue-100 hover:bg-sky-50 shadow-2xs">
+              ข้อมูลส่วนตัว
+            </Link>
+            <Link href="/appointments" onClick={() => setIsMobileMenuOpen(false)} className="p-2 rounded-xl bg-white text-center text-[#1a2b6d] border border-blue-100 hover:bg-sky-50 shadow-2xs">
+              ประวัตินัดหมาย
+            </Link>
+          </div>
+        )}
+      </div>
+
+      {!isAdmin && !isDoctor && (
+        <button onClick={handlePrimaryAction} className="w-full text-center py-2.5 font-bold rounded-xl text-xs text-white bg-[#1a2b6d] cursor-pointer">
+          ทำนัดหมายออนไลน์
+        </button>
+      )}
+    </div>
+  );
+}
+
+function renderMobileDrawerContent(
+  isAdmin: boolean,
+  isDoctor: boolean,
+  user: any,
+  userName: string,
+  pathname: string,
+  openMobileSubmenu: string | null,
+  toggleSubmenu: (name: string) => void,
+  setIsMobileMenuOpen: (open: boolean) => void,
+  setIsBranchModalOpen: (open: boolean) => void,
+  handleLogout: () => void,
+  handlePrimaryAction: () => void,
+  activeBranch: any
+) {
+  return (
+    <div className="lg:hidden bg-white border-b border-slate-200 px-4 pt-3 pb-6 space-y-4 shadow-lg animate-in slide-in-from-top duration-200 max-h-[85vh] overflow-y-auto">
+      <div className="flex justify-between items-center bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+        <button
+          onClick={() => {
+            setIsMobileMenuOpen(false);
+            setIsBranchModalOpen(true);
+          }}
+          className="text-xs font-bold text-sky-700 flex items-center gap-1.5 cursor-pointer"
+        >
+          <span>{activeBranch ? activeBranch.name : 'เลือกสาขาใกล้คุณ'}</span>
+        </button>
+        <span className="text-[11px] font-bold text-sky-600">เปลี่ยน ➔</span>
+      </div>
+
+      <nav className="flex flex-col space-y-1 text-sm font-bold text-slate-700">
+        <Link href="/" onClick={() => setIsMobileMenuOpen(false)} className="p-2 rounded-lg hover:bg-slate-50">
+          หน้าหลัก
+        </Link>
+
+        <div>
+          <button
+            onClick={() => toggleSubmenu('services')}
+            className="w-full flex items-center justify-between p-2 rounded-lg hover:bg-slate-50 text-left cursor-pointer"
+          >
+            <span>บริการ</span>
+            <svg className={`w-4 h-4 transition-transform ${openMobileSubmenu === 'services' ? 'rotate-180 text-[#1a2b6d]' : 'text-slate-400'}`} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+          <MobileServicesSubmenu isOpen={openMobileSubmenu === 'services'} setIsMobileMenuOpen={setIsMobileMenuOpen} />
+        </div>
+
+        <div>
+          <button
+            onClick={() => toggleSubmenu('patient-info')}
+            className="w-full flex items-center justify-between p-2 rounded-lg hover:bg-slate-50 text-left cursor-pointer"
+          >
+            <span>ข้อมูลผู้เข้ารับบริการ</span>
+            <svg className={`w-4 h-4 transition-transform ${openMobileSubmenu === 'patient-info' ? 'rotate-180 text-[#1a2b6d]' : 'text-slate-400'}`} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+          <MobilePatientInfoSubmenu isOpen={openMobileSubmenu === 'patient-info'} setIsMobileMenuOpen={setIsMobileMenuOpen} />
+        </div>
+
+        <div>
+          <button
+            onClick={() => toggleSubmenu('health-info')}
+            className="w-full flex items-center justify-between p-2 rounded-lg hover:bg-slate-50 text-left cursor-pointer"
+          >
+            <span>ข้อมูลสุขภาพ</span>
+            <svg className={`w-4 h-4 transition-transform ${openMobileSubmenu === 'health-info' ? 'rotate-180 text-[#1a2b6d]' : 'text-slate-400'}`} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+          <MobileHealthInfoSubmenu isOpen={openMobileSubmenu === 'health-info'} setIsMobileMenuOpen={setIsMobileMenuOpen} />
+        </div>
+
+        <div>
+          <button
+            onClick={() => toggleSubmenu('about')}
+            className="w-full flex items-center justify-between p-2 rounded-lg hover:bg-slate-50 text-left cursor-pointer"
+          >
+            <span>เกี่ยวกับเรา</span>
+            <svg className={`w-4 h-4 transition-transform ${openMobileSubmenu === 'about' ? 'rotate-180 text-[#1a2b6d]' : 'text-slate-400'}`} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+          <MobileAboutSubmenu isOpen={openMobileSubmenu === 'about'} setIsMobileMenuOpen={setIsMobileMenuOpen} />
+        </div>
+      </nav>
+
+      <MobileUserSection
+        isAdmin={isAdmin}
+        isDoctor={isDoctor}
+        user={user}
+        userName={userName}
+        handleLogout={handleLogout}
+        setIsMobileMenuOpen={setIsMobileMenuOpen}
+        pathname={pathname}
+        handlePrimaryAction={handlePrimaryAction}
+      />
     </div>
   );
 }
@@ -458,7 +739,7 @@ export default function Navbar({ selectedBranch: propBranch, onSelectBranch }: N
 
           <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="lg:hidden p-2 text-slate-700 hover:text-[#1a2b6d] hover:bg-slate-100 rounded-lg transition"
+            className="lg:hidden p-2 text-slate-700 hover:text-[#1a2b6d] hover:bg-slate-100 rounded-lg transition cursor-pointer"
             aria-label="Toggle menu"
           >
             {isMobileMenuOpen ? (
@@ -475,188 +756,19 @@ export default function Navbar({ selectedBranch: propBranch, onSelectBranch }: N
       </div>
 
       {/* MOBILE MENU DRAWER */}
-      {isMobileMenuOpen && (
-        <div className="lg:hidden bg-white border-b border-slate-200 px-4 pt-3 pb-6 space-y-4 shadow-lg animate-in slide-in-from-top duration-200 max-h-[85vh] overflow-y-auto">
-          <div className="flex justify-between items-center bg-slate-50 p-2.5 rounded-xl border border-slate-100">
-            <button
-              onClick={() => {
-                setIsMobileMenuOpen(false);
-                setIsBranchModalOpen(true);
-              }}
-              className="text-xs font-bold text-sky-700 flex items-center gap-1.5"
-            >
-              <span>{activeBranch ? activeBranch.name : 'เลือกสาขาใกล้คุณ'}</span>
-            </button>
-            <span className="text-[11px] font-bold text-sky-600">เปลี่ยน ➔</span>
-          </div>
-
-          <nav className="flex flex-col space-y-1 text-sm font-bold text-slate-700">
-            <Link href="/" onClick={() => setIsMobileMenuOpen(false)} className="p-2 rounded-lg hover:bg-slate-50">
-              หน้าหลัก
-            </Link>
-
-            <div>
-              <button
-                onClick={() => toggleSubmenu('services')}
-                className="w-full flex items-center justify-between p-2 rounded-lg hover:bg-slate-50 text-left"
-              >
-                <span>บริการ</span>
-                <svg className={`w-4 h-4 transition-transform ${openMobileSubmenu === 'services' ? 'rotate-180 text-[#1a2b6d]' : 'text-slate-400'}`} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                </svg>
-              </button>
-              {openMobileSubmenu === 'services' && (
-                <div className="pl-4 pr-2 py-2 space-y-1 bg-slate-50/60 rounded-lg my-1 text-xs font-semibold text-slate-600">
-                  <p className="text-[10px] uppercase font-bold text-slate-400 pt-1 pb-0.5">ศูนย์เฉพาะทาง</p>
-                  <Link href="/services/heart" onClick={() => setIsMobileMenuOpen(false)} className="block p-1.5 hover:text-[#1a2b6d]">ศูนย์หัวใจ</Link>
-                  <Link href="/services/cancer" onClick={() => setIsMobileMenuOpen(false)} className="block p-1.5 hover:text-[#1a2b6d]">ศูนย์มะเร็ง</Link>
-                  <Link href="/services/bone" onClick={() => setIsMobileMenuOpen(false)} className="block p-1.5 hover:text-[#1a2b6d]">ศูนย์กระดูก</Link>
-                  <Link href="/services/brain" onClick={() => setIsMobileMenuOpen(false)} className="block p-1.5 hover:text-[#1a2b6d]">ศูนย์สมอง</Link>
-                  <Link href="/services/checkup" onClick={() => setIsMobileMenuOpen(false)} className="block p-1.5 hover:text-[#1a2b6d]">ตรวจสุขภาพ</Link>
-                  <Link href="/services" onClick={() => setIsMobileMenuOpen(false)} className="block p-1.5 text-sky-600 font-bold">ศูนย์ทั้งหมด ➔</Link>
-                  <div className="border-t border-slate-200/60 my-1"></div>
-                  <Link href="/doctors" onClick={() => setIsMobileMenuOpen(false)} className="block p-1.5 font-bold text-slate-700">ค้นหาแพทย์</Link>
-                  <Link href="/packages" onClick={() => setIsMobileMenuOpen(false)} className="block p-1.5 font-bold text-slate-700">แพ็กเกจและโปรโมชั่น</Link>
-                </div>
-              )}
-            </div>
-
-            <div>
-              <button
-                onClick={() => toggleSubmenu('patient-info')}
-                className="w-full flex items-center justify-between p-2 rounded-lg hover:bg-slate-50 text-left"
-              >
-                <span>ข้อมูลผู้เข้ารับบริการ</span>
-                <svg className={`w-4 h-4 transition-transform ${openMobileSubmenu === 'patient-info' ? 'rotate-180 text-[#1a2b6d]' : 'text-slate-400'}`} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                </svg>
-              </button>
-              {openMobileSubmenu === 'patient-info' && (
-                <div className="pl-4 pr-2 py-2 space-y-1 bg-slate-50/60 rounded-lg my-1 text-xs font-semibold text-slate-600">
-                  <Link href="/rooms" onClick={() => setIsMobileMenuOpen(false)} className="block p-1.5 hover:text-[#1a2b6d]">ห้องพักผู้ป่วย (Inpatient Rooms)</Link>
-                  <Link href="/map" onClick={() => setIsMobileMenuOpen(false)} className="block p-1.5 hover:text-[#1a2b6d]">แผนที่และการเดินทาง</Link>
-                  <Link href="/insurance" onClick={() => setIsMobileMenuOpen(false)} className="block p-1.5 hover:text-[#1a2b6d]">ประกัน และสิทธิการรักษา</Link>
-                </div>
-              )}
-            </div>
-
-            <div>
-              <button
-                onClick={() => toggleSubmenu('health-info')}
-                className="w-full flex items-center justify-between p-2 rounded-lg hover:bg-slate-50 text-left"
-              >
-                <span>ข้อมูลสุขภาพ</span>
-                <svg className={`w-4 h-4 transition-transform ${openMobileSubmenu === 'health-info' ? 'rotate-180 text-[#1a2b6d]' : 'text-slate-400'}`} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                </svg>
-              </button>
-              {openMobileSubmenu === 'health-info' && (
-                <div className="pl-4 pr-2 py-2 space-y-1 bg-slate-50/60 rounded-lg my-1 text-xs font-semibold text-slate-600">
-                  <Link href="/health" onClick={() => setIsMobileMenuOpen(false)} className="block p-1.5 hover:text-[#1a2b6d]">บทความสุขภาพ</Link>
-                  <Link href="/mental-health" onClick={() => setIsMobileMenuOpen(false)} className="block p-1.5 hover:text-[#1a2b6d]">แบบประเมินสุขภาพใจ</Link>
-                </div>
-              )}
-            </div>
-
-            <div>
-              <button
-                onClick={() => toggleSubmenu('about')}
-                className="w-full flex items-center justify-between p-2 rounded-lg hover:bg-slate-50 text-left"
-              >
-                <span>เกี่ยวกับเรา</span>
-                <svg className={`w-4 h-4 transition-transform ${openMobileSubmenu === 'about' ? 'rotate-180 text-[#1a2b6d]' : 'text-slate-400'}`} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                </svg>
-              </button>
-              {openMobileSubmenu === 'about' && (
-                <div className="pl-4 pr-2 py-2 space-y-1 bg-slate-50/60 rounded-lg my-1 text-xs font-semibold text-slate-600">
-                  <Link href="/about" onClick={() => setIsMobileMenuOpen(false)} className="block p-1.5 hover:text-[#1a2b6d]">ประวัติโรงพยาบาล</Link>
-                  <Link href="/news" onClick={() => setIsMobileMenuOpen(false)} className="block p-1.5 hover:text-[#1a2b6d]">ข่าวสารและกิจกรรม</Link>
-                  <Link href="/contact" onClick={() => setIsMobileMenuOpen(false)} className="block p-1.5 hover:text-[#1a2b6d]">ติดต่อสอบถาม</Link>
-                </div>
-              )}
-            </div>
-          </nav>
-
-          <div className="pt-3 border-t border-slate-100 flex flex-col space-y-2">
-            {user ? (
-              <div className={`p-3.5 rounded-2xl border flex flex-col space-y-3 ${isAdmin ? 'bg-amber-50/80 border-amber-200/80' : isDoctor ? 'bg-emerald-50/80 border-emerald-200/80' : 'bg-blue-50/80 border-blue-200/80'}`}>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2.5">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-xs shadow-2xs ${isAdmin ? 'bg-amber-600' : isDoctor ? 'bg-emerald-600' : 'bg-[#1a2b6d]'}`}>
-                      {userName.charAt(0).toUpperCase()}
-                    </div>
-                    <div className="flex flex-col">
-                      <span className="text-[10px] uppercase font-extrabold text-slate-500">
-                        {isAdmin ? 'ADMIN' : isDoctor ? 'DOCTOR' : 'PATIENT'}
-                      </span>
-                      <span className="text-xs font-bold text-slate-800">{userName}</span>
-                    </div>
-                  </div>
-                  <button onClick={handleLogout} className="text-xs text-red-600 font-bold hover:underline">
-                    ออกจากระบบ
-                  </button>
-                </div>
-
-                {isAdmin ? (
-                  <div className="pt-2 border-t border-amber-200/50">
-                    <Link
-                      href="/admin/main"
-                      onClick={() => setIsMobileMenuOpen(false)}
-                      className="block w-full py-2 rounded-xl bg-amber-600 text-center text-white font-bold text-xs shadow-2xs hover:bg-amber-700 transition"
-                    >
-                      หน้าหลักแอดมิน
-                    </Link>
-                  </div>
-                ) : isDoctor ? (
-                  <div className="pt-2 border-t border-emerald-200/50">
-                    <Link
-                      href="/doctors/main"
-                      onClick={() => setIsMobileMenuOpen(false)}
-                      className="block w-full py-2 rounded-xl bg-emerald-600 text-center text-white font-bold text-xs shadow-2xs"
-                    >
-                      แดชบอร์ดแพทย์ / จัดการคิว
-                    </Link>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-2 gap-2 pt-2 border-t border-blue-200/50 text-xs font-bold">
-                    <Link
-                      href="/profile"
-                      onClick={() => setIsMobileMenuOpen(false)}
-                      className="p-2 rounded-xl bg-white text-center text-[#1a2b6d] border border-blue-100 hover:bg-sky-50 shadow-2xs"
-                    >
-                      ข้อมูลส่วนตัว
-                    </Link>
-                    <Link
-                      href="/appointments"
-                      onClick={() => setIsMobileMenuOpen(false)}
-                      className="p-2 rounded-xl bg-white text-center text-[#1a2b6d] border border-blue-100 hover:bg-sky-50 shadow-2xs"
-                    >
-                      ประวัตินัดหมาย
-                    </Link>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <Link
-                href={`/login?redirect=${encodeURIComponent(pathname)}`}
-                onClick={() => setIsMobileMenuOpen(false)}
-                className="w-full text-center py-2.5 bg-slate-100 font-bold rounded-xl text-xs text-slate-700 block"
-              >
-                เข้าสู่ระบบ
-              </Link>
-            )}
-
-            {!isAdmin && !isDoctor && (
-              <button
-                onClick={handlePrimaryAction}
-                className="w-full text-center py-2.5 font-bold rounded-xl text-xs text-white bg-[#1a2b6d]"
-              >
-                ทำนัดหมายออนไลน์
-              </button>
-            )}
-          </div>
-        </div>
+      {isMobileMenuOpen && renderMobileDrawerContent(
+        isAdmin,
+        isDoctor,
+        user,
+        userName,
+        pathname,
+        openMobileSubmenu,
+        toggleSubmenu,
+        setIsMobileMenuOpen,
+        setIsBranchModalOpen,
+        handleLogout,
+        handlePrimaryAction,
+        activeBranch
       )}
 
       <SearchModal isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />

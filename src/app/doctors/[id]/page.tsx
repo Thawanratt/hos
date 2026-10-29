@@ -7,7 +7,7 @@ import Link from 'next/link';
 interface DoctorSchedule {
   id: number;
   doctorId: number;
-  dayOfWeek: number;
+  dayOfWeek: number; // 0=อาทิตย์, 1=จันทร์, ..., 6=เสาร์
   startTime: string;
   endTime: string;
   maxSlots: number;
@@ -21,6 +21,7 @@ interface DoctorDetail {
   licenseNumber: string;
   specialization: string;
   bio?: string | null;
+  imageUrl?: string | null;
   isInstantBooking: boolean;
   user: {
     firstName: string;
@@ -36,7 +37,6 @@ interface DoctorDetail {
   schedules: DoctorSchedule[];
 }
 
-// 🖼️ Mapping รูปภาพแพทย์ฝั่ง Frontend อ้างอิงตาม doctor.id
 const doctorImageMap: Record<number, string> = {
   2: '/images/สมชาย.jpg', 
   3: '/images/22.jpeg',
@@ -50,9 +50,6 @@ const doctorImageMap: Record<number, string> = {
   11: '/images/13.jpeg',
 };
 
-// ----------------------------------------------------
-// Helper Function (วันที่ปัจจุบัน YYYY-MM-DD)
-// ----------------------------------------------------
 function getTodayString(): string {
   const today = new Date();
   const year = today.getFullYear();
@@ -70,20 +67,18 @@ export default function DoctorDetailPage() {
 
   const [doctor, setDoctor] = useState<DoctorDetail | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
+  
+  // 🟢 ใช้ปฏิทินเลือกวันที่เป็นหลัก
   const [selectedDate, setSelectedDate] = useState<string>(todayStr);
-  const [selectedTimeSlot, setSelectedTimeSlot] = useState<string>('');
+  const [selectedSchedule, setSelectedSchedule] = useState<DoctorSchedule | null>(null);
   const [symptoms, setSymptoms] = useState<string>('');
   const [bookingStatus, setBookingStatus] = useState<{ success?: boolean; message?: string } | null>(null);
   const [submitting, setSubmitting] = useState<boolean>(false);
 
-  // 🟢 State สำหรับเปิด/ปิดใบนัดจองคิวสำเร็จ (Success Modal)
   const [showAppointmentModal, setShowAppointmentModal] = useState<boolean>(false);
-
-  // 🔐 State สำหรับเช็กสถานะการล็อกอินจริงจาก localStorage
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
   const [showLoginModal, setShowLoginModal] = useState<boolean>(false);
 
-  // เช็กสถานะการล็อกอินเมื่อโหลดหน้าเว็บ
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
     if (storedUser) {
@@ -91,7 +86,6 @@ export default function DoctorDetailPage() {
     }
   }, []);
 
-  // ดึงข้อมูลแพทย์รายบุคคล
   useEffect(() => {
     if (!doctorId) return;
 
@@ -114,7 +108,6 @@ export default function DoctorDetailPage() {
     fetchDoctorDetail();
   }, [doctorId]);
 
-  // ตรวจสอบ Hash เพื่อเลื่อนหน้าจอไปยังส่วนนัดหมายอัตโนมัติ
   useEffect(() => {
     if (!loading && window.location.hash === '#appointment') {
       const element = document.getElementById('appointment');
@@ -129,7 +122,6 @@ export default function DoctorDetailPage() {
     return days[dayNum] || '';
   };
 
-  // ตรวจสอบและจัดการการเปลี่ยนวันที่
   const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const chosenDate = e.target.value;
     if (chosenDate < todayStr) {
@@ -138,11 +130,10 @@ export default function DoctorDetailPage() {
       return;
     }
     setSelectedDate(chosenDate);
+    setSelectedSchedule(null); // รีเซ็ตเวลาที่เลือกเมื่อเปลี่ยนวัน
   };
 
-  // ฟังก์ชันเมื่อผู้ใช้คลิกเลือกช่องตารางออกตรวจ (พร้อมเช็ก isAvailable)
-  const handleScheduleClick = (sched: DoctorSchedule) => {
-    // 🟢 ถ้าแพทย์งดออกตรวจ ห้ามกดเลือก
+  const handleTimeSlotClick = (sched: DoctorSchedule) => {
     if (!sched.isAvailable) {
       alert('แพทย์ท่านนี้งดออกตรวจในช่วงเวลานี้ ไม่สามารถเลือกจองคิวได้');
       return;
@@ -153,24 +144,18 @@ export default function DoctorDetailPage() {
       return;
     }
 
-    const slotValue = `วัน${getDayName(sched.dayOfWeek)} (${sched.startTime} - ${sched.endTime})`;
-    setSelectedTimeSlot(slotValue);
+    setSelectedSchedule(sched);
   };
 
-  const handleBookingSubmit = async (e: React.FormEvent) => {
+  const handleBookingSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!isLoggedIn) {
       setShowLoginModal(true);
       return;
     }
 
-    if (!selectedDate || !selectedTimeSlot) {
-      alert('กรุณาเลือกวันที่และช่วงเวลาที่ต้องการนัดหมาย');
-      return;
-    }
-
-    if (selectedDate < todayStr) {
-      alert('วันที่นัดหมายไม่ถูกต้อง ไม่สามารถทำรายการย้อนหลังได้');
+    if (!selectedDate || !selectedSchedule) {
+      alert('กรุณาเลือกวันที่และช่วงเวลาออกตรวจที่ต้องการนัดหมาย');
       return;
     }
 
@@ -181,6 +166,8 @@ export default function DoctorDetailPage() {
       const storedUser = localStorage.getItem('user');
       const user = storedUser ? JSON.parse(storedUser) : { id: 1 };
 
+      const timeSlotStr = `วัน${getDayName(selectedSchedule.dayOfWeek)} (${selectedSchedule.startTime}-${selectedSchedule.endTime})`;
+
       const res = await fetch('/api/appointments', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -189,7 +176,7 @@ export default function DoctorDetailPage() {
           doctorId: doctor?.id,
           departmentId: doctor?.departmentId,
           appointmentDate: selectedDate,
-          timeSlot: selectedTimeSlot,
+          timeSlot: timeSlotStr,
           symptoms: symptoms,
         }),
       });
@@ -226,13 +213,20 @@ export default function DoctorDetailPage() {
     );
   }
 
-  const doctorImgSrc = doctorImageMap[doctor.id] || doctorImageMap[doctor.userId];
+  const doctorImgSrc = doctor.imageUrl || doctorImageMap[doctor.id] || doctorImageMap[doctor.userId];
   const doctorName = `${doctor.user?.firstName} ${doctor.user?.lastName}`;
+
+  // 🟢 คำนวณหาวันในสัปดาห์ (0-6) จากวันที่ผู้ใช้เลือกในปฏิทิน
+  const selectedDayOfWeek = selectedDate ? new Date(selectedDate).getDay() : null;
+
+  // 🟢 กรองตารางออกตรวจของแพทย์ให้ตรงกับวันในสัปดาห์ที่ผู้ใช้เลือกจากปฏิทิน
+  const availableSchedulesForDate = doctor.schedules?.filter(
+    (sched) => sched.dayOfWeek === selectedDayOfWeek
+  ) || [];
 
   return (
     <div className="bg-[#FAFAFA] min-h-screen pb-24 font-sans text-slate-800 space-y-8 relative">
       
-      {/* 🟢 SUCCESS APPOINTMENT MODAL */}
       {showAppointmentModal && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-fadeIn">
           <div className="bg-white rounded-3xl p-6 md:p-8 max-w-md w-full shadow-2xl border border-slate-100 text-center space-y-6 relative overflow-hidden">
@@ -267,7 +261,9 @@ export default function DoctorDetailPage() {
               </div>
               <div className="flex justify-between border-b border-slate-200/60 pb-1.5">
                 <span className="text-slate-500">ช่วงเวลา:</span>
-                <span className="font-bold text-[#1a2b6d]">{selectedTimeSlot}</span>
+                <span className="font-bold text-[#1a2b6d]">
+                  {selectedSchedule ? `${selectedSchedule.startTime} - ${selectedSchedule.endTime} น.` : ''}
+                </span>
               </div>
               {symptoms && (
                 <div className="flex justify-between">
@@ -303,7 +299,6 @@ export default function DoctorDetailPage() {
         </div>
       )}
 
-      {/* 🔐 LOGIN MODAL POPUP */}
       {showLoginModal && (
         <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 animate-fadeIn">
           <div className="bg-white rounded-2xl p-6 md:p-8 max-w-md w-full shadow-2xl border border-slate-100 text-center space-y-6 relative">
@@ -341,7 +336,6 @@ export default function DoctorDetailPage() {
         </div>
       )}
 
-      {/* HEADER & BREADCRUMB */}
       <section className="bg-white border-b border-slate-200 pt-6 pb-6">
         <div className="max-w-6xl mx-auto px-4 md:px-8">
           <nav className="text-[11px] text-slate-400 font-medium tracking-wide uppercase mb-2">
@@ -354,7 +348,6 @@ export default function DoctorDetailPage() {
         </div>
       </section>
 
-      {/* SECTION 1: DOCTOR PROFILE CARD */}
       <section className="max-w-6xl mx-auto px-4 md:px-8">
         <div className="bg-white rounded-2xl border border-slate-200 p-6 md:p-8 shadow-sm flex flex-col md:flex-row gap-8 items-center md:items-start">
           <div className="w-44 h-52 md:w-56 md:h-68 rounded-xl bg-slate-100 overflow-hidden flex-shrink-0 border border-slate-200 shadow-inner">
@@ -391,40 +384,65 @@ export default function DoctorDetailPage() {
         </div>
       </section>
 
-      {/* SECTION 2: SCHEDULES & APPOINTMENT BOOKING */}
       <section id="appointment" className="max-w-6xl mx-auto px-4 md:px-8 pt-4">
         <div className="bg-white rounded-2xl border border-slate-200 p-6 md:p-8 shadow-sm space-y-6">
           <div className="border-b border-slate-100 pb-4 text-center">
-            <h2 className="text-lg font-bold text-slate-900">ตารางออกตรวจและนัดหมายแพทย์</h2>
-            <p className="text-xs text-slate-500 mt-0.5">เลือกวันและช่วงเวลาที่ท่านสะดวก (คลิกที่ตารางออกตรวจด้านล่างเพื่อเลือกคิว)</p>
+            <h2 className="text-lg font-bold text-slate-900">เลือกวันที่และรอบเวลาออกตรวจ</h2>
+            <p className="text-xs text-slate-500 mt-0.5">เลือกวันที่ต้องการจากปฏิทิน ระบบจะแสดงรอบเวลาออกตรวจของแพทย์ในวันนั้นๆ ทันที</p>
           </div>
 
-          {/* ตารางออกตรวจของแพทย์ */}
-          <div className="space-y-3">
-            <span className="text-xs font-semibold text-slate-700 block">ตารางออกตรวจประจำสัปดาห์ (คลิกเพื่อเลือกคิว):</span>
-            {doctor.schedules && doctor.schedules.length > 0 ? (
+          {/* 1. เลือกวันที่จากปฏิทิน */}
+          <div className="max-w-md mx-auto space-y-2 text-xs">
+            <label htmlFor="calendar-date-input" className="text-slate-700 font-semibold block text-center">
+              📅 เลือกวันที่ต้องการเข้ารับบริการ
+            </label>
+            <input
+              id="calendar-date-input"
+              type="date"
+              min={todayStr}
+              value={selectedDate}
+              onChange={handleDateChange}
+              className="w-full p-3 rounded-xl border border-slate-300 bg-white text-slate-800 text-sm font-semibold text-center focus:outline-none focus:border-[#1a2b6d] focus:ring-2 focus:ring-blue-50 transition cursor-pointer shadow-sm"
+            />
+          </div>
+
+          {/* 2. แสดงรอบเวลาตามวันที่เลือก */}
+          <div className="space-y-3 pt-2">
+            <span className="text-xs font-semibold text-slate-700 block text-center">
+              รอบเวลาออกตรวจประจำ <span className="text-[#1a2b6d] underline">วัน{selectedDayOfWeek !== null ? getDayName(selectedDayOfWeek) : ''} ({selectedDate})</span>:
+            </span>
+
+            {availableSchedulesForDate.length > 0 ? (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                {doctor.schedules.map((sched) => {
-                  const slotValue = `วัน${getDayName(sched.dayOfWeek)} (${sched.startTime} - ${sched.endTime})`;
-                  const isSelected = selectedTimeSlot === slotValue;
+                {availableSchedulesForDate.map((sched) => {
+                  const isSelected = selectedSchedule?.id === sched.id;
                   const isAvailable = sched.isAvailable;
+
+                  let cardClass = 'bg-slate-50 hover:bg-blue-50/50 border-slate-200 text-slate-700 cursor-pointer';
+                  let timeColorClass = 'text-slate-800';
+
+                  if (!isAvailable) {
+                    cardClass = 'bg-red-50/60 border-red-200 text-red-400 opacity-75 cursor-not-allowed line-through';
+                    timeColorClass = 'text-red-400 line-through';
+                  } else if (isSelected) {
+                    cardClass = 'bg-[#1a2b6d] text-white border-[#1a2b6d] shadow-md scale-[1.02] cursor-pointer';
+                    timeColorClass = 'text-white';
+                  }
 
                   return (
                     <div
                       key={sched.id}
-                      onClick={() => handleScheduleClick(sched)}
-                      className={`p-3.5 border rounded-xl text-center space-y-1 transition-all duration-200 ${
-                        !isAvailable 
-                          ? 'bg-red-50/60 border-red-200 text-red-400 opacity-75 cursor-not-allowed line-through'
-                          : isSelected 
-                          ? 'bg-[#1a2b6d] text-white border-[#1a2b6d] shadow-md scale-[1.02] cursor-pointer' 
-                          : 'bg-slate-50 hover:bg-blue-50/50 border-slate-200 text-slate-700 cursor-pointer'
-                      }`}
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => handleTimeSlotClick(sched)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          handleTimeSlotClick(sched);
+                        }
+                      }}
+                      className={`p-4 border rounded-xl text-center space-y-1 transition-all duration-200 outline-none focus:ring-2 focus:ring-[#1a2b6d] ${cardClass}`}
                     >
-                      <span className={`text-xs font-bold block ${!isAvailable ? 'text-red-400 line-through' : isSelected ? 'text-white' : 'text-[#1a2b6d]'}`}>
-                        วัน{getDayName(sched.dayOfWeek)}
-                      </span>
-                      <span className={`text-[11px] block ${!isAvailable ? 'text-red-400 line-through' : isSelected ? 'text-blue-100' : 'text-slate-600'}`}>
+                      <span className={`text-sm font-bold block ${timeColorClass}`}>
                         {sched.startTime} - {sched.endTime} น.
                       </span>
 
@@ -434,19 +452,24 @@ export default function DoctorDetailPage() {
                         </span>
                       ) : isSelected ? (
                         <span className="text-[10px] bg-white/20 px-2 py-0.5 rounded-md inline-block mt-1">
-                          ✓ เลือกแล้ว
+                          ✓ เลือกเวลานี้แล้ว
                         </span>
-                      ) : null}
+                      ) : (
+                        <span className="text-[10px] text-slate-400 block">คลิกเพื่อเลือก</span>
+                      )}
                     </div>
                   );
                 })}
               </div>
             ) : (
-              <p className="text-xs text-slate-400 italic">แพทย์ท่านนี้ยังไม่มีตารางออกตรวจในระบบ</p>
+              <div className="text-center py-10 bg-amber-50/60 rounded-2xl border border-amber-200/80 space-y-1 text-xs">
+                <p className="font-semibold text-amber-800 text-sm">❌ วันนี้แพทย์ไม่มีตารางออกตรวจ</p>
+                <p className="text-amber-600">กรุณาเลือกเปลี่ยนวันที่อื่นในปฏิทินด้านบน เพื่อดูรอบเวลาที่แพทย์เปิดให้บริการ</p>
+              </div>
             )}
           </div>
 
-          {/* ฟอร์มจองคิว */}
+          {/* ฟอร์มยืนยันการจอง */}
           <form onSubmit={handleBookingSubmit} className="pt-4 border-t border-slate-100 space-y-4">
             <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider">ฟอร์มยืนยันการนัดหมาย</h3>
             
@@ -456,42 +479,23 @@ export default function DoctorDetailPage() {
               </div>
             )}
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-              <div className="space-y-1">
-                <label htmlFor="doctor-appointment-date" className="text-slate-600 font-medium block">
-                  วันที่ต้องการนัดหมาย
-                </label>
-                <input
-                  id="doctor-appointment-date"
-                  type="date"
-                  min={todayStr}
-                  value={selectedDate}
-                  onChange={handleDateChange}
-                  className="w-full p-2.5 rounded-xl border border-slate-300 bg-white text-slate-700 focus:outline-none focus:border-[#1a2b6d] focus:ring-2 focus:ring-blue-50 transition cursor-pointer"
-                  required
-                />
+            <div className="bg-sky-50/60 p-4 rounded-xl border border-sky-100 grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+              <div>
+                <span className="text-slate-500 block">วันที่นัดหมาย:</span>
+                <span className="font-bold text-[#1a2b6d] text-sm">
+                  {selectedDate} (วัน{selectedDayOfWeek !== null ? getDayName(selectedDayOfWeek) : ''})
+                </span>
               </div>
-
-              <div className="space-y-1">
-                <label htmlFor="selected-time-slot" className="text-slate-600 font-medium block">
-                  ช่วงเวลาที่เลือก (จากตารางด้านบน)
-                </label>
-                <input
-                  id="selected-time-slot"
-                  type="text"
-                  value={selectedTimeSlot}
-                  readOnly
-                  placeholder="กรุณาคลิกเลือกตารางออกตรวจด้านบน..."
-                  className="w-full p-2.5 rounded-xl border border-slate-300 bg-slate-50 text-slate-800 font-medium focus:outline-none"
-                  required
-                />
+              <div>
+                <span className="text-slate-500 block">ช่วงเวลาออกตรวจ:</span>
+                <span className="font-bold text-[#1a2b6d] text-sm">
+                  {selectedSchedule ? `${selectedSchedule.startTime} - ${selectedSchedule.endTime} น.` : 'ยังไม่ได้เลือกช่วงเวลา'}
+                </span>
               </div>
             </div>
 
-            <div className="space-y-1 text-xs">
-              <label htmlFor="doctor-symptoms" className="text-slate-600 font-medium block">
-                อาการเบื้องต้น / หมายเหตุ (ถ้ามี)
-              </label>
+            <label className="space-y-1 text-xs block cursor-pointer">
+              <span className="text-slate-600 font-medium block">อาการเบื้องต้น / หมายเหตุ (ถ้ามี)</span>
               <textarea
                 id="doctor-symptoms"
                 rows={3}
@@ -500,12 +504,12 @@ export default function DoctorDetailPage() {
                 placeholder="ระบุอาการเจ็บป่วยคร่าวๆ..."
                 className="w-full p-2.5 rounded-xl border border-slate-300 bg-white text-slate-700 focus:outline-none focus:border-[#1a2b6d]"
               ></textarea>
-            </div>
+            </label>
 
             <div className="pt-2">
               <button
                 type="submit"
-                disabled={submitting || selectedDate < todayStr}
+                disabled={submitting || !selectedSchedule}
                 className="w-full py-3 bg-[#1a2b6d] text-white rounded-xl text-xs font-semibold hover:bg-[#0f1a42] transition shadow-sm cursor-pointer disabled:opacity-50"
               >
                 {submitting ? 'กำลังบันทึกการนัดหมาย...' : 'ยืนยันการจองคิวแพทย์'}

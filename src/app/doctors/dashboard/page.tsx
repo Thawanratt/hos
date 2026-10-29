@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { IBM_Plex_Sans_Thai } from 'next/font/google';
 
 const plex = IBM_Plex_Sans_Thai({
@@ -61,7 +61,6 @@ export default function DoctorDashboardPage() {
   const [updatingId, setUpdatingId] = useState<number | null>(null);
   const [showCancelled, setShowCancelled] = useState(false);
 
-  // 1. ตรวจสอบสิทธิ์การล็อกอินและดึงข้อมูลเฉพาะแพทย์ท่านนั้น
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
     if (!storedUser) {
@@ -105,7 +104,6 @@ export default function DoctorDashboardPage() {
     }
   };
 
-  // 2. อัปเดตสถานะการรักษา (ให้ API หลังบ้านจัดการสร้างเวชระเบียนอัตโนมัติเพียงที่เดียวเพื่อป้องกันการเบิ้ลซ้ำ)
   const handleStatusChange = async (appointment: Appointment, newStatus: string) => {
     setUpdatingId(appointment.id);
     try {
@@ -155,7 +153,6 @@ export default function DoctorDashboardPage() {
 
   return (
     <div className={`${plex.className} min-h-screen bg-[#f6f8fb] text-slate-800 pb-20`}>
-      {/* ---------- แถบบน ---------- */}
       <header className="bg-white border-b border-slate-200 sticky top-0 z-30">
         <div className="max-w-[1400px] mx-auto px-4 md:px-8 h-16 flex items-center justify-between">
           <Link
@@ -187,7 +184,6 @@ export default function DoctorDashboardPage() {
       </header>
 
       <main className="max-w-[1400px] mx-auto px-4 md:px-8 py-8 space-y-6">
-        {/* หัวเรื่อง */}
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
           <div>
             <h1 className="text-2xl font-semibold tracking-tight text-[#1e3a6e]">คิวตรวจผู้ป่วย</h1>
@@ -206,7 +202,6 @@ export default function DoctorDashboardPage() {
           )}
         </div>
 
-        {/* แจ้งเตือน */}
         {statusMessage && (
           <div
             role="status"
@@ -230,7 +225,6 @@ export default function DoctorDashboardPage() {
           </div>
         )}
 
-        {/* ---------- บอร์ดคิว ---------- */}
         <div className={`grid grid-cols-1 gap-5 items-start ${showCancelled ? 'lg:grid-cols-4' : 'lg:grid-cols-3'}`}>
           {columns.map((col) => (
             <section
@@ -295,7 +289,6 @@ function QueueCard({
 
   return (
     <article className={`bg-white rounded-lg border border-slate-200 p-4 shadow-[0_1px_2px_rgba(15,23,42,0.04)] ${done ? 'opacity-80' : ''}`}>
-      {/* เวลา + สถานะ */}
       <div className="flex items-start justify-between gap-3">
         <div>
           <div className="text-xl font-semibold text-[#1e3a6e] tabular-nums leading-none">{item.timeSlot}</div>
@@ -313,7 +306,6 @@ function QueueCard({
         </div>
       </div>
 
-      {/* ผู้ป่วย */}
       <div className="mt-3.5 pt-3.5 border-t border-slate-100">
         <div className="text-[15px] font-semibold text-slate-900">
           {item.patient?.firstName || 'คนไข้'} {item.patient?.lastName || ''}
@@ -331,7 +323,6 @@ function QueueCard({
         </p>
       </div>
 
-      {/* ปุ่มดำเนินการ */}
       <div className="mt-4 flex flex-wrap items-center gap-2">
         {item.status === 'PENDING' && (
           <>
@@ -385,38 +376,38 @@ function StatusBadge({ status }: { status: string }) {
       return (
         <span className={`${base} bg-amber-50 text-amber-700 border-amber-200`}>
           <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-          รออนุมัติ
+          <span>รออนุมัติ</span>
         </span>
       );
     case 'CONFIRMED':
       return (
         <span className={`${base} bg-[#e9eff7] text-[#2f5597] border-[#d6e0ee]`}>
           <span className="w-1.5 h-1.5 rounded-full bg-[#2f5597]" />
-          ยืนยันแล้ว
+          <span>ยืนยันแล้ว</span>
         </span>
       );
     case 'IN_PROGRESS':
       return (
         <span className={`${base} bg-[#2f5597] text-white border-[#2f5597]`}>
           <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
-          กำลังตรวจ
+          <span>กำลังตรวจ</span>
         </span>
       );
     case 'COMPLETED':
       return (
         <span className={`${base} bg-emerald-50 text-emerald-700 border-emerald-200`}>
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-          ตรวจเสร็จ
+          <span>ตรวจเสร็จ</span>
         </span>
       );
     case 'CANCELLED':
       return (
         <span className={`${base} bg-slate-100 text-slate-500 border-slate-200`}>
           <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
-          ยกเลิก
+          <span>ยกเลิก</span>
         </span>
       );
     default:
-      return <span className={`${base} bg-slate-100 text-slate-600 border-slate-200`}>{status}</span>;
+      return <span className={`${base} bg-slate-100 text-slate-600 border-slate-200`}><span>{status}</span></span>;
   }
 }

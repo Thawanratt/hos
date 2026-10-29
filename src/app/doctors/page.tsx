@@ -42,7 +42,6 @@ interface DepartmentData {
   name: string;
 }
 
-// Mapping รูปภาพแพทย์ฝั่ง Frontend อ้างอิงตาม doctor.id (เก็บไว้ตามเดิมเพื่อความสมบูรณ์)
 const doctorImageMap: Record<number, string> = {
   2: '/images/สมชาย.jpg',
   3: '/images/22.jpeg',
@@ -57,7 +56,6 @@ const doctorImageMap: Record<number, string> = {
 };
 
 export default function DoctorsPage() {
-  // State ตัวกรองทั้งหมด
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDeptId, setSelectedDeptId] = useState<string>('ALL');
   const [selectedGender, setSelectedGender] = useState<string>('ALL');
@@ -66,7 +64,6 @@ export default function DoctorsPage() {
   const [instantBookingOnly, setInstantBookingOnly] = useState<boolean>(false);
   const [showFilterPanel, setShowFilterPanel] = useState<boolean>(false);
 
-  // รายชื่อแผนกและศูนย์การรักษาทั้งหมด
   const [departmentsList] = useState<DepartmentData[]>([
     { id: 1, name: 'อายุรกรรมแพทย์' },
     { id: 2, name: 'กุมารแพทย์' },
@@ -83,11 +80,8 @@ export default function DoctorsPage() {
 
   const [doctorsList, setDoctorsList] = useState<DoctorData[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
-
-  // State สำหรับเก็บข้อมูลข่าวสารจริงจาก API หลังบ้าน
   const [healthArticles, setHealthArticles] = useState<any[]>([]);
 
-  // States สำหรับ Pagination & News Slide
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 6;
   const [newsSlide, setNewsSlide] = useState(0);
@@ -110,7 +104,6 @@ export default function DoctorsPage() {
     { label: 'ช่วงเย็น (16:00 - 20:00)', value: 'evening' },
   ];
 
-  // ฟังก์ชันยิง API ดึงแพทย์ตามตัวกรอง
   const fetchDoctors = useCallback(async () => {
     setLoading(true);
     try {
@@ -127,14 +120,13 @@ export default function DoctorsPage() {
       if (result.success) {
         setDoctorsList(result.data);
       }
-    } catch (error) {
-      console.error('Failed to fetch doctors:', error);
+    } catch {
+      // Ignored fetch error safely
     } finally {
       setLoading(false);
     }
   }, [searchQuery, selectedDeptId, selectedGender, selectedDay, selectedTime, instantBookingOnly]);
 
-  // ดึงข้อมูลข่าวสารจาก API หลังบ้าน (/api/admin) เมื่อโหลดหน้าเว็บ
   useEffect(() => {
     const fetchArticles = async () => {
       try {
@@ -145,8 +137,8 @@ export default function DoctorsPage() {
             setHealthArticles(result.data.news);
           }
         }
-      } catch (error) {
-        console.error('Failed to fetch news articles:', error);
+      } catch {
+        // Ignored articles fetch error safely
       }
     };
 
@@ -176,14 +168,12 @@ export default function DoctorsPage() {
     return days[dayNum] || '';
   };
 
-  // Pagination Calculation
   const totalPages = Math.ceil(doctorsList.length / itemsPerPage) || 1;
   const displayedDoctors = doctorsList.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
 
-  // คำนวณจำนวนตัวกรองที่ใช้งานอยู่
   const activeFiltersCount = [
     selectedDeptId !== 'ALL',
     selectedGender !== 'ALL',
@@ -277,9 +267,10 @@ export default function DoctorsPage() {
               <div className="pt-4 border-t border-slate-200/80 space-y-4 animate-fadeIn">
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
 
-                  <div className="space-y-1.5">
-                    <label className="text-slate-600 font-semibold">แผนกการรักษา</label>
+                  <label className="space-y-1.5 block cursor-pointer">
+                    <span className="text-slate-600 font-semibold block">แผนกการรักษา</span>
                     <select
+                      id="department-select"
                       value={selectedDeptId}
                       onChange={(e) => setSelectedDeptId(e.target.value)}
                       className="w-full p-2.5 rounded-lg border border-slate-300 bg-white text-slate-700 focus:outline-none focus:border-[#1a2b6d]"
@@ -289,11 +280,12 @@ export default function DoctorsPage() {
                         <option key={dept.id} value={dept.id}>{dept.name}</option>
                       ))}
                     </select>
-                  </div>
+                  </label>
 
-                  <div className="space-y-1.5">
-                    <label className="text-slate-600 font-semibold">เพศแพทย์</label>
+                  <label className="space-y-1.5 block cursor-pointer">
+                    <span className="text-slate-600 font-semibold block">เพศแพทย์</span>
                     <select
+                      id="gender-select"
                       value={selectedGender}
                       onChange={(e) => setSelectedGender(e.target.value)}
                       className="w-full p-2.5 rounded-lg border border-slate-300 bg-white text-slate-700 focus:outline-none focus:border-[#1a2b6d]"
@@ -302,11 +294,12 @@ export default function DoctorsPage() {
                       <option value="MALE">ชาย</option>
                       <option value="FEMALE">หญิง</option>
                     </select>
-                  </div>
+                  </label>
 
-                  <div className="space-y-1.5">
-                    <label className="text-slate-600 font-semibold">วันออกตรวจ</label>
+                  <label className="space-y-1.5 block cursor-pointer">
+                    <span className="text-slate-600 font-semibold block">วันออกตรวจ</span>
                     <select
+                      id="day-select"
                       value={selectedDay}
                       onChange={(e) => setSelectedDay(e.target.value)}
                       className="w-full p-2.5 rounded-lg border border-slate-300 bg-white text-slate-700 focus:outline-none focus:border-[#1a2b6d]"
@@ -315,11 +308,12 @@ export default function DoctorsPage() {
                         <option key={day.value} value={day.value}>{day.label}</option>
                       ))}
                     </select>
-                  </div>
+                  </label>
 
-                  <div className="space-y-1.5">
-                    <label className="text-slate-600 font-semibold">ช่วงเวลาตรวจ</label>
+                  <label className="space-y-1.5 block cursor-pointer">
+                    <span className="text-slate-600 font-semibold block">ช่วงเวลาตรวจ</span>
                     <select
+                      id="time-select"
                       value={selectedTime}
                       onChange={(e) => setSelectedTime(e.target.value)}
                       className="w-full p-2.5 rounded-lg border border-slate-300 bg-white text-slate-700 focus:outline-none focus:border-[#1a2b6d]"
@@ -328,7 +322,7 @@ export default function DoctorsPage() {
                         <option key={t.value} value={t.value}>{t.label}</option>
                       ))}
                     </select>
-                  </div>
+                  </label>
                 </div>
 
                 <div className="flex flex-wrap items-center justify-between gap-4 pt-3 border-t border-slate-200/60">
@@ -391,7 +385,6 @@ export default function DoctorsPage() {
         ) : displayedDoctors.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {displayedDoctors.map((doc) => {
-              // 🟢 เพิ่มการดึง doc.imageUrl จากหลังบ้าน (ถ้าไม่มีจะดึงจาก doctorImageMap เดิม)
               const doctorImgSrc = doc.imageUrl || doctorImageMap[doc.id] || doctorImageMap[doc.userId];
 
               return (
@@ -454,7 +447,7 @@ export default function DoctorsPage() {
                               key={sched.id}
                               className={`text-[10px] px-2 py-0.5 rounded-md font-medium border ${sched.isAvailable
                                   ? 'bg-slate-50 text-slate-700 border-slate-200/80'
-                                  : 'bg-red-50 text-red-600 border-red-200 line-through' // 🟢 ถ้าปิดรับตรวจจะขึ้นสีแดงและขีดเส้นทับ
+                                  : 'bg-red-50 text-red-600 border-red-200 line-through'
                                 }`}
                               title={sched.isAvailable ? 'เปิดให้บริการปกติ' : 'แพทย์งดออกตรวจในเวลานี้'}
                             >

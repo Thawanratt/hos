@@ -24,7 +24,7 @@ export default function ProfilePage() {
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState<UserProfile>({});
   const [savedSuccess, setSavedSuccess] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null); // State สำหรับเก็บข้อความแจ้งเตือนข้อผิดพลาด
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -45,14 +45,13 @@ export default function ProfilePage() {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
-    if (errorMessage) setErrorMessage(null); // ล้างข้อความเตือนเมื่อผู้ใช้เริ่มพิมพ์แก้ไข
+    if (errorMessage) setErrorMessage(null);
   };
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage(null);
 
-    // ตรวจสอบความถูกต้องของข้อมูลก่อนบันทึก
     if (!formData.firstName?.trim() || !formData.lastName?.trim()) {
       setErrorMessage('กรุณากรอกชื่อจริงและนามสกุลให้ครบถ้วน');
       return;
@@ -179,9 +178,10 @@ export default function ProfilePage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5 text-xs font-semibold">
             {/* ชื่อ */}
             <div>
-              <label className="block text-slate-500 mb-1.5 font-bold">ชื่อจริง *</label>
+              <label htmlFor="firstName" className="block text-slate-500 mb-1.5 font-bold">ชื่อจริง *</label>
               {isEditing ? (
                 <input
+                  id="firstName"
                   type="text"
                   name="firstName"
                   value={formData.firstName || ''}
@@ -189,15 +189,16 @@ export default function ProfilePage() {
                   className="w-full p-3 rounded-xl border border-slate-200 focus:border-[#1a2b6d] focus:ring-1 focus:ring-[#1a2b6d] outline-none font-semibold text-slate-800"
                 />
               ) : (
-                <p className="p-3 bg-slate-50 rounded-xl text-slate-800 font-bold">{user.firstName || '-'}</p>
+                <p id="firstName" className="p-3 bg-slate-50 rounded-xl text-slate-800 font-bold">{user.firstName || '-'}</p>
               )}
             </div>
 
             {/* นามสกุล */}
             <div>
-              <label className="block text-slate-500 mb-1.5 font-bold">นามสกุล *</label>
+              <label htmlFor="lastName" className="block text-slate-500 mb-1.5 font-bold">นามสกุล *</label>
               {isEditing ? (
                 <input
+                  id="lastName"
                   type="text"
                   name="lastName"
                   value={formData.lastName || ''}
@@ -205,15 +206,16 @@ export default function ProfilePage() {
                   className="w-full p-3 rounded-xl border border-slate-200 focus:border-[#1a2b6d] focus:ring-1 focus:ring-[#1a2b6d] outline-none font-semibold text-slate-800"
                 />
               ) : (
-                <p className="p-3 bg-slate-50 rounded-xl text-slate-800 font-bold">{user.lastName || '-'}</p>
+                <p id="lastName" className="p-3 bg-slate-50 rounded-xl text-slate-800 font-bold">{user.lastName || '-'}</p>
               )}
             </div>
 
             {/* อีเมล */}
             <div>
-              <label className="block text-slate-500 mb-1.5 font-bold">อีเมลติดต่อ *</label>
+              <label htmlFor="email" className="block text-slate-500 mb-1.5 font-bold">อีเมลติดต่อ *</label>
               {isEditing ? (
                 <input
+                  id="email"
                   type="email"
                   name="email"
                   value={formData.email || ''}
@@ -221,15 +223,16 @@ export default function ProfilePage() {
                   className="w-full p-3 rounded-xl border border-slate-200 focus:border-[#1a2b6d] focus:ring-1 focus:ring-[#1a2b6d] outline-none font-semibold text-slate-800"
                 />
               ) : (
-                <p className="p-3 bg-slate-50 rounded-xl text-slate-800 font-bold">{user.email || '-'}</p>
+                <p id="email" className="p-3 bg-slate-50 rounded-xl text-slate-800 font-bold">{user.email || '-'}</p>
               )}
             </div>
 
-            {/* เบอร์โทรศัพท์ (บังคับตัวเลข 10 หลัก) */}
+            {/* เบอร์โทรศัพท์ */}
             <div>
-              <label className="block text-slate-500 mb-1.5 font-bold">เบอร์โทรศัพท์ (10 หลัก)</label>
+              <label htmlFor="phone" className="block text-slate-500 mb-1.5 font-bold">เบอร์โทรศัพท์ (10 หลัก)</label>
               {isEditing ? (
                 <input
+                  id="phone"
                   type="tel"
                   inputMode="numeric"
                   name="phone"
@@ -243,15 +246,16 @@ export default function ProfilePage() {
                   className="w-full p-3 rounded-xl border border-slate-200 focus:border-[#1a2b6d] focus:ring-1 focus:ring-[#1a2b6d] outline-none font-semibold text-slate-800"
                 />
               ) : (
-                <p className="p-3 bg-slate-50 rounded-xl text-slate-800 font-bold">{user.phone || 'ยังไม่ได้ระบุ'}</p>
+                <p id="phone" className="p-3 bg-slate-50 rounded-xl text-slate-800 font-bold">{user.phone || 'ยังไม่ได้ระบุ'}</p>
               )}
             </div>
 
-            {/* เลขประจำตัวประชาชน (บังคับตัวเลข 13 หลัก) */}
+            {/* เลขประจำตัวประชาชน */}
             <div>
-              <label className="block text-slate-500 mb-1.5 font-bold">เลขประจำตัวประชาชน (13 หลัก)</label>
+              <label htmlFor="idCard" className="block text-slate-500 mb-1.5 font-bold">เลขประจำตัวประชาชน (13 หลัก)</label>
               {isEditing ? (
                 <input
+                  id="idCard"
                   type="text"
                   inputMode="numeric"
                   name="idCard"
@@ -265,15 +269,16 @@ export default function ProfilePage() {
                   className="w-full p-3 rounded-xl border border-slate-200 focus:border-[#1a2b6d] focus:ring-1 focus:ring-[#1a2b6d] outline-none font-semibold text-slate-800"
                 />
               ) : (
-                <p className="p-3 bg-slate-50 rounded-xl text-slate-800 font-bold">{user.idCard || 'ยังไม่ได้ระบุ'}</p>
+                <p id="idCard" className="p-3 bg-slate-50 rounded-xl text-slate-800 font-bold">{user.idCard || 'ยังไม่ได้ระบุ'}</p>
               )}
             </div>
 
             {/* กรุ๊ปเลือด */}
             <div>
-              <label className="block text-slate-500 mb-1.5 font-bold">หมู่เลือด (Blood Group)</label>
+              <label htmlFor="bloodGroup" className="block text-slate-500 mb-1.5 font-bold">หมู่เลือด (Blood Group)</label>
               {isEditing ? (
                 <select
+                  id="bloodGroup"
                   name="bloodGroup"
                   value={formData.bloodGroup || ''}
                   onChange={handleChange}
@@ -286,15 +291,16 @@ export default function ProfilePage() {
                   <option value="AB">AB</option>
                 </select>
               ) : (
-                <p className="p-3 bg-slate-50 rounded-xl text-slate-800 font-bold">{user.bloodGroup || 'ไม่ทราบ/ยังไม่ระบุ'}</p>
+                <p id="bloodGroup" className="p-3 bg-slate-50 rounded-xl text-slate-800 font-bold">{user.bloodGroup || 'ไม่ทราบ/ยังไม่ระบุ'}</p>
               )}
             </div>
 
             {/* ประวัติแพ้ยา/อาหาร */}
             <div className="md:col-span-2">
-              <label className="block text-slate-500 mb-1.5 font-bold">ประวัติการแพ้ยา/อาหาร</label>
+              <label htmlFor="allergy" className="block text-slate-500 mb-1.5 font-bold">ประวัติการแพ้ยา/อาหาร</label>
               {isEditing ? (
                 <input
+                  id="allergy"
                   type="text"
                   name="allergy"
                   value={formData.allergy || ''}
@@ -303,16 +309,17 @@ export default function ProfilePage() {
                   className="w-full p-3 rounded-xl border border-slate-200 focus:border-[#1a2b6d] focus:ring-1 focus:ring-[#1a2b6d] outline-none font-semibold text-slate-800"
                 />
               ) : (
-                <p className="p-3 bg-slate-50 rounded-xl text-red-600 font-bold">{user.allergy || 'ปฏิเสธการแพ้ยา'}</p>
+                <p id="allergy" className="p-3 bg-slate-50 rounded-xl text-red-600 font-bold">{user.allergy || 'ปฏิเสธการแพ้ยา'}</p>
               )}
             </div>
           </div>
 
           {/* ที่อยู่ปัจจุบัน */}
           <div>
-            <label className="block text-slate-500 mb-1.5 font-bold text-xs">ที่อยู่ปัจจุบัน</label>
+            <label htmlFor="address" className="block text-slate-500 mb-1.5 font-bold text-xs">ที่อยู่ปัจจุบัน</label>
             {isEditing ? (
               <textarea
+                id="address"
                 name="address"
                 rows={3}
                 value={formData.address || ''}
@@ -321,7 +328,7 @@ export default function ProfilePage() {
                 className="w-full p-3 rounded-xl border border-slate-200 focus:border-[#1a2b6d] focus:ring-1 focus:ring-[#1a2b6d] outline-none font-semibold text-slate-800 text-xs"
               />
             ) : (
-              <p className="p-3 bg-slate-50 rounded-xl text-slate-800 font-bold text-xs">{user.address || 'ยังไม่ได้บันทึกที่อยู่'}</p>
+              <p id="address" className="p-3 bg-slate-50 rounded-xl text-slate-800 font-bold text-xs">{user.address || 'ยังไม่ได้บันทึกที่อยู่'}</p>
             )}
           </div>
 

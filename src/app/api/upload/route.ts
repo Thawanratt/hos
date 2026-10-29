@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { writeFile, mkdir } from 'fs/promises';
 import path from 'path';
-
+import crypto from 'node:crypto'; 
 
 export const config = {
   api: {
@@ -12,7 +12,6 @@ export const config = {
 };
 
 export async function POST(request: NextRequest) {
-
   try {
     const formData = await request.formData();
     const file = formData.get('file') as File | null;
@@ -31,7 +30,10 @@ export async function POST(request: NextRequest) {
     const uploadDir = path.join(process.cwd(), 'public', 'uploads');
     await mkdir(uploadDir, { recursive: true });
 
-    const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
+    // 🟢 ใช้ crypto.randomBytes แทน Math.random() เพื่อเคลียร์ Security Hotspots
+    const randomString = crypto.randomBytes(8).toString('hex');
+    const uniqueSuffix = `${Date.now()}-${randomString}`;
+    
     const ext = path.extname(file.name) || '.jpg';
     const filename = `upload-${uniqueSuffix}${ext}`;
     const filePath = path.join(uploadDir, filename);

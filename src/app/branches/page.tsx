@@ -1,12 +1,13 @@
 'use client';
 
 import { useState, Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { BRANCHES_DATA, Branch } from '@/app/api/branches/branches';
 import BranchSelectorModal from '@/components/BranchSelectorModal';
 
 function BranchesContent() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   
   // รับรหัสสาขาที่ส่งมาจากหน้าแรกผ่าน URL
@@ -15,6 +16,9 @@ function BranchesContent() {
 
   const [selectedService, setSelectedService] = useState<string>('doctor');
   const [isBranchModalOpen, setIsBranchModalOpen] = useState<boolean>(false);
+  
+  // 🟢 State สำหรับเปิด/ปิด Modal สำเร็จการจองฉีดวัคซีน (เฉพาะกิจในหน้านี้)
+  const [showVaccineModal, setShowVaccineModal] = useState<boolean>(false);
 
   // ประเภทบริการ
   const services = [
@@ -50,12 +54,86 @@ function BranchesContent() {
     },
   ];
 
-  // URL ปลายทางสำหรับส่งต่อไปยังหน้า Booking
-  const targetBookingPath = `/booking?branch=${branchId}&service=${selectedService}`;
+  // ฟังก์ชันจัดการเมื่อคลิกปุ่มดำเนินการต่อ
+  const handleProceed = () => {
+    if (selectedService === 'vaccine') {
+      // ถ้าเลือกฉีดวัคซีน ให้เปิด Modal แจ้งรับสิทธิ์/สำเร็จทันทีโดยไม่ต้องไปหน้าอื่น
+      const storedUser = localStorage.getItem('user');
+      if (!storedUser) {
+        router.push('/login?redirect=/branches?branch=' + branchId);
+        return;
+      }
+      setShowVaccineModal(true);
+    } else {
+      // นัดหมายแพทย์ หรือ ตรวจสุขภาพ ไปหน้า Booking ปกติ
+      router.push(`/booking?branch=${branchId}&service=${selectedService}`);
+    }
+  };
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] font-sans pb-24 text-slate-800">
+    <div className="min-h-screen bg-[#F8FAFC] font-sans pb-24 text-slate-800 relative">
       
+      {/* 🟢 VACCINE SUCCESS MODAL (แสดงผลเมื่อเลือกฉีดวัคซีนแล้วกดดำเนินการ) */}
+      {showVaccineModal && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-fadeIn">
+          <div className="bg-white rounded-3xl p-6 md:p-8 max-w-md w-full shadow-2xl border border-slate-100 text-center space-y-6 relative overflow-hidden">
+            <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-[#1a2b6d] to-[#c5a035]"></div>
+
+            <div className="w-14 h-14 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center mx-auto border border-emerald-200">
+              <svg className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+
+            <div className="space-y-1">
+              <span className="text-[10px] font-bold text-[#c5a035] uppercase tracking-widest bg-amber-50 px-3 py-1 rounded-full">
+                ลงทะเบียนเข้ารับบริการสำเร็จ
+              </span>
+              <h3 className="text-lg font-bold text-slate-900 pt-1">จองคิวฉีดวัคซีนไข้หวัดใหญ่สำเร็จ!</h3>
+              <p className="text-xs text-slate-500">ท่านสามารถเดินทางมาติดต่อที่จุดบริการฉีดวัคซีน ณ {currentBranch.name} ได้ทันที</p>
+            </div>
+
+            <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 text-left space-y-2 text-xs">
+              <div className="flex justify-between border-b border-slate-200/60 pb-1.5">
+                <span className="text-slate-500">รายการบริการ:</span>
+                <span className="font-bold text-slate-800">ฉีดวัคซีนไข้หวัดใหญ่ประจำปี</span>
+              </div>
+              <div className="flex justify-between border-b border-slate-200/60 pb-1.5">
+                <span className="text-slate-500">สถานที่:</span>
+                <span className="font-bold text-slate-800">{currentBranch.name}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">คำแนะนำ:</span>
+                <span className="font-bold text-emerald-700">แสดงหน้าจอนี้หรือแจ้งชื่อที่เคาน์เตอร์</span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowVaccineModal(false);
+                  router.push('/appointments');
+                }}
+                className="py-3 px-4 rounded-xl border border-slate-300 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition text-center cursor-pointer"
+              >
+                ดูรายการนัดหมาย
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowVaccineModal(false);
+                  router.push('/');
+                }}
+                className="py-3 px-4 rounded-xl bg-[#1a2b6d] text-xs font-semibold text-white hover:bg-[#0f1a42] transition shadow-sm text-center cursor-pointer"
+              >
+                กลับหน้าหลัก
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* HEADER BANNER */}
       <div className="bg-[#1a2b6d] text-white py-12 px-6 shadow-sm">
         <div className="max-w-4xl mx-auto text-center space-y-3">
@@ -143,16 +221,16 @@ function BranchesContent() {
               ย้อนกลับ
             </Link>
             
-            {/* 🟢 ใช้ Link ครอบและส่งต่อไปหน้า /booking ตรงๆ เหมือนปุ่มย้อนกลับ */}
-            <Link
-              href={targetBookingPath}
+            {/* 🟢 ปุ่มกดเรียกฟังก์ชัน handleProceed แยกเงื่อนไขระหว่างวัคซีนกับบริการอื่น */}
+            <button
+              onClick={handleProceed}
               className="bg-[#1a2b6d] text-white px-8 py-3 rounded-xl text-xs font-semibold hover:bg-[#0f1a42] transition shadow-xs cursor-pointer flex items-center space-x-2"
             >
-              <span>ต่อไป: ไปหน้าจองคิว</span>
+              <span>{selectedService === 'vaccine' ? 'ยืนยันการรับสิทธิ์ฉีดวัคซีน' : 'ต่อไป: ไปหน้าจองคิว'}</span>
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
               </svg>
-            </Link>
+            </button>
           </div>
         </div>
 

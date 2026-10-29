@@ -59,22 +59,24 @@ function StepProgressIndicator({ step }: { readonly step: number }) {
     <div className="flex items-center justify-center max-w-md mx-auto relative">
       <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-slate-200 -translate-y-1/2 z-0" />
       <div className="flex justify-between w-full z-10">
-        {steps.map((s) => (
-          <div key={s.num} className="flex flex-col items-center space-y-1.5 bg-white px-2">
-            <div
-              className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
-                step >= s.num
-                  ? 'bg-[#1a2b6d] text-white ring-4 ring-blue-50'
-                  : 'bg-slate-100 text-slate-400'
-              }`}
-            >
-              {s.num}
+        {steps.map((s) => {
+          const isStepActive = step >= s.num;
+          const stepClass = isStepActive
+            ? 'bg-[#1a2b6d] text-white ring-4 ring-blue-50'
+            : 'bg-slate-100 text-slate-400';
+          const labelClass = isStepActive ? 'text-[#1a2b6d]' : 'text-slate-400';
+
+          return (
+            <div key={s.num} className="flex flex-col items-center space-y-1.5 bg-white px-2">
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all ${stepClass}`}>
+                {s.num}
+              </div>
+              <span className={`text-[11px] font-medium ${labelClass}`}>
+                {s.label}
+              </span>
             </div>
-            <span className={`text-[11px] font-medium ${step >= s.num ? 'text-[#1a2b6d]' : 'text-slate-400'}`}>
-              {s.label}
-            </span>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
@@ -99,6 +101,25 @@ function StepOneDoctorSelection({
   readonly departments: Department[];
   readonly doctorError: boolean;
 }) {
+  const isAutoSelected = doctorSelectionType === 'auto';
+  const isManualSelected = doctorSelectionType === 'manual';
+
+  const autoBtnClass = isAutoSelected
+    ? 'border-[#1a2b6d] bg-blue-50/30 shadow-xs ring-1 ring-[#1a2b6d]'
+    : 'border-slate-200 bg-white hover:border-slate-300';
+
+  const autoCircleClass = isAutoSelected ? 'border-[#1a2b6d] bg-[#1a2b6d]' : 'border-slate-300';
+
+  const manualBtnClass = isManualSelected
+    ? 'border-[#1a2b6d] bg-blue-50/30 shadow-xs ring-1 ring-[#1a2b6d]'
+    : 'border-slate-200 bg-white hover:border-slate-300';
+
+  const manualCircleClass = isManualSelected ? 'border-[#1a2b6d] bg-[#1a2b6d]' : 'border-slate-300';
+
+  const selectClass = doctorError 
+    ? 'border-rose-500 ring-1 ring-rose-500 bg-rose-50/20' 
+    : 'border-slate-200 focus:border-[#1a2b6d]';
+
   return (
     <div className="space-y-6">
       <div className="space-y-3">
@@ -112,15 +133,11 @@ function StepOneDoctorSelection({
               setDoctorSelectionType('auto');
               setBookingData((prev: any) => ({ ...prev, doctorId: 0, doctorName: 'จัดสรรแพทย์ให้อัตโนมัติ' }));
             }}
-            className={`p-5 rounded-2xl border transition-all cursor-pointer flex items-center justify-between text-left ${
-              doctorSelectionType === 'auto'
-                ? 'border-[#1a2b6d] bg-blue-50/30 shadow-xs ring-1 ring-[#1a2b6d]'
-                : 'border-slate-200 bg-white hover:border-slate-300'
-            }`}
+            className={`p-5 rounded-2xl border transition-all cursor-pointer flex items-center justify-between text-left ${autoBtnClass}`}
           >
             <div className="flex items-center space-x-3.5">
-              <div className={`w-5 h-5 rounded-full border flex items-center justify-center ${doctorSelectionType === 'auto' ? 'border-[#1a2b6d] bg-[#1a2b6d]' : 'border-slate-300'}`}>
-                {doctorSelectionType === 'auto' && <div className="w-2 h-2 rounded-full bg-white" />}
+              <div className={`w-5 h-5 rounded-full border flex items-center justify-center ${autoCircleClass}`}>
+                {isAutoSelected && <div className="w-2 h-2 rounded-full bg-white" />}
               </div>
               <span className="text-xs font-semibold text-slate-800">เลือกแพทย์ให้ฉัน</span>
             </div>
@@ -129,15 +146,11 @@ function StepOneDoctorSelection({
           <button
             type="button"
             onClick={() => setDoctorSelectionType('manual')}
-            className={`p-5 rounded-2xl border transition-all cursor-pointer flex items-center justify-between text-left ${
-              doctorSelectionType === 'manual'
-                ? 'border-[#1a2b6d] bg-blue-50/30 shadow-xs ring-1 ring-[#1a2b6d]'
-                : 'border-slate-200 bg-white hover:border-slate-300'
-            }`}
+            className={`p-5 rounded-2xl border transition-all cursor-pointer flex items-center justify-between text-left ${manualBtnClass}`}
           >
             <div className="flex items-center space-x-3.5">
-              <div className={`w-5 h-5 rounded-full border flex items-center justify-center ${doctorSelectionType === 'manual' ? 'border-[#1a2b6d] bg-[#1a2b6d]' : 'border-slate-300'}`}>
-                {doctorSelectionType === 'manual' && <div className="w-2 h-2 rounded-full bg-white" />}
+              <div className={`w-5 h-5 rounded-full border flex items-center justify-center ${manualCircleClass}`}>
+                {isManualSelected && <div className="w-2 h-2 rounded-full bg-white" />}
               </div>
               <span className="text-xs font-semibold text-slate-800">ฉันต้องการเลือกแพทย์เอง</span>
             </div>
@@ -150,32 +163,35 @@ function StepOneDoctorSelection({
           เลือกแผนกและศูนย์การรักษา
         </p>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-          {departments.map((dept) => (
-            <button
-              key={dept.id}
-              type="button"
-              onClick={() =>
-                setBookingData((prev: any) => ({
-                  ...prev,
-                  departmentId: dept.id,
-                  departmentName: dept.name,
-                  doctorId: 0,
-                  doctorName: ''
-                }))
-              }
-              className={`p-4 rounded-2xl border text-center text-xs font-semibold transition-all cursor-pointer ${
-                bookingData.departmentId === dept.id
-                  ? 'border-[#1a2b6d] bg-[#1a2b6d] text-white shadow-xs'
-                  : 'border-slate-200 hover:border-slate-300 text-slate-700 bg-white'
-              }`}
-            >
-              {dept.name}
-            </button>
-          ))}
+          {departments.map((dept) => {
+            const isDeptSelected = bookingData.departmentId === dept.id;
+            const deptBtnClass = isDeptSelected
+              ? 'border-[#1a2b6d] bg-[#1a2b6d] text-white shadow-xs'
+              : 'border-slate-200 hover:border-slate-300 text-slate-700 bg-white';
+
+            return (
+              <button
+                key={dept.id}
+                type="button"
+                onClick={() =>
+                  setBookingData((prev: any) => ({
+                    ...prev,
+                    departmentId: dept.id,
+                    departmentName: dept.name,
+                    doctorId: 0,
+                    doctorName: ''
+                  }))
+                }
+                className={`p-4 rounded-2xl border text-center text-xs font-semibold transition-all cursor-pointer ${deptBtnClass}`}
+              >
+                {dept.name}
+              </button>
+            );
+          })}
         </div>
       </div>
 
-      {doctorSelectionType === 'manual' && (
+      {isManualSelected && (
         <div className="space-y-2 pt-2">
           <label htmlFor="doctor-select" className="block text-xs font-bold text-slate-700 tracking-wide uppercase">
             เลือกแพทย์เฉพาะทาง
@@ -192,9 +208,7 @@ function StepOneDoctorSelection({
                 doctorName: doc ? `${doc.user.firstName} ${doc.user.lastName}` : 'แพทย์ท่านใดก็ได้'
               });
             }}
-            className={`w-full p-3.5 rounded-2xl border text-xs text-slate-700 bg-white outline-none transition-all ${
-              doctorError ? 'border-rose-500 ring-1 ring-rose-500 bg-rose-50/20' : 'border-slate-200 focus:border-[#1a2b6d]'
-            }`}
+            className={`w-full p-3.5 rounded-2xl border text-xs text-slate-700 bg-white outline-none transition-all ${selectClass}`}
           >
             <option value={0}>-- โปรดเลือกแพทย์ผู้ตรวจ --</option>
             {filteredDoctors.map((doc) => (
@@ -270,39 +284,63 @@ function BookingContent() {
     symptoms: ''
   });
 
-  useEffect(() => {
-    let isMounted = true;
+  const extractPatientId = (storedUser: string): number | null => {
+    try {
+      const parsedUser = JSON.parse(storedUser);
+      const realUser = parsedUser.user || parsedUser.data || parsedUser;
+      const validId = realUser?.id || realUser?.userId;
+      return validId ? Number(validId) : null;
+    } catch (e) {
+      console.error('Error parsing patientId:', e);
+      return null;
+    }
+  };
+
+  // 🟢 แยกฟังก์ชันย่อยเพื่อลดความซับซ้อนเชิงความคิด (Cognitive Complexity) ตามกฎของ SonarQube
+  const processValidUserAuth = (storedUser: string, isMounted: boolean) => {
+    const validId = extractPatientId(storedUser);
+    if (validId && isMounted) {
+      setBookingData((prev) => ({ ...prev, patientId: validId }));
+    }
+    if (isMounted) setIsCheckingAuth(false);
+  };
+
+  const redirectToLogin = (isMounted: boolean) => {
+    if (isMounted) {
+      const currentQuery = searchParams.toString();
+      const currentPath = `/booking${currentQuery ? `?${currentQuery}` : ''}`;
+      router.push(`/login?redirect=${encodeURIComponent(currentPath)}`);
+    }
+  };
+
+  const handleAuthVerification = (isMounted: boolean) => {
     try {
       const storedUser = localStorage.getItem('user');
       const storedLoggedInState = localStorage.getItem('isLoggedIn');
 
-      if ((storedUser && storedUser !== 'undefined' && storedUser !== 'null') || storedLoggedInState === 'true') {
-        if (storedUser) {
-          try {
-            const parsedUser = JSON.parse(storedUser);
-            const realUser = parsedUser.user || parsedUser.data || parsedUser;
-            const validId = realUser?.id || realUser?.userId;
-            if (validId && isMounted) {
-              setBookingData((prev) => ({ ...prev, patientId: Number(validId) }));
-            }
-          } catch (e) {
-            console.error('Error parsing patientId:', e);
-          }
-        }
+      const hasValidUser = Boolean(storedUser && storedUser !== 'undefined' && storedUser !== 'null');
+      const isLoggedIn = storedLoggedInState === 'true';
+
+      if (hasValidUser && storedUser) {
+        processValidUserAuth(storedUser, isMounted);
+        return;
+      }
+
+      if (isLoggedIn) {
         if (isMounted) setIsCheckingAuth(false);
         return;
       }
 
-      if (isMounted) {
-        const currentQuery = searchParams.toString();
-        const currentPath = `/booking${currentQuery ? `?${currentQuery}` : ''}`;
-        router.push(`/login?redirect=${encodeURIComponent(currentPath)}`);
-      }
+      redirectToLogin(isMounted);
     } catch (e) {
       console.error('Error verifying auth state:', e);
       if (isMounted) setIsCheckingAuth(false);
     }
+  };
 
+  useEffect(() => {
+    let isMounted = true;
+    handleAuthVerification(isMounted);
     return () => {
       isMounted = false;
     };
@@ -373,22 +411,25 @@ function BookingContent() {
     setBookingData((prev) => ({ ...prev, date: selectedDate }));
   };
 
-  // 🟢 ตรวจสอบสถานะ isAvailable แบบเจาะจงรายช่วงเวลาที่ผู้ใช้เลือก
+  const checkSpecificDoctorAvailability = (selectedDoc: Doctor, targetDayOfWeek: number) => {
+    if (!selectedDoc.schedules || selectedDoc.schedules.length === 0) return true;
+    const matchingSchedule = selectedDoc.schedules.find(
+      (s) => s.dayOfWeek === targetDayOfWeek && `${s.startTime}-${s.endTime}` === bookingData.time
+    );
+    if (matchingSchedule && !matchingSchedule.isAvailable) {
+      setAvailabilityErrorMsg('แพทย์ท่านนี้งดออกตรวจในช่วงเวลาดังกล่าว กรุณาเลือกช่วงเวลาอื่น');
+      return false;
+    }
+    return true;
+  };
+
   const validateDoctorAvailability = () => {
     if (doctorSelectionType === 'manual' && bookingData.doctorId && bookingData.time) {
       const selectedDoc = doctors.find((d) => d.id === Number(bookingData.doctorId));
-      if (selectedDoc && selectedDoc.schedules && selectedDoc.schedules.length > 0) {
+      if (selectedDoc) {
         const targetDateObj = new Date(bookingData.date);
         const targetDayOfWeek = targetDateObj.getDay();
-
-        const matchingSchedule = selectedDoc.schedules.find(
-          (s) => s.dayOfWeek === targetDayOfWeek && `${s.startTime} - ${s.endTime}` === bookingData.time
-        );
-
-        if (matchingSchedule && !matchingSchedule.isAvailable) {
-          setAvailabilityErrorMsg('แพทย์ท่านนี้งดออกตรวจในช่วงเวลาดังกล่าว กรุณาเลือกช่วงเวลาอื่น');
-          return false;
-        }
+        return checkSpecificDoctorAvailability(selectedDoc, targetDayOfWeek);
       }
     }
     setAvailabilityErrorMsg(null);
@@ -465,6 +506,80 @@ function BookingContent() {
   const selectedDoctorObj = doctors.find((d) => d.id === Number(bookingData.doctorId));
   const targetDayOfWeek = new Date(bookingData.date).getDay();
 
+  const renderTimeSlotButtons = () => {
+    if (doctorSelectionType === 'manual' && selectedDoctorObj && selectedDoctorObj.schedules) {
+      const doctorSchedules = selectedDoctorObj.schedules.filter(
+        (s) => s.dayOfWeek === targetDayOfWeek
+      );
+
+      if (doctorSchedules.length === 0) {
+        return (
+          <div className="col-span-full py-3 px-4 bg-amber-50 border border-amber-200 rounded-xl text-center text-xs text-amber-700 font-medium">
+            แพทย์ท่านนี้ไม่มีรอบเวลาออกตรวจในวันที่ท่านเลือก กรุณาเปลี่ยนวันนัดหมาย
+          </div>
+        );
+      }
+
+      return doctorSchedules.map((sched) => {
+        const timeLabel = `${sched.startTime}-${sched.endTime}`;
+        const isSelected = bookingData.time === timeLabel;
+        const isAvailable = sched.isAvailable;
+
+        let timeBtnClass = 'border-slate-200 text-slate-700 bg-white hover:border-slate-300 cursor-pointer';
+        if (!isAvailable) {
+          timeBtnClass = 'bg-red-50/60 border-red-200 text-red-400 opacity-60 cursor-not-allowed line-through';
+        } else if (isSelected) {
+          timeBtnClass = 'border-[#1a2b6d] bg-[#1a2b6d] text-white shadow-xs cursor-pointer';
+        }
+
+        return (
+          <button
+            key={sched.id}
+            type="button"
+            disabled={!isAvailable}
+            onClick={() => {
+              if (!isAvailable) return;
+              setTimeError(false);
+              setBookingData({ ...bookingData, time: timeLabel });
+            }}
+            className={`p-3.5 rounded-2xl border text-center text-xs font-semibold transition-all ${timeBtnClass}`}
+          >
+            {timeLabel} น.
+            {!isAvailable && (
+              <span className="block text-[10px] text-red-500 font-bold mt-0.5 no-underline">
+                [งดออกตรวจ]
+              </span>
+            )}
+          </button>
+        );
+      });
+    }
+
+    return ['09:00 - 10:00', '10:30 - 11:30', '13:00 - 14:00', '14:30 - 15:30'].map((time) => {
+      const isTimeSelected = bookingData.time === time;
+      let timeDefaultClass = 'border-slate-200 text-slate-600 bg-white hover:border-slate-300';
+      if (isTimeSelected) {
+        timeDefaultClass = 'border-[#1a2b6d] bg-[#1a2b6d] text-white shadow-xs';
+      } else if (timeError) {
+        timeDefaultClass = 'border-rose-300 text-slate-600 bg-rose-50/20';
+      }
+
+      return (
+        <button
+          key={time}
+          type="button"
+          onClick={() => {
+            setTimeError(false);
+            setBookingData({ ...bookingData, time });
+          }}
+          className={`p-3.5 rounded-2xl border text-center text-xs font-semibold transition-all cursor-pointer ${timeDefaultClass}`}
+        >
+          {time} น.
+        </button>
+      );
+    });
+  };
+
   if (isCheckingAuth) {
     return (
       <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center text-xs text-slate-500">
@@ -472,6 +587,10 @@ function BookingContent() {
       </div>
     );
   }
+
+  const dateInputClass = dateError 
+    ? 'border-rose-500 ring-1 ring-rose-500 bg-rose-50/20' 
+    : 'border-slate-200 focus:border-[#1a2b6d]';
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] font-sans pb-24 text-slate-800">
@@ -547,9 +666,7 @@ function BookingContent() {
                       min={todayStr}
                       value={bookingData.date}
                       onChange={handleDateChange}
-                      className={`w-full pl-4 pr-10 py-3.5 rounded-2xl border text-xs font-medium text-slate-800 bg-white focus:outline-none transition-all cursor-pointer shadow-2xs ${
-                        dateError ? 'border-rose-500 ring-1 ring-rose-500 bg-rose-50/20' : 'border-slate-200 focus:border-[#1a2b6d]'
-                      }`}
+                      className={`w-full pl-4 pr-10 py-3.5 rounded-2xl border text-xs font-medium text-slate-800 bg-white focus:outline-none transition-all cursor-pointer shadow-2xs ${dateInputClass}`}
                     />
                   </div>
                   {dateError && (
@@ -557,7 +674,7 @@ function BookingContent() {
                       - กรุณาเลือกวันที่ปัจจุบันหรือวันที่ในอนาคต (ไม่อนุญาตให้เลือกวันที่ย้อนหลัง)
                     </p>
                   )}
-                  {availabilityErrorMsg && (
+                  {Boolean(availabilityErrorMsg) && (
                     <p className="text-[11px] text-rose-600 font-bold pl-1 mt-1 animate-fadeIn">
                       - {availabilityErrorMsg}
                     </p>
@@ -567,76 +684,8 @@ function BookingContent() {
                 <div className="space-y-2 pt-2">
                   <p className="text-xs font-semibold text-slate-700">เลือกรอบเวลา</p>
                   
-                  {/* 🟢 แสดงรอบเวลาตามจริงและเช็กสถานะ isAvailable แยกตามช่วงเวลา */}
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                    {(() => {
-                      if (doctorSelectionType === 'manual' && selectedDoctorObj && selectedDoctorObj.schedules) {
-                        const doctorSchedules = selectedDoctorObj.schedules.filter(
-                          (s) => s.dayOfWeek === targetDayOfWeek
-                        );
-
-                        if (doctorSchedules.length === 0) {
-                          return (
-                            <div className="col-span-full py-3 px-4 bg-amber-50 border border-amber-200 rounded-xl text-center text-xs text-amber-700 font-medium">
-                              แพทย์ท่านนี้ไม่มีรอบเวลาออกตรวจในวันที่ท่านเลือก กรุณาเปลี่ยนวันนัดหมาย
-                            </div>
-                          );
-                        }
-
-                        return doctorSchedules.map((sched) => {
-                          const timeLabel = `${sched.startTime} - ${sched.endTime}`;
-                          const isSelected = bookingData.time === timeLabel;
-                          const isAvailable = sched.isAvailable; // 🟢 สถานะแยกตามช่วงเวลา
-
-                          return (
-                            <button
-                              key={sched.id}
-                              type="button"
-                              disabled={!isAvailable}
-                              onClick={() => {
-                                if (!isAvailable) return;
-                                setTimeError(false);
-                                setBookingData({ ...bookingData, time: timeLabel });
-                              }}
-                              className={`p-3.5 rounded-2xl border text-center text-xs font-semibold transition-all ${
-                                !isAvailable
-                                  ? 'bg-red-50/60 border-red-200 text-red-400 opacity-60 cursor-not-allowed line-through'
-                                  : isSelected
-                                  ? 'border-[#1a2b6d] bg-[#1a2b6d] text-white shadow-xs cursor-pointer'
-                                  : 'border-slate-200 text-slate-700 bg-white hover:border-slate-300 cursor-pointer'
-                              }`}
-                            >
-                              {timeLabel} น.
-                              {!isAvailable && (
-                                <span className="block text-[10px] text-red-500 font-bold mt-0.5 no-underline">
-                                  [งดออกตรวจ]
-                                </span>
-                              )}
-                            </button>
-                          );
-                        });
-                      }
-
-                      return ['09:00 - 10:00', '10:30 - 11:30', '13:00 - 14:00', '14:30 - 15:30'].map((time) => (
-                        <button
-                          key={time}
-                          type="button"
-                          onClick={() => {
-                            setTimeError(false);
-                            setBookingData({ ...bookingData, time });
-                          }}
-                          className={`p-3.5 rounded-2xl border text-center text-xs font-semibold transition-all cursor-pointer ${
-                            bookingData.time === time
-                              ? 'border-[#1a2b6d] bg-[#1a2b6d] text-white shadow-xs'
-                              : timeError
-                              ? 'border-rose-300 text-slate-600 bg-rose-50/20'
-                              : 'border-slate-200 text-slate-600 bg-white hover:border-slate-300'
-                          }`}
-                        >
-                          {time} น.
-                        </button>
-                      ));
-                    })()}
+                    {renderTimeSlotButtons()}
                   </div>
 
                   {timeError && (
@@ -730,7 +779,7 @@ function BookingContent() {
                   <span className="text-slate-500">เวลานัดหมาย:</span>
                   <span className="font-bold text-[#1a2b6d]">{bookingData.time} น.</span>
                 </div>
-                {bookingData.symptoms && (
+                {Boolean(bookingData.symptoms) && (
                   <div className="flex justify-between">
                     <span className="text-slate-500">หมายเหตุ:</span>
                     <span className="font-bold text-slate-800">{bookingData.symptoms}</span>
@@ -761,7 +810,7 @@ function BookingContent() {
         </div>
       </main>
 
-      {showSuccessModal && (
+      {Boolean(showSuccessModal) && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs">
           <div className="bg-white rounded-3xl shadow-2xl p-8 max-w-sm w-full text-center space-y-6 relative border border-slate-100">
             <div className="mx-auto w-14 h-14 rounded-full bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-600">

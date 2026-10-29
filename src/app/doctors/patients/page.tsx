@@ -46,6 +46,104 @@ const icons = {
 
 const genderLabel = (g: string | null) => (g === 'MALE' ? 'ชาย' : g === 'FEMALE' ? 'หญิง' : '-');
 
+const inputCls =
+  'w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm text-slate-800 bg-white placeholder:text-slate-400 focus:outline-none focus:border-[#2f5597] focus:ring-2 focus:ring-[#2f5597]/15 transition';
+
+// 🟢 แยกส่วนที่ยังไม่ได้เลือกผู้ป่วยออกมาเป็น Component ย่อย
+function EmptyPatientSelection() {
+  return (
+    <div className="bg-white border border-dashed border-slate-300 rounded-xl px-6 py-20 text-center">
+      <div className="mx-auto w-12 h-12 rounded-full bg-[#e9eff7] text-[#2f5597] flex items-center justify-center">
+        <Icon d={icons.record} className="w-6 h-6" />
+      </div>
+      <h3 className="mt-4 text-sm font-semibold text-slate-900">ยังไม่ได้เลือกผู้ป่วย</h3>
+      <p className="mt-1 text-sm text-slate-500">เลือกรายชื่อผู้ป่วยจากรายการ เพื่อดูประวัติหรือบันทึกเวชระเบียน</p>
+    </div>
+  );
+}
+
+// 🟢 แยกส่วนแสดงประวัติการรักษาเก่าออกมาเป็น Component ย่อย
+function MedicalHistoryList({ 
+  records, 
+  editingRecordId, 
+  onStartEdit 
+}: { 
+  readonly records?: MedicalRecordItem[]; 
+  readonly editingRecordId: number | null; 
+  readonly onStartEdit: (rec: MedicalRecordItem) => void; 
+}) {
+  if (!records || records.length === 0) {
+    return (
+      <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
+        <div className="p-4 border-b border-slate-100 flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <span className="w-8 h-8 rounded-lg bg-[#e9eff7] text-[#2f5597] flex items-center justify-center">
+              <Icon d={icons.history} />
+            </span>
+            <h3 className="text-sm font-semibold text-slate-900">ประวัติการรักษาเดิมทั้งหมด</h3>
+          </div>
+          <span className="text-xs text-slate-400">0 ครั้ง</span>
+        </div>
+        <p className="text-sm text-slate-400 py-12 px-6 text-center">
+          ยังไม่มีประวัติการบันทึกเวชระเบียนสำหรับผู้ป่วยรายนี้
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
+      <div className="p-4 border-b border-slate-100 flex items-center justify-between">
+        <div className="flex items-center gap-2.5">
+          <span className="w-8 h-8 rounded-lg bg-[#e9eff7] text-[#2f5597] flex items-center justify-center">
+            <Icon d={icons.history} />
+          </span>
+          <h3 className="text-sm font-semibold text-slate-900">ประวัติการรักษาเดิมทั้งหมด</h3>
+        </div>
+        <span className="text-xs text-slate-400">{records.length} ครั้ง</span>
+      </div>
+
+      <ul className="divide-y divide-slate-100">
+        {records.map((rec) => {
+          const isEditing = editingRecordId === rec.id;
+          return (
+            <li key={rec.id} className={`relative px-5 py-4 transition-colors ${isEditing ? 'bg-[#f1f5fb]' : ''}`}>
+              {isEditing && <span className="absolute left-0 top-0 bottom-0 w-[3px] bg-[#2f5597]" />}
+
+              <div className="flex items-center justify-between gap-3">
+                <span className="inline-flex items-center gap-1.5 text-xs text-slate-500">
+                  <Icon d={icons.calendar} className="w-3.5 h-3.5" />
+                  {new Date(rec.createdAt).toLocaleString('th-TH', { dateStyle: 'medium', timeStyle: 'short' })}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => onStartEdit(rec)}
+                  disabled={isEditing}
+                  className="inline-flex items-center gap-1 text-xs font-medium text-[#2f5597] hover:text-[#1e3a6e] transition-colors cursor-pointer disabled:text-slate-400 disabled:cursor-default"
+                >
+                  <Icon d={icons.edit} className="w-3.5 h-3.5" />
+                  {isEditing ? 'กำลังแก้ไข' : 'แก้ไข'}
+                </button>
+              </div>
+
+              <dl className="mt-3 space-y-3 text-sm">
+                <div>
+                  <dt className="text-xs text-slate-500">การวินิจฉัย</dt>
+                  <dd className="mt-0.5 font-semibold text-slate-900">{rec.diagnosis}</dd>
+                </div>
+                <div>
+                  <dt className="text-xs text-slate-500">การสั่งจ่ายยา / คำแนะนำ</dt>
+                  <dd className="mt-0.5 font-medium text-slate-900 whitespace-pre-wrap">{rec.prescription || '-'}</dd>
+                </div>
+              </dl>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
+
 export default function DoctorPatientsPage() {
   const [patients, setPatients] = useState<PatientUser[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -69,7 +167,7 @@ export default function DoctorPatientsPage() {
   };
 
   useEffect(() => {
-    const storedUser = localStorage.getItem('user'); // ดึงข้อมูลผู้ใช้จาก localStorage
+    const storedUser = localStorage.getItem('user');
     if (storedUser) {
       try {
         const user = JSON.parse(storedUser);
@@ -184,9 +282,6 @@ export default function DoctorPatientsPage() {
       (p.phone && p.phone.includes(searchTerm))
   );
 
-  const inputCls =
-    'w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm text-slate-800 bg-white placeholder:text-slate-400 focus:outline-none focus:border-[#2f5597] focus:ring-2 focus:ring-[#2f5597]/15 transition';
-
   return (
     <div className={`${plex.className} min-h-screen bg-[#f6f8fb] text-slate-800 pb-20`}>
       <header className="bg-white border-b border-slate-200 sticky top-0 z-30">
@@ -295,13 +390,7 @@ export default function DoctorPatientsPage() {
           {/* ขวา: รายละเอียดและประวัติการรักษา */}
           <section ref={panelRef} className="lg:col-span-3 space-y-6">
             {!selectedPatient ? (
-              <div className="bg-white border border-dashed border-slate-300 rounded-xl px-6 py-20 text-center">
-                <div className="mx-auto w-12 h-12 rounded-full bg-[#e9eff7] text-[#2f5597] flex items-center justify-center">
-                  <Icon d={icons.record} className="w-6 h-6" />
-                </div>
-                <h3 className="mt-4 text-sm font-semibold text-slate-900">ยังไม่ได้เลือกผู้ป่วย</h3>
-                <p className="mt-1 text-sm text-slate-500">เลือกรายชื่อผู้ป่วยจากรายการ เพื่อดูประวัติหรือบันทึกเวชระเบียน</p>
-              </div>
+              <EmptyPatientSelection />
             ) : (
               <>
                 {/* ข้อมูลทั่วไปผู้ป่วย */}
@@ -389,69 +478,11 @@ export default function DoctorPatientsPage() {
                 </div>
 
                 {/* ประวัติการรักษาเดิมย้อนหลัง */}
-                <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
-                  <div className="p-4 border-b border-slate-100 flex items-center justify-between">
-                    <div className="flex items-center gap-2.5">
-                      <span className="w-8 h-8 rounded-lg bg-[#e9eff7] text-[#2f5597] flex items-center justify-center">
-                        <Icon d={icons.history} />
-                      </span>
-                      <h3 className="text-sm font-semibold text-slate-900">ประวัติการรักษาเดิมทั้งหมด</h3>
-                    </div>
-                    <span className="text-xs text-slate-400">{selectedPatient.medicalRecords?.length || 0} ครั้ง</span>
-                  </div>
-
-                  {!selectedPatient.medicalRecords || selectedPatient.medicalRecords.length === 0 ? (
-                    <p className="text-sm text-slate-400 py-12 px-6 text-center">
-                      ยังไม่มีประวัติการบันทึกเวชระเบียนสำหรับผู้ป่วยรายนี้
-                    </p>
-                  ) : (
-                    <ul className="divide-y divide-slate-100">
-                      {selectedPatient.medicalRecords.map((rec) => {
-                        const isEditing = editingRecordId === rec.id;
-                        return (
-                          <li
-                            key={rec.id}
-                            className={`relative px-5 py-4 transition-colors ${isEditing ? 'bg-[#f1f5fb]' : ''}`}
-                          >
-                            {isEditing && <span className="absolute left-0 top-0 bottom-0 w-[3px] bg-[#2f5597]" />}
-
-                            <div className="flex items-center justify-between gap-3">
-                              <span className="inline-flex items-center gap-1.5 text-xs text-slate-500">
-                                <Icon d={icons.calendar} className="w-3.5 h-3.5" />
-                                {new Date(rec.createdAt).toLocaleString('th-TH', {
-                                  dateStyle: 'medium',
-                                  timeStyle: 'short',
-                                })}
-                              </span>
-                              <button
-                                type="button"
-                                onClick={() => handleStartEdit(rec)}
-                                disabled={isEditing}
-                                className="inline-flex items-center gap-1 text-xs font-medium text-[#2f5597] hover:text-[#1e3a6e] transition-colors cursor-pointer disabled:text-slate-400 disabled:cursor-default"
-                              >
-                                <Icon d={icons.edit} className="w-3.5 h-3.5" />
-                                {isEditing ? 'กำลังแก้ไข' : 'แก้ไข'}
-                              </button>
-                            </div>
-
-                            <dl className="mt-3 space-y-3 text-sm">
-                              <div>
-                                <dt className="text-xs text-slate-500">การวินิจฉัย</dt>
-                                <dd className="mt-0.5 font-semibold text-slate-900">{rec.diagnosis}</dd>
-                              </div>
-                              <div>
-                                <dt className="text-xs text-slate-500">การสั่งจ่ายยา / คำแนะนำ</dt>
-                                <dd className="mt-0.5 font-medium text-slate-900 whitespace-pre-wrap">
-                                  {rec.prescription || '-'}
-                                </dd>
-                              </div>
-                            </dl>
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  )}
-                </div>
+                <MedicalHistoryList
+                  records={selectedPatient.medicalRecords}
+                  editingRecordId={editingRecordId}
+                  onStartEdit={handleStartEdit}
+                />
               </>
             )}
           </section>

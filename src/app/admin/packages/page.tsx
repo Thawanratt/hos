@@ -217,21 +217,21 @@ export default function AdminPackagesPage() {
     <div className="min-h-screen bg-[#f8fafc] text-slate-800 font-sans pb-20 relative">
 
       {/* TOAST */}
-      {toast.show && (
+      {Boolean(toast.show) && (
         <div className="fixed bottom-6 right-6 z-50 bg-slate-900 text-white px-4 py-3 rounded-lg shadow-lg text-xs">
           <span>{toast.message}</span>
         </div>
       )}
 
       {/* CONFIRM MODAL */}
-      {confirmModal.show && (
+      {Boolean(confirmModal.show) && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-xl max-w-sm w-full p-6 shadow-xl space-y-4">
             <h3 className="font-bold text-slate-800 text-sm">ยืนยันการทำรายการ</h3>
             <p className="text-xs text-slate-600">{confirmModal.message}</p>
             <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
-              <button onClick={() => setConfirmModal((prev) => ({ ...prev, show: false }))} className="px-3 py-1.5 text-xs border rounded-md">ยกเลิก</button>
-              <button onClick={confirmModal.onConfirm} className="px-3 py-1.5 text-xs bg-red-600 text-white rounded-md">ยืนยันการลบ</button>
+              <button onClick={() => setConfirmModal((prev) => ({ ...prev, show: false }))} className="px-3 py-1.5 text-xs border rounded-md cursor-pointer">ยกเลิก</button>
+              <button onClick={confirmModal.onConfirm} className="px-3 py-1.5 text-xs bg-red-600 text-white rounded-md cursor-pointer">ยืนยันการลบ</button>
             </div>
           </div>
         </div>
@@ -256,8 +256,8 @@ export default function AdminPackagesPage() {
             <h2 className="font-bold text-[#1a2b6d] text-base">
               {editingId ? 'แก้ไขข้อมูลแพ็กเกจ' : 'เพิ่มแพ็กเกจใหม่'}
             </h2>
-            {editingId && (
-              <button onClick={resetForm} className="text-xs text-slate-600 border px-3 py-1.5 rounded-md bg-slate-50">
+            {Boolean(editingId) && (
+              <button onClick={resetForm} className="text-xs text-slate-600 border px-3 py-1.5 rounded-md bg-slate-50 cursor-pointer">
                 ยกเลิกการแก้ไข
               </button>
             )}
@@ -266,13 +266,13 @@ export default function AdminPackagesPage() {
           <form onSubmit={handleSubmit} className="space-y-4 text-xs">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="md:col-span-2 space-y-1.5">
-                <label className="font-semibold text-slate-700">ชื่อแพ็กเกจ *</label>
-                <input type="text" value={formData.title} onChange={(e) => setFormData({ ...formData, title: e.target.value })} placeholder="เช่น โปรแกรมตรวจสุขภาพประจำปี" className="w-full p-2.5 rounded-md border border-slate-300 bg-white" required />
+                <label htmlFor="input-pkgtitle" className="font-semibold text-slate-700 block">ชื่อแพ็กเกจ *</label>
+                <input id="input-pkgtitle" type="text" value={formData.title} onChange={(e) => setFormData({ ...formData, title: e.target.value })} placeholder="เช่น โปรแกรมตรวจสุขภาพประจำปี" className="w-full p-2.5 rounded-md border border-slate-300 bg-white" required />
               </div>
 
               <div className="space-y-1.5">
-                <label className="font-semibold text-slate-700">หมวดหมู่</label>
-                <select value={formData.category} onChange={(e) => setFormData({ ...formData, category: e.target.value })} className="w-full p-2.5 rounded-md border border-slate-300 bg-white">
+                <label htmlFor="select-pkgcategory" className="font-semibold text-slate-700 block">หมวดหมู่</label>
+                <select id="select-pkgcategory" value={formData.category} onChange={(e) => setFormData({ ...formData, category: e.target.value })} className="w-full p-2.5 rounded-md border border-slate-300 bg-white">
                   <option value="ตรวจสุขภาพประจำปี">ตรวจสุขภาพประจำปี</option>
                   <option value="วิตามิน & ชะลอวัย">วิตามิน & ชะลอวัย</option>
                   <option value="สิทธิพิเศษวันเกิด">สิทธิพิเศษวันเกิด</option>
@@ -280,28 +280,34 @@ export default function AdminPackagesPage() {
               </div>
 
               <div className="space-y-1.5">
-                <label className="font-semibold text-slate-700">ราคาโปรโมชั่น *</label>
-                <input type="text" value={formData.price} onChange={(e) => setFormData({ ...formData, price: e.target.value })} placeholder="เช่น 3,500 ฿" className="w-full p-2.5 rounded-md border border-slate-300 bg-white" required />
+                <label htmlFor="input-pkgprice" className="font-semibold text-slate-700 block">ราคาโปรโมชั่น *</label>
+                <input id="input-pkgprice" type="text" value={formData.price} onChange={(e) => setFormData({ ...formData, price: e.target.value })} placeholder="เช่น 3,500 ฿" className="w-full p-2.5 rounded-md border border-slate-300 bg-white" required />
               </div>
 
               <div className="space-y-1.5">
-                <label className="font-semibold text-slate-700">ราคาปกติ</label>
-                <input type="text" value={formData.originalPrice} onChange={(e) => setFormData({ ...formData, originalPrice: e.target.value })} placeholder="เช่น 6,000 ฿" className="w-full p-2.5 rounded-md border border-slate-300 bg-white" />
+                <label htmlFor="input-pkgorigprice" className="font-semibold text-slate-700 block">ราคาปกติ</label>
+                <input id="input-pkgorigprice" type="text" value={formData.originalPrice} onChange={(e) => setFormData({ ...formData, originalPrice: e.target.value })} placeholder="เช่น 6,000 ฿" className="w-full p-2.5 rounded-md border border-slate-300 bg-white" />
               </div>
 
               <div className="space-y-1.5">
-                <label className="font-semibold text-slate-700">ป้ายกำกับ (Tag)</label>
-                <input type="text" value={formData.tag} onChange={(e) => setFormData({ ...formData, tag: e.target.value })} placeholder="เช่น โปรแกรมยอดนิยม" className="w-full p-2.5 rounded-md border border-slate-300 bg-white" />
+                <label htmlFor="input-pkgtag" className="font-semibold text-slate-700 block">ป้ายกำกับ (Tag)</label>
+                <input id="input-pkgtag" type="text" value={formData.tag} onChange={(e) => setFormData({ ...formData, tag: e.target.value })} placeholder="เช่น โปรแกรมยอดนิยม" className="w-full p-2.5 rounded-md border border-slate-300 bg-white" />
               </div>
             </div>
 
             <div className="space-y-3 border-t border-slate-100 pt-4">
-              <label className="font-semibold text-slate-700 block">รูปภาพแพ็กเกจ</label>
+              <span className="font-semibold text-slate-700 block">รูปภาพแพ็กเกจ</span>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <input type="file" accept="image/*" onChange={handleImageUpload} className="block w-full text-[11px] text-slate-500 border border-slate-300 rounded-md file:py-2 file:px-3 file:bg-[#1a2b6d] file:text-white" />
-                <input type="text" value={formData.imageUrl} onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })} placeholder="หรือระบุ URL รูปภาพ" className="w-full p-2.5 rounded-md border border-slate-300 bg-white" />
+                <div>
+                  <label htmlFor="file-pkgimage" className="text-[11px] text-slate-500 block mb-1">อัปโหลดไฟล์รูปภาพ</label>
+                  <input id="file-pkgimage" type="file" accept="image/*" onChange={handleImageUpload} className="block w-full text-[11px] text-slate-500 border border-slate-300 rounded-md file:py-2 file:px-3 file:bg-[#1a2b6d] file:text-white" />
+                </div>
+                <div>
+                  <label htmlFor="input-pkgimageurl" className="text-[11px] text-slate-500 block mb-1">หรือระบุ URL รูปภาพ</label>
+                  <input id="input-pkgimageurl" type="text" value={formData.imageUrl} onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })} placeholder="หรือระบุ URL รูปภาพ" className="w-full p-2.5 rounded-md border border-slate-300 bg-white" />
+                </div>
               </div>
-              {formData.imageUrl && (
+              {Boolean(formData.imageUrl) && (
                 <div className="flex items-center gap-3 bg-white p-2 border rounded-md w-fit">
                   <span className="text-[11px] text-slate-500">ตัวอย่าง:</span>
                   <img src={formData.imageUrl} alt="Preview" className="h-12 w-20 object-cover rounded border" />
@@ -310,26 +316,26 @@ export default function AdminPackagesPage() {
             </div>
 
             <div className="space-y-1.5 border-t border-slate-100 pt-4">
-              <label className="font-semibold text-slate-700">คำอธิบายสั้นๆ (Subtitle)</label>
-              <textarea rows={2} value={formData.subtitle} onChange={(e) => setFormData({ ...formData, subtitle: e.target.value })} className="w-full p-2.5 rounded-md border border-slate-300 bg-white" />
+              <label htmlFor="textarea-pkgsubtitle" className="font-semibold text-slate-700 block">คำอธิบายสั้นๆ (Subtitle)</label>
+              <textarea id="textarea-pkgsubtitle" rows={2} value={formData.subtitle} onChange={(e) => setFormData({ ...formData, subtitle: e.target.value })} className="w-full p-2.5 rounded-md border border-slate-300 bg-white" />
             </div>
 
             <div className="space-y-1.5">
-              <label className="font-semibold text-slate-700">ข้อมูลแพ็กเกจ / รายการตรวจ (แยกแต่ละข้อด้วยการขึ้นบรรทัดใหม่)</label>
-              <textarea rows={3} value={formData.featuresText} onChange={(e) => setFormData({ ...formData, featuresText: e.target.value })} className="w-full p-2.5 rounded-md border border-slate-300 bg-white" />
+              <label htmlFor="textarea-pkgfeatures" className="font-semibold text-slate-700 block">ข้อมูลแพ็กเกจ / รายการตรวจ (แยกแต่ละข้อด้วยการขึ้นบรรทัดใหม่)</label>
+              <textarea id="textarea-pkgfeatures" rows={3} value={formData.featuresText} onChange={(e) => setFormData({ ...formData, featuresText: e.target.value })} className="w-full p-2.5 rounded-md border border-slate-300 bg-white" />
             </div>
 
             <div className="space-y-1.5">
-              <label className="font-semibold text-slate-700">ระยะเวลา (Valid Date)</label>
-              <input type="text" value={formData.validDate} onChange={(e) => setFormData({ ...formData, validDate: e.target.value })} className="w-full p-2.5 rounded-md border border-slate-300 bg-white" />
+              <label htmlFor="input-pkgvalid" className="font-semibold text-slate-700 block">ระยะเวลา (Valid Date)</label>
+              <input id="input-pkgvalid" type="text" value={formData.validDate} onChange={(e) => setFormData({ ...formData, validDate: e.target.value })} className="w-full p-2.5 rounded-md border border-slate-300 bg-white" />
             </div>
 
             <div className="space-y-1.5">
-              <label className="font-semibold text-slate-700">เงื่อนไขการใช้บริการ (แยกแต่ละข้อด้วยการขึ้นบรรทัดใหม่)</label>
-              <textarea rows={3} value={formData.termsText} onChange={(e) => setFormData({ ...formData, termsText: e.target.value })} className="w-full p-2.5 rounded-md border border-slate-300 bg-white" />
+              <label htmlFor="textarea-pkgterms" className="font-semibold text-slate-700 block">เงื่อนไขการใช้บริการ (แยกแต่ละข้อด้วยการขึ้นบรรทัดใหม่)</label>
+              <textarea id="textarea-pkgterms" rows={3} value={formData.termsText} onChange={(e) => setFormData({ ...formData, termsText: e.target.value })} className="w-full p-2.5 rounded-md border border-slate-300 bg-white" />
             </div>
 
-            <button type="submit" disabled={submitting || uploadingImage} className="bg-[#1a2b6d] text-white font-semibold px-5 py-2.5 rounded-md hover:bg-[#0f1a42] transition cursor-pointer">
+            <button type="submit" disabled={submitting || uploadingImage} className="bg-[#1a2b6d] text-white font-semibold px-5 py-2.5 rounded-md hover:bg-[#0f1a42] transition cursor-pointer disabled:bg-slate-400">
               {submitting ? 'กำลังบันทึก...' : editingId ? 'บันทึกการแก้ไข' : 'เพิ่มแพ็กเกจใหม่'}
             </button>
           </form>
@@ -353,8 +359,8 @@ export default function AdminPackagesPage() {
                     <div className="text-xs font-extrabold text-[#1a2b6d]">{pkg.price}</div>
                   </div>
                   <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-200">
-                    <button onClick={() => handleEditClick(pkg)} className="px-3 py-1.5 bg-white border border-slate-300 hover:bg-slate-100 rounded-lg text-xs font-semibold">แก้ไข</button>
-                    <button onClick={() => handleDelete(pkg.id)} className="px-3 py-1.5 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg text-xs font-semibold">ลบ</button>
+                    <button onClick={() => handleEditClick(pkg)} className="px-3 py-1.5 bg-white border border-slate-300 hover:bg-slate-100 rounded-lg text-xs font-semibold cursor-pointer">แก้ไข</button>
+                    <button onClick={() => handleDelete(pkg.id)} className="px-3 py-1.5 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg text-xs font-semibold cursor-pointer">ลบ</button>
                   </div>
                 </div>
               ))}

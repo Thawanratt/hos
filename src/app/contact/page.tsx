@@ -28,9 +28,9 @@ export default function ContactPage() {
 
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [errorMessage, setErrorMessage] = useState(''); // 🟢 เพิ่ม State สำหรับแจ้งเตือนข้อผิดพลาด
+  const [errorMessage, setErrorMessage] = useState('');
 
-const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage('');
 
@@ -101,7 +101,7 @@ const handleSubmit = async (e: React.FormEvent) => {
       {/* MAIN CONTENT */}
       <main className="max-w-7xl mx-auto px-4 md:px-8 mt-8 space-y-8">
         
-        {/* CONTACT INFO CARDS - แบบเรียบง่าย */}
+        {/* CONTACT INFO CARDS */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           
           <div className="bg-white border border-slate-200 rounded-lg p-5 space-y-2">
@@ -155,7 +155,6 @@ const handleSubmit = async (e: React.FormEvent) => {
               <div className="h-0.5 w-16 bg-[#1a2b6d] mt-2"></div>
             </div>
 
-            {/* 🔴 ข้อความแจ้งเตือน Error เมื่อกรอกข้อมูลไม่ถูกต้อง */}
             {errorMessage && (
               <div className="bg-red-50 border border-red-200 rounded-md p-3 text-red-700 text-xs font-bold flex items-center justify-between">
                 <span>{errorMessage}</span>
@@ -193,7 +192,6 @@ const handleSubmit = async (e: React.FormEvent) => {
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {/* ช่องเบอร์โทรศัพท์: กรอกได้เฉพาะตัวเลข และจำกัดความยาวไม่เกิน 10 หลัก */}
                 <div className="space-y-1">
                   <label htmlFor="phone" className="font-semibold text-slate-700">
                     เบอร์โทรศัพท์ติดต่อ (10 หลัก) <span className="text-rose-500">*</span>
@@ -276,6 +274,7 @@ const handleSubmit = async (e: React.FormEvent) => {
                 />
               </div>
 
+              {/* ปรับปรุงให้ label มี htmlFor เชื่อมกับ checkbox เสมอ */}
               <div className="pt-1 flex items-start gap-2">
                 <input
                   type="checkbox"
@@ -359,7 +358,7 @@ const handleSubmit = async (e: React.FormEvent) => {
             <div className="bg-white border border-slate-200 rounded-lg p-2">
               <iframe
                 title="Novaria Hospital Location Map"
-                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3874.526315582236!2d100.3241088!3d13.7925827!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMTPCsDQ3JzMzLjMiTiAxMDDCsDE5JzI2LjgnRQ!52e0!3m2!1sth!2sth!4v1680000000000!5m2!1sth!2sth"
+                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3874.526315582236!2d100.3241088!3d13.7925827!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMTPCsDQ3JzMzLjMiTi ইনMDDCsDE5JzI2LjgnRQ!52e0!3m2!1sth!2sth!4v1680000000000!5m2!1sth!2sth"
                 className="w-full h-52 rounded-md border-0"
                 loading="lazy"
               ></iframe>

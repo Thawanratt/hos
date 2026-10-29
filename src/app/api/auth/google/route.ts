@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import crypto from 'node:crypto'; // 🟢 ปรับมาใช้ node:crypto ตามมาตรฐาน SonarQube
 
 export async function POST(request: NextRequest) {
   try {
@@ -24,8 +25,8 @@ export async function POST(request: NextRequest) {
       const firstName = nameParts[0] || 'ผู้ป่วย';
       const lastName = nameParts.slice(1).join(' ') || 'Google';
 
-      // สร้างเลขบัตรประชาชนชั่วคราวชั่วคราวป้องกัน idCard ซ้ำกัน
-      const dummyIdCard = `GOOGLE_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+      const randomHex = crypto.randomBytes(4).toString('hex');
+      const dummyIdCard = `GOOGLE_${Date.now()}_${randomHex}`;
 
       user = await prisma.user.create({
         data: {

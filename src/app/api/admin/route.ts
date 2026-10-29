@@ -215,12 +215,12 @@ export async function POST(request: NextRequest) {
 }
 
 // ----------------------------------------------------
-// Helper Functions สำหรับ DELETE
+// Helper Functions สำหรับ DELETE (ใช้ Number.isNaN ตามมาตรฐาน SonarQube)
 // ----------------------------------------------------
 
 async function handleDeletePackage(packageId: string) {
   const id = Number(packageId);
-  if (isNaN(id)) {
+  if (Number.isNaN(id)) {
     return NextResponse.json({ success: false, message: 'packageId ไม่ถูกต้อง' }, { status: 400 });
   }
   await db.package.delete({ where: { id } });
@@ -229,7 +229,7 @@ async function handleDeletePackage(packageId: string) {
 
 async function handleDeleteNews(newsId: string) {
   const id = Number(newsId);
-  if (isNaN(id)) {
+  if (Number.isNaN(id)) {
     return NextResponse.json({ success: false, message: 'newsId ไม่ถูกต้อง' }, { status: 400 });
   }
   await db.news.delete({ where: { id } });
@@ -238,7 +238,7 @@ async function handleDeleteNews(newsId: string) {
 
 async function handleDeleteAppointment(appointmentId: string) {
   const id = Number(appointmentId);
-  if (isNaN(id)) {
+  if (Number.isNaN(id)) {
     return NextResponse.json({ success: false, message: 'appointmentId ไม่ถูกต้อง' }, { status: 400 });
   }
   await prisma.appointment.delete({ where: { id } });
@@ -247,7 +247,7 @@ async function handleDeleteAppointment(appointmentId: string) {
 
 async function handleDeleteUser(userId: string) {
   const id = Number(userId);
-  if (isNaN(id)) {
+  if (Number.isNaN(id)) {
     return NextResponse.json({ success: false, message: 'userId ไม่ถูกต้อง' }, { status: 400 });
   }
   await prisma.user.delete({ where: { id } });

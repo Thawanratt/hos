@@ -64,7 +64,7 @@ export default function AdminDoctorsPage() {
     bio: '',
     imageUrl: '',
     isInstantBooking: false,
-    schedules: [] as DoctorSchedule[], // 🟢 เพิ่ม State สำหรับเก็บตารางออกตรวจ
+    schedules: [] as DoctorSchedule[],
   });
 
   // State สำหรับเพิ่มตารางออกตรวจชั่วคราวก่อนกดบันทึกหลัก
@@ -99,7 +99,6 @@ export default function AdminDoctorsPage() {
     fetchDoctors();
   }, []);
 
-  // ฟังก์ชันอัปโหลดรูปภาพยิงเข้า /api/upload
   const handleImageUpload = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -129,7 +128,6 @@ export default function AdminDoctorsPage() {
     }
   };
 
-  // 🟢 เพิ่มตารางออกตรวจลงในฟอร์มชั่วคราว
   const handleAddSchedule = () => {
     setFormData((prev) => ({
       ...prev,
@@ -137,7 +135,6 @@ export default function AdminDoctorsPage() {
     }));
   };
 
-  // 🟢 ลบตารางออกตรวจออกจากฟอร์มชั่วคราว
   const handleRemoveSchedule = (index: number) => {
     setFormData((prev) => ({
       ...prev,
@@ -263,20 +260,20 @@ export default function AdminDoctorsPage() {
 
       <main className="max-w-7xl mx-auto px-4 md:px-8 py-6 space-y-8">
 
-        {message && (
+        {Boolean(message) && (
           <div className="bg-emerald-50 text-emerald-800 p-3 rounded-xl text-xs border border-emerald-200">
             {message}
           </div>
         )}
 
-        {/* FORM PANEL: เพิ่มหรือแก้ไขแพทย์ */}
+        {/* FORM PANEL */}
         <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4">
           <div className="flex justify-between items-center border-b border-slate-100 pb-3">
             <h2 className="font-bold text-[#1a2b6d] text-base">
               {editingId ? 'แก้ไขข้อมูลแพทย์' : 'เพิ่มแพทย์คนใหม่เข้าสู่ระบบ'}
             </h2>
-            {editingId && (
-              <button onClick={resetForm} className="text-xs text-slate-600 border px-3 py-1.5 rounded-md bg-slate-50">
+            {Boolean(editingId) && (
+              <button onClick={resetForm} className="text-xs text-slate-600 border px-3 py-1.5 rounded-md bg-slate-50 cursor-pointer">
                 ยกเลิกการแก้ไข
               </button>
             )}
@@ -285,26 +282,27 @@ export default function AdminDoctorsPage() {
           <form onSubmit={handleSubmit} className="space-y-4 text-xs">
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
               <div>
-                <label className="font-semibold text-slate-700">ชื่อจริง *</label>
-                <input type="text" value={formData.firstName} onChange={e => setFormData({ ...formData, firstName: e.target.value })} className="w-full p-2.5 rounded-md border border-slate-300 mt-1" required />
+                <label htmlFor="input-firstname" className="font-semibold text-slate-700 block">ชื่อจริง *</label>
+                <input id="input-firstname" type="text" value={formData.firstName} onChange={e => setFormData({ ...formData, firstName: e.target.value })} className="w-full p-2.5 rounded-md border border-slate-300 mt-1 bg-white" required />
               </div>
               <div>
-                <label className="font-semibold text-slate-700">นามสกุล *</label>
-                <input type="text" value={formData.lastName} onChange={e => setFormData({ ...formData, lastName: e.target.value })} className="w-full p-2.5 rounded-md border border-slate-300 mt-1" required />
+                <label htmlFor="input-lastname" className="font-semibold text-slate-700 block">นามสกุล *</label>
+                <input id="input-lastname" type="text" value={formData.lastName} onChange={e => setFormData({ ...formData, lastName: e.target.value })} className="w-full p-2.5 rounded-md border border-slate-300 mt-1 bg-white" required />
               </div>
               <div>
-                <label className="font-semibold text-slate-700">อีเมลสำหรับเข้าสู่ระบบ *</label>
-                <input type="email" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} className="w-full p-2.5 rounded-md border border-slate-300 mt-1" required />
+                <label htmlFor="input-email" className="font-semibold text-slate-700 block">อีเมลสำหรับเข้าสู่ระบบ *</label>
+                <input id="input-email" type="email" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} className="w-full p-2.5 rounded-md border border-slate-300 mt-1 bg-white" required />
               </div>
               {!editingId && (
                 <>
                   <div>
-                    <label className="font-semibold text-slate-700">รหัสผ่าน (อย่างน้อย 8 ตัว) *</label>
-                    <input type="password" value={formData.password} onChange={e => setFormData({ ...formData, password: e.target.value })} className="w-full p-2.5 rounded-md border border-slate-300 mt-1" required />
+                    <label htmlFor="input-password" className="font-semibold text-slate-700 block">รหัสผ่าน (อย่างน้อย 8 ตัว) *</label>
+                    <input id="input-password" type="password" value={formData.password} onChange={e => setFormData({ ...formData, password: e.target.value })} className="w-full p-2.5 rounded-md border border-slate-300 mt-1 bg-white" required />
                   </div>
                   <div>
-                    <label className="font-semibold text-slate-700">เลขบัตรประชาชน (13 หลัก) *</label>
+                    <label htmlFor="input-idcard" className="font-semibold text-slate-700 block">เลขบัตรประชาชน (13 หลัก) *</label>
                     <input 
+                      id="input-idcard"
                       type="text" 
                       inputMode="numeric"
                       maxLength={13}
@@ -314,15 +312,16 @@ export default function AdminDoctorsPage() {
                         if (val.length <= 13) setFormData({ ...formData, idCard: val });
                       }} 
                       placeholder="กรอกตัวเลข 13 หลัก"
-                      className="w-full p-2.5 rounded-md border border-slate-300 mt-1" 
+                      className="w-full p-2.5 rounded-md border border-slate-300 mt-1 bg-white" 
                       required 
                     />
                   </div>
                 </>
               )}
               <div>
-                <label className="font-semibold text-slate-700">เบอร์โทรศัพท์ (10 หลัก)</label>
+                <label htmlFor="input-phone" className="font-semibold text-slate-700 block">เบอร์โทรศัพท์ (10 หลัก)</label>
                 <input 
+                  id="input-phone"
                   type="text" 
                   inputMode="numeric"
                   maxLength={10}
@@ -332,12 +331,12 @@ export default function AdminDoctorsPage() {
                     if (val.length <= 10) setFormData({ ...formData, phone: val });
                   }} 
                   placeholder="เช่น 0812345678"
-                  className="w-full p-2.5 rounded-md border border-slate-300 mt-1" 
+                  className="w-full p-2.5 rounded-md border border-slate-300 mt-1 bg-white" 
                 />
               </div>
               <div>
-                <label className="font-semibold text-slate-700">แผนกการรักษา *</label>
-                <select value={formData.departmentId} onChange={e => setFormData({ ...formData, departmentId: e.target.value })} className="w-full p-2.5 rounded-md border border-slate-300 mt-1 bg-white">
+                <label htmlFor="select-department" className="font-semibold text-slate-700 block">แผนกการรักษา *</label>
+                <select id="select-department" value={formData.departmentId} onChange={e => setFormData({ ...formData, departmentId: e.target.value })} className="w-full p-2.5 rounded-md border border-slate-300 mt-1 bg-white">
                   <option value="1">อายุรกรรมแพทย์</option>
                   <option value="2">กุมารแพทย์</option>
                   <option value="3">สูตินรีแพทย์</option>
@@ -352,23 +351,24 @@ export default function AdminDoctorsPage() {
                 </select>
               </div>
               <div>
-                <label className="font-semibold text-slate-700">เลขที่ใบประกอบวิชาชีพ *</label>
-                <input type="text" value={formData.licenseNumber} onChange={e => setFormData({ ...formData, licenseNumber: e.target.value })} className="w-full p-2.5 rounded-md border border-slate-300 mt-1" required />
+                <label htmlFor="input-license" className="font-semibold text-slate-700 block">เลขที่ใบประกอบวิชาชีพ *</label>
+                <input id="input-license" type="text" value={formData.licenseNumber} onChange={e => setFormData({ ...formData, licenseNumber: e.target.value })} className="w-full p-2.5 rounded-md border border-slate-300 mt-1 bg-white" required />
               </div>
               <div>
-                <label className="font-semibold text-slate-700">ความเชี่ยวชาญเฉพาะทาง</label>
-                <input type="text" value={formData.specialization} onChange={e => setFormData({ ...formData, specialization: e.target.value })} placeholder="เช่น อายุรศาสตร์โรคหัวใจ" className="w-full p-2.5 rounded-md border border-slate-300 mt-1" />
+                <label htmlFor="input-specialization" className="font-semibold text-slate-700 block">ความเชี่ยวชาญเฉพาะทาง</label>
+                <input id="input-specialization" type="text" value={formData.specialization} onChange={e => setFormData({ ...formData, specialization: e.target.value })} placeholder="เช่น อายุรศาสตร์โรคหัวใจ" className="w-full p-2.5 rounded-md border border-slate-300 mt-1 bg-white" />
               </div>
             </div>
 
-            {/* 🟢 ส่วนจัดการตารางออกตรวจ (Schedules Builder) */}
+            {/* Schedules Builder */}
             <div className="space-y-3 border-t border-slate-100 pt-4">
               <label className="font-semibold text-slate-700 block text-sm">จัดการตารางออกตรวจประจำสัปดาห์</label>
               <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
                 <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
                   <div>
-                    <label className="text-[11px] text-slate-500 font-medium">วันออกตรวจ</label>
+                    <label htmlFor="select-day" className="text-[11px] text-slate-500 font-medium block">วันออกตรวจ</label>
                     <select 
+                      id="select-day"
                       value={tempSchedule.dayOfWeek} 
                       onChange={e => setTempSchedule({ ...tempSchedule, dayOfWeek: Number(e.target.value) })}
                       className="w-full p-2 rounded-md border border-slate-300 mt-1 bg-white"
@@ -379,8 +379,9 @@ export default function AdminDoctorsPage() {
                     </select>
                   </div>
                   <div>
-                    <label className="text-[11px] text-slate-500 font-medium">เวลาเริ่ม</label>
+                    <label htmlFor="input-starttime" className="text-[11px] text-slate-500 font-medium block">เวลาเริ่ม</label>
                     <input 
+                      id="input-starttime"
                       type="time" 
                       value={tempSchedule.startTime} 
                       onChange={e => setTempSchedule({ ...tempSchedule, startTime: e.target.value })}
@@ -388,8 +389,9 @@ export default function AdminDoctorsPage() {
                     />
                   </div>
                   <div>
-                    <label className="text-[11px] text-slate-500 font-medium">เวลาสิ้นสุด</label>
+                    <label htmlFor="input-endtime" className="text-[11px] text-slate-500 font-medium block">เวลาสิ้นสุด</label>
                     <input 
+                      id="input-endtime"
                       type="time" 
                       value={tempSchedule.endTime} 
                       onChange={e => setTempSchedule({ ...tempSchedule, endTime: e.target.value })}
@@ -407,7 +409,6 @@ export default function AdminDoctorsPage() {
                   </div>
                 </div>
 
-                {/* แสดงรายการตารางที่เพิ่มเข้ามา */}
                 {formData.schedules.length > 0 ? (
                   <div className="flex flex-wrap gap-2 pt-2">
                     {formData.schedules.map((sch, idx) => (
@@ -431,20 +432,20 @@ export default function AdminDoctorsPage() {
               </div>
             </div>
 
-            {/* ส่วนจัดการรูปภาพแพทย์ */}
+            {/* รูปภาพแพทย์ */}
             <div className="space-y-2 border-t border-slate-100 pt-4">
-              <label className="font-semibold text-slate-700 block">รูปภาพประจำตัวแพทย์</label>
+              <span className="font-semibold text-slate-700 block">รูปภาพประจำตัวแพทย์</span>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <span className="text-[11px] text-slate-500 block mb-1">อัปโหลดไฟล์รูปภาพจากเครื่อง</span>
-                  <input type="file" accept="image/*" onChange={handleImageUpload} className="block w-full text-[11px] text-slate-500 border border-slate-300 rounded-md file:py-2 file:px-3 file:bg-[#1a2b6d] file:text-white" />
+                  <label htmlFor="file-doctor-image" className="text-[11px] text-slate-500 block mb-1">อัปโหลดไฟล์รูปภาพจากเครื่อง</label>
+                  <input id="file-doctor-image" type="file" accept="image/*" onChange={handleImageUpload} className="block w-full text-[11px] text-slate-500 border border-slate-300 rounded-md file:py-2 file:px-3 file:bg-[#1a2b6d] file:text-white" />
                 </div>
                 <div>
-                  <span className="text-[11px] text-slate-500 block mb-1">หรือระบุ URL รูปภาพ</span>
-                  <input type="text" value={formData.imageUrl} onChange={e => setFormData({ ...formData, imageUrl: e.target.value })} placeholder="/images/doctor.jpg หรือ https://..." className="w-full p-2.5 rounded-md border border-slate-300 bg-white" />
+                  <label htmlFor="input-imageurl" className="text-[11px] text-slate-500 block mb-1">หรือระบุ URL รูปภาพ</label>
+                  <input id="input-imageurl" type="text" value={formData.imageUrl} onChange={e => setFormData({ ...formData, imageUrl: e.target.value })} placeholder="/images/doctor.jpg หรือ https://..." className="w-full p-2.5 rounded-md border border-slate-300 bg-white" />
                 </div>
               </div>
-              {formData.imageUrl && (
+              {Boolean(formData.imageUrl) && (
                 <div className="flex items-center gap-3 bg-slate-50 p-2 border rounded-md w-fit">
                   <span className="text-[11px] text-slate-500">ตัวอย่างรูป:</span>
                   <img src={formData.imageUrl} alt="Preview" className="h-12 w-12 object-cover rounded-full border" />
@@ -453,8 +454,8 @@ export default function AdminDoctorsPage() {
             </div>
 
             <div className="space-y-1 border-t border-slate-100 pt-4">
-              <label className="font-semibold text-slate-700">ประวัติโดยย่อ / Bio</label>
-              <textarea rows={2} value={formData.bio} onChange={e => setFormData({ ...formData, bio: e.target.value })} className="w-full p-2.5 rounded-md border border-slate-300 mt-1" />
+              <label htmlFor="textarea-bio" className="font-semibold text-slate-700 block">ประวัติโดยย่อ / Bio</label>
+              <textarea id="textarea-bio" rows={2} value={formData.bio} onChange={e => setFormData({ ...formData, bio: e.target.value })} className="w-full p-2.5 rounded-md border border-slate-300 mt-1 bg-white" />
             </div>
 
             <div className="flex items-center gap-2 pt-1">
@@ -480,13 +481,13 @@ export default function AdminDoctorsPage() {
                 <div key={doc.id} className="border border-slate-200 rounded-xl p-4 bg-slate-50 flex flex-col justify-between space-y-3">
                   <div className="space-y-2">
                     <div className="h-28 bg-slate-200 rounded-lg overflow-hidden relative">
-                      {doc.imageUrl ? (
-                        <img src={doc.imageUrl} alt={doc.user.firstName} className="w-full h-full object-cover object-top" />
+                      {Boolean(doc.imageUrl) ? (
+                        <img src={doc.imageUrl!} alt={doc.user.firstName} className="w-full h-full object-cover object-top" />
                       ) : (
                         <div className="flex items-center justify-center h-full text-[10px] text-slate-400">[ ไม่มีรูปภาพ ]</div>
                       )}
                     </div>
-                    <span className="text-[10px] bg-[#1a2b6d]/10 text-[#1a2b6d] font-bold px-2 py-0.5 rounded uppercase">
+                    <span className="text-[10px] bg-[#1a2b6d]/10 text-[#1a2b6d] font-bold px-2 py-0.5 rounded uppercase inline-block">
                       {doc.department?.name}
                     </span>
                     <h3 className="font-bold text-slate-900 text-xs">{doc.user.firstName} {doc.user.lastName}</h3>
@@ -495,8 +496,8 @@ export default function AdminDoctorsPage() {
                   </div>
 
                   <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-200">
-                    <button onClick={() => handleEditClick(doc)} className="px-3 py-1.5 bg-white border border-slate-300 hover:bg-slate-100 rounded-lg text-xs font-semibold">แก้ไข</button>
-                    <button onClick={() => handleDelete(doc.id)} className="px-3 py-1.5 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg text-xs font-semibold">ลบ</button>
+                    <button onClick={() => handleEditClick(doc)} className="px-3 py-1.5 bg-white border border-slate-300 hover:bg-slate-100 rounded-lg text-xs font-semibold cursor-pointer">แก้ไข</button>
+                    <button onClick={() => handleDelete(doc.id)} className="px-3 py-1.5 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg text-xs font-semibold cursor-pointer">ลบ</button>
                   </div>
                 </div>
               ))}

@@ -17,7 +17,6 @@ export default function CartPage() {
   const [patientName, setPatientName] = useState('');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
-  // Toast State
   const [toast, setToast] = useState<ToastState>({ show: false, message: '', type: 'info' });
 
   const showToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
@@ -28,7 +27,6 @@ export default function CartPage() {
   };
 
   useEffect(() => {
-    // 💡 เช็กว่ามีการทำรายการชำระเงินเสร็จสิ้นจากหน้า checkout หรือไม่ ถ้ามีให้ล้างตะกร้าทิ้งทันที
     const isCompleted = localStorage.getItem('novaria_order_completed');
     if (isCompleted === 'true') {
       localStorage.removeItem('novaria_cart');
@@ -36,31 +34,30 @@ export default function CartPage() {
       localStorage.removeItem('novaria_order_completed');
       setCartItems([]);
     } else {
-      // โหลดข้อมูลตะกร้าปกติ
       const savedCart = localStorage.getItem('novaria_cart');
       if (savedCart) {
         try {
           setCartItems(JSON.parse(savedCart));
-        } catch (e) {
+        } catch {
+          // Ignored parse error safely
           setCartItems([]);
         }
       }
     }
 
-    // ล้างข้อมูล checkout data เก่าที่ค้างคาป้องกันการดึงซ้ำ
     localStorage.removeItem('novaria_checkout_data');
 
-    // ดึงข้อมูลผู้ใช้สิทธิ์สมาชิกลงชื่อเข้าใช้
     const user = localStorage.getItem('user');
     if (user) {
       try {
         const parsedUser = JSON.parse(user);
         setIsLoggedIn(true);
-        const fullName = parsedUser.firstName && parsedUser.lastName 
+        const fullName = parsedUser?.firstName && parsedUser?.lastName 
           ? `${parsedUser.firstName} ${parsedUser.lastName}` 
-          : parsedUser.firstName || parsedUser.name || '';
+          : parsedUser?.firstName || parsedUser?.name || '';
         setPatientName(fullName);
-      } catch (e) {
+      } catch {
+        // Ignored parse error safely
         setIsLoggedIn(false);
       }
     } else {
@@ -71,8 +68,8 @@ export default function CartPage() {
   const parsePrice = (priceVal: any): number => {
     if (typeof priceVal === 'number') return priceVal;
     if (!priceVal) return 0;
-    const cleanNumber = String(priceVal).replace(/[^0-9.]/g, '');
-    return parseFloat(cleanNumber) || 0;
+    const cleanNumber = String(priceVal).replace(/[^\d.]/g, '');
+    return Number.parseFloat(cleanNumber) || 0;
   };
 
   const updateCartStorage = (newItems: any[]) => {
@@ -107,7 +104,6 @@ export default function CartPage() {
   };
 
   const handleCheckout = () => {
-    // 1. เช็กว่าเข้าสู่ระบบหรือยัง
     if (!isLoggedIn) {
       showToast('กรุณาเข้าสู่ระบบหรือสมัครสมาชิกก่อนทำการสั่งซื้อ', 'error');
       setTimeout(() => {
@@ -123,10 +119,8 @@ export default function CartPage() {
       return;
     }
 
-    // คำนวณราคาสรุป
     const totalAmount = cartItems.reduce((sum, item) => sum + (parsePrice(item.price) * item.quantity), 0);
 
-    // บันทึกข้อมูลที่ต้องใช้ไปยัง checkout
     const checkoutData = {
       patientName: patientName.trim(),
       paymentMethod,
@@ -138,16 +132,25 @@ export default function CartPage() {
 
     localStorage.setItem('novaria_checkout_data', JSON.stringify(checkoutData));
     
-    // 💡 เคลียร์สินค้าในตะกร้าหลักทันทีเมื่อกดส่งข้อมูลมาหน้าชำระเงิน
     localStorage.removeItem('novaria_cart');
     window.dispatchEvent(new Event('cartUpdated'));
 
-    // ไปหน้า /checkout
     router.push('/checkout');
   };
 
   const totalPrice = cartItems.reduce((sum, item) => sum + (parsePrice(item.price) * item.quantity), 0);
   const totalItemsCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+
+  // 🟢 แยกเงื่อนไข Toast Class เพื่อเลี่ยงเทอร์นารีซ้อน
+  let toastBg = 'bg-slate-800 text-white border-slate-700';
+  let dotBg = 'bg-blue-400';
+  if (toast.type === 'success') {
+    toastBg = 'bg-slate-900 text-white border-slate-800';
+    dotBg = 'bg-emerald-400';
+  } else if (toast.type === 'error') {
+    toastBg = 'bg-red-900 text-white border-red-800';
+    dotBg = 'bg-red-400';
+  }
 
   return (
     <div className="min-h-screen bg-slate-50/50 text-slate-800 pb-20 font-sans relative">
@@ -155,11 +158,8 @@ export default function CartPage() {
       {/* TOAST NOTIFICATION */}
       {toast.show && (
         <div className="fixed bottom-6 right-6 z-50 transition-all duration-300">
-          <div className={`px-4 py-3 rounded-lg shadow-lg border text-xs font-medium flex items-center gap-3 ${toast.type === 'success' ? 'bg-slate-900 text-white border-slate-800' :
-            toast.type === 'error' ? 'bg-red-900 text-white border-red-800' : 'bg-slate-800 text-white border-slate-700'
-            }`}>
-            <span className={`w-2 h-2 rounded-full ${toast.type === 'success' ? 'bg-emerald-400' : toast.type === 'error' ? 'bg-red-400' : 'bg-blue-400'
-              }`} />
+          <div className={`px-4 py-3 rounded-lg shadow-lg border text-xs font-medium flex items-center gap-3 ${toastBg}`}>
+            <span className={`w-2 h-2 rounded-full ${dotBg}`} />
             <span>{toast.message}</span>
             <button onClick={() => setToast({ show: false, message: '', type: 'info' })} className="ml-2 text-slate-400 hover:text-white">&times;</button>
           </div>
@@ -191,7 +191,6 @@ export default function CartPage() {
           </div>
         ) : (
           <>
-            {/* กล่องรายการในตะกร้า */}
             {cartItems.map((item) => {
               const numericPrice = parsePrice(item.price);
               const numericOriginalPrice = parsePrice(item.originalPrice);
@@ -240,12 +239,13 @@ export default function CartPage() {
               );
             })}
 
-            {/* ข้อมูลผู้เข้ารับบริการ */}
+            {/* ข้อมูลผู้เข้ารับบริการ (ครอบ label กับ input ไว้ด้วยกันเพื่อแก้ปัญหา A11y) */}
             <div className="bg-white rounded-xl border border-slate-200 p-5 space-y-3 shadow-2xs text-xs">
               <h3 className="font-bold text-slate-900 border-b pb-2">ข้อมูลผู้เข้ารับบริการ</h3>
-              <div className="flex flex-col space-y-1">
-                <label className="text-slate-500 font-medium">ชื่อ-นามสกุล ผู้ใช้สิทธิ์แพ็กเกจ *</label>
+              <label className="flex flex-col space-y-1 cursor-pointer">
+                <span className="text-slate-500 font-medium">ชื่อ-นามสกุล ผู้ใช้สิทธิ์แพ็กเกจ *</span>
                 <input 
+                  id="patient-name-input"
                   type="text" 
                   value={patientName} 
                   onChange={(e) => setPatientName(e.target.value)}
@@ -253,7 +253,7 @@ export default function CartPage() {
                   className="border border-slate-300 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-[#1a2b6d]"
                   required
                 />
-              </div>
+              </label>
             </div>
 
             {/* เลือกวิธีชำระเงิน */}
@@ -303,7 +303,7 @@ export default function CartPage() {
             </div>
 
             <p className="text-[11px] text-center text-slate-400">
-              โดยการคลิก 'ดำเนินการชำระเงิน' ฉันได้อ่านและยอมรับเงื่อนไขการให้บริการ นโยบายคืนเงิน/คืนสินค้า
+              โดยการคลิก &apos;ดำเนินการชำระเงิน&apos; ฉันได้อ่านและยอมรับเงื่อนไขการให้บริการ นโยบายคืนเงิน/คืนสินค้า
             </p>
 
             <div className="flex gap-4 pt-2">

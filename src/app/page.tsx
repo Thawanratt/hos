@@ -30,15 +30,11 @@ const quickLabel = 'font-semibold text-xs text-slate-700 group-hover:text-white 
 export default function HomePage() {
   const router = useRouter();
 
-  // State สำหรับควบคุมการเปิด-ปิด และเก็บสาขาที่เลือก
   const [isBranchModalOpen, setIsBranchModalOpen] = useState(false);
   const [selectedBranch, setSelectedBranch] = useState<Branch>(BRANCHES_DATA[0]);
 
-  // State สำหรับ Toast Popup แจ้งเตือน
   const [toastMessage, setToastMessage] = useState('');
   const [showToast, setShowToast] = useState(false);
-
-  //  State สำหรับเปิด-ปิด Login Modal Popup
   const [showLoginModal, setShowLoginModal] = useState(false);
 
   const triggerToast = (msg: string) => {
@@ -55,7 +51,6 @@ export default function HomePage() {
     router.push(`/branches?branch=${branch.id}`);
   };
 
-  // 1. ระบบแบนเนอร์สไลด์
   const heroBanners = [
      {
       id: 1,
@@ -113,45 +108,51 @@ export default function HomePage() {
     setCurrentSlide((prev) => (prev - 1 + heroBanners.length) % heroBanners.length);
   };
 
-  // 2. บริการของเรา
   const mainServices = [
     {
+      id: 's-heart',
       title: 'หัวใจ',
       desc: 'โรคหัวใจและหลอดเลือด',
       href: '/services/heart',
       icon: <Icon className="w-6 h-6" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" />,
     },
     {
+      id: 's-cancer',
       title: 'มะเร็ง',
       desc: 'วินิจฉัยและรักษาเฉพาะบุคคล',
       href: '/services/cancer',
       icon: <Icon className="w-6 h-6" d="M12 21a9 9 0 100-18 9 9 0 000 18zM12 9v4m0 4h.01" />,
     },
     {
+      id: 's-bone',
       title: 'กระดูก',
       desc: 'กระดูกและข้อ',
       href: '/services/bone',
       icon: <Icon className="w-6 h-6" d="M19.5 12c0-1.232-.046-2.453-.138-3.662a4.006 4.006 0 00-3.7-3.7 48.678 48.678 0 00-7.324 0 4.006 4.006 0 00-3.7 3.7c-.092 1.209-.138 2.43-.138 3.662s.046 2.453.138 3.662a4.006 4.006 0 003.7 3.7 48.656 48.656 0 007.324 0 4.006 4.006 0 003.7-3.7c.092-1.209.138-2.43.138-3.662z" />,
     },
     {
+      id: 's-brain',
       title: 'สมอง',
       desc: 'ระบบประสาทและสมอง',
       href: '/services/brain',
       icon: <Icon className="w-6 h-6" d="M9.75 3.104v5.714a2.25 2.25 0 01-.659 1.591L5 13.5M14.25 3.104v5.714c0 .597.237 1.17.659 1.591L19 13.5M9.75 3.104a11.2 11.2 0 014.5 0M12 10.5h.008v.008H12V10.5zm0 3h.008v.008H12V13.5zm0 3h.008v.008H12V16.5z" />,
     },
     {
+      id: 's-emergency',
       title: 'อุบัติเหตุ',
       desc: 'ฉุกเฉินและอุบัติเหตุ 24 ชม.',
       href: '/services/emergency',
       icon: <Icon className="w-6 h-6" d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25M16.5 18.75h-2.25m0-11.25v11.25" />,
     },
     {
+      id: 's-checkup',
       title: 'ตรวจสุขภาพ',
       desc: 'โปรแกรมตรวจสุขภาพประจำปี',
       href: '/services/checkup',
       icon: <Icon className="w-6 h-6" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />,
     },
     {
+      id: 's-surgery',
       title: 'การผ่าตัด',
       desc: 'ศัลยกรรมและการผ่าตัดขั้นสูง',
       href: '/services/surgery',
@@ -208,11 +209,8 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto px-4 md:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
 
-            {/* Quick Actions Panel */}
             <div className="lg:col-span-4 bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm flex flex-col justify-between">
               <div className="space-y-4">
-
-                {/* สาขาปัจจุบัน */}
                 <button
                   type="button"
                   onClick={() => setIsBranchModalOpen(true)}
@@ -233,7 +231,6 @@ export default function HomePage() {
                   </p>
                 </button>
 
-                {/* แถบสิทธิพิเศษ โทนน้ำเงินพรีเมียม */}
                 <div className="rounded-xl p-3.5 border border-sky-200/50 bg-gradient-to-r from-[#1a2b6d] to-[#253880] text-white flex items-center justify-between shadow-sm">
                   <div className="space-y-0.5">
                     <span className="text-[9px] font-bold uppercase tracking-widest text-sky-200 bg-white/10 px-2 py-0.5 rounded border border-white/10">
@@ -250,7 +247,6 @@ export default function HomePage() {
                   </Link>
                 </div>
 
-                {/* 4 ปุ่มบริการด่วน */}
                 <div className="grid grid-cols-2 gap-2.5">
                   <Link href="/doctors" className={quickBtn}>
                     <div className={quickIcon}>
@@ -283,13 +279,11 @@ export default function HomePage() {
               </div>
             </div>
 
-            {/* Banner หลัก Slider */}
             <div className="lg:col-span-8 rounded-2xl overflow-hidden relative shadow-md min-h-[360px] md:min-h-[400px] group flex flex-col justify-between">
-
-              {heroBanners.map((slide, index) => (
+              {heroBanners.map((slide) => (
                 <div
                   key={slide.id}
-                  className={`absolute inset-0 transition-opacity duration-1000 ease-in-out flex flex-col justify-between p-6 md:p-10 text-white bg-gradient-to-r ${slide.bgGradient} ${index === currentSlide ? 'opacity-100 z-10' : 'opacity-0 z-0'}`}
+                  className={`absolute inset-0 transition-opacity duration-1000 ease-in-out flex flex-col justify-between p-6 md:p-10 text-white bg-gradient-to-r ${slide.bgGradient} ${slide.id === heroBanners[currentSlide].id ? 'opacity-100 z-10' : 'opacity-0 z-0'}`}
                   style={
                     slide.imageUrl
                       ? {
@@ -339,9 +333,9 @@ export default function HomePage() {
               </button>
 
               <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex space-x-2">
-                {heroBanners.map((_, idx) => (
+                {heroBanners.map((slide, idx) => (
                   <button
-                    key={idx}
+                    key={slide.id}
                     onClick={() => setCurrentSlide(idx)}
                     aria-label={`สไลด์ที่ ${idx + 1}`}
                     className={`h-1.5 rounded-full transition-all duration-300 cursor-pointer ${currentSlide === idx ? 'w-6 bg-white' : 'w-1.5 bg-white/50 hover:bg-white/80'}`}
@@ -372,9 +366,9 @@ export default function HomePage() {
             </div>
 
             <div className="lg:col-span-9 p-4 md:p-6 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
-              {mainServices.map((item, idx) => (
+              {mainServices.map((item) => (
                 <Link
-                  key={idx}
+                  key={item.id}
                   href={item.href}
                   className="group flex items-center gap-3.5 p-3.5 rounded-xl border border-slate-200/70 bg-white hover:border-sky-300 hover:bg-sky-50/40 transition-colors duration-200"
                 >
@@ -425,7 +419,7 @@ export default function HomePage() {
               {packagesList.slice(0, 3).map((pkg) => {
                 const numericPrice = typeof pkg.price === 'number'
                   ? pkg.price
-                  : parseInt(String(pkg.price || 0).replace(/[^0-9]/g, ''), 10) || 0;
+                  : Number.parseInt(String(pkg.price || 0).replace(/[^\d]/g, ''), 10) || 0;
 
                 return (
                   <div key={pkg.id} className="bg-white rounded-2xl border border-slate-200/80 overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-300 flex flex-col justify-between group">
@@ -584,13 +578,13 @@ export default function HomePage() {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
             <div className="lg:col-span-8 grid grid-cols-2 sm:grid-cols-4 gap-4">
               {[
-                { href: '/about', label: 'ข้อมูลโรงพยาบาล', d: 'M2.25 21h19.5m-18-18v18m10.5-18v18m-6-18v18m6-18h.008v.008H12V3zm0 3h.008v.008H12V6zm0 3h.008v.008H12V9zm0 3h.008v.008H12v-1.5zm0 3h.008v.008H12v-1.5zm0 3h.008v.008H12v-1.5z' },
-                { href: '/news', label: 'ข่าวสารและกิจกรรม', d: 'M12 7.5h1.5m-1.5 3h1.5m-7.5 3h7.5m-7.5 3h7.5m3-9h3.75M16.5 10.5h3.75m-3.75 3h3.75m-3.75 3h3.75M3 19.5h18a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3A1.5 1.5 0 001.5 6v12a1.5 1.5 0 001.5 1.5z' },
-                { href: '/rooms', label: 'ห้องพักผู้ป่วย', d: 'M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z' },
-                { href: '/map', label: 'แผนที่', d: 'M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25' },
+                { id: 'info-about', href: '/about', label: 'ข้อมูลโรงพยาบาล', d: 'M2.25 21h19.5m-18-18v18m10.5-18v18m-6-18v18m6-18h.008v.008H12V3zm0 3h.008v.008H12V6zm0 3h.008v.008H12V9zm0 3h.008v.008H12v-1.5zm0 3h.008v.008H12v-1.5zm0 3h.008v.008H12v-1.5z' },
+                { id: 'info-news', href: '/news', label: 'ข่าวสารและกิจกรรม', d: 'M12 7.5h1.5m-1.5 3h1.5m-7.5 3h7.5m-7.5 3h7.5m3-9h3.75M16.5 10.5h3.75m-3.75 3h3.75m-3.75 3h3.75M3 19.5h18a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3A1.5 1.5 0 001.5 6v12a1.5 1.5 0 001.5 1.5z' },
+                { id: 'info-rooms', href: '/rooms', label: 'ห้องพักผู้ป่วย', d: 'M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z' },
+                { id: 'info-map', href: '/map', label: 'แผนที่', d: 'M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25' },
               ].map((item) => (
                 <Link
-                  key={item.href}
+                  key={item.id}
                   href={item.href}
                   className="bg-white p-6 rounded-xl border border-slate-200/80 hover:border-[#1a2b6d] hover:bg-sky-50/30 transition-colors duration-200 text-center flex flex-col items-center justify-center gap-3 group"
                 >
@@ -642,16 +636,18 @@ export default function HomePage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {[
               {
+                id: 'feedback-1',
                 text: 'แจ้งข้อกังวลเกี่ยวกับคุณภาพการดูแลผู้ป่วยต่อฝ่ายบริหารโรงพยาบาล',
                 d: 'M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3h7.5M6 20.25h12A2.25 2.25 0 0020.25 18V6.75A2.25 2.25 0 0018 4.5H6A2.25 2.25 0 003.75 6.75v11.25A2.25 2.25 0 006 20.25z',
               },
               {
+                id: 'feedback-2',
                 text: 'แจ้งเกี่ยวกับคุณภาพการดูแลผู้ป่วยตามมาตรฐาน JCI',
                 d: 'M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751A11.959 11.959 0 0112 2.714z',
               },
-            ].map((card, i) => (
+            ].map((card) => (
               <Link
-                key={i}
+                key={card.id}
                 href="/contact"
                 className="bg-slate-50 hover:bg-sky-50/60 p-5 rounded-xl border border-slate-200/80 hover:border-sky-200 flex items-center justify-between gap-4 group transition-colors duration-200"
               >
@@ -717,8 +713,8 @@ export default function HomePage() {
 
       {/* 🔐 LOGIN MODAL POPUP */}
       {showLoginModal && (
-        <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 animate-fadeIn">
-          <div className="bg-white rounded-2xl p-6 md:p-8 max-w-md w-full shadow-xl border border-slate-100 text-center space-y-6 relative" role="dialog" aria-modal="true">
+        <dialog open className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 animate-fadeIn border-0 w-full h-full max-w-none max-h-none bg-transparent">
+          <div className="bg-white rounded-2xl p-6 md:p-8 max-w-md w-full shadow-xl border border-slate-100 text-center space-y-6 relative" role="document">
             <button
               onClick={() => setShowLoginModal(false)}
               aria-label="ปิด"
@@ -748,7 +744,7 @@ export default function HomePage() {
               </Link>
             </div>
           </div>
-        </div>
+        </dialog>
       )}
 
       {/* BranchSelectorModal */}

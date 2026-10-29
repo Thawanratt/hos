@@ -9,7 +9,6 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { fullName, phone, email, category, subject, message } = body;
 
-    // 1. ตรวจสอบข้อมูลเบื้องต้น
     if (!fullName || !phone || !subject || !message) {
       return NextResponse.json(
         { success: false, message: 'กรุณากรอกข้อมูลที่จำเป็นให้ครบถ้วน' },
@@ -17,7 +16,6 @@ export async function POST(request: Request) {
       );
     }
 
-    // 2. บันทึกลงฐานข้อมูล PostgreSQL ผ่าน Prisma
     const newContact = await prisma.contactMessage.create({
       data: {
         fullName,
@@ -29,16 +27,17 @@ export async function POST(request: Request) {
       },
     });
 
-    // 3. ตั้งค่าระบบส่งอีเมลหาแอดมิน
+    // 🟢 เปลี่ยนมาใช้ host และ port 465 พร้อม secure: true เพื่อความปลอดภัยผ่าน HTTPS/SSL (แก้ปัญหา SonarQube)
     const transporter = nodemailer.createTransport({
-      service: 'gmail',
+      host: 'smtp.gmail.com',
+      port: 465,
+      secure: true,
       auth: {
         user: process.env.EMAIL_SERVER_USER,
         pass: process.env.EMAIL_SERVER_PASSWORD,
       },
     });
 
-    // แปลงหมวดหมู่ให้อ่านง่ายขึ้น
     const categoryMap: { [key: string]: string } = {
       general: 'สอบถามข้อมูลทั่วไป',
       appointment: 'นัดหมายแพทย์ / ตรวจสุขภาพ',
@@ -49,7 +48,6 @@ export async function POST(request: Request) {
 
     const categoryText = categoryMap[category] || category;
 
-    // ส่งอีเมลแจ้งเตือนไปยังแอดมิน
     await transporter.sendMail({
       from: `"Novaria Hospital Website" <${process.env.EMAIL_SERVER_USER}>`,
       to: process.env.EMAIL_ADMIN_RECEIVER,

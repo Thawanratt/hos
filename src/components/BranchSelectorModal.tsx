@@ -39,7 +39,7 @@ export default function BranchSelectorModal({ isOpen, onClose, onSelectBranch }:
     );
   };
 
-  // ครองและเรียงลำดับสาขา
+  // กรองและเรียงลำดับสาขา
   let filteredBranches = BRANCHES_DATA.filter((b) => {
     const matchSearch = b.name.toLowerCase().includes(searchTerm.toLowerCase()) || b.address.includes(searchTerm);
     const matchRegion = selectedRegion === 'ทั้งหมด' || b.region === selectedRegion;
@@ -69,7 +69,7 @@ export default function BranchSelectorModal({ isOpen, onClose, onSelectBranch }:
           </div>
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center text-gray-600 transition"
+            className="w-8 h-8 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center text-gray-600 transition cursor-pointer"
           >
             ✕
           </button>
@@ -110,7 +110,7 @@ export default function BranchSelectorModal({ isOpen, onClose, onSelectBranch }:
               <button
                 key={reg}
                 onClick={() => setSelectedRegion(reg)}
-                className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition ${
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition cursor-pointer ${
                   selectedRegion === reg
                     ? 'bg-amber-500 text-slate-900 shadow-sm'
                     : 'bg-slate-100 text-gray-600 hover:bg-slate-200'
@@ -130,11 +130,19 @@ export default function BranchSelectorModal({ isOpen, onClose, onSelectBranch }:
             filteredBranches.map((branch: any) => (
               <div
                 key={branch.id}
+                role="button"
+                tabIndex={0}
                 onClick={() => {
                   onSelectBranch(branch);
                   onClose();
                 }}
-                className="p-4 rounded-2xl border border-slate-100 bg-white hover:border-amber-400 hover:shadow-md transition cursor-pointer flex justify-between items-center group"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    onSelectBranch(branch);
+                    onClose();
+                  }
+                }}
+                className="p-4 rounded-2xl border border-slate-100 bg-white hover:border-amber-400 hover:shadow-md transition cursor-pointer flex justify-between items-center group outline-none focus:ring-2 focus:ring-[#1a2b6d]"
               >
                 <div className="space-y-1">
                   <div className="flex items-center space-x-2">

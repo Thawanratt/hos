@@ -19,7 +19,7 @@ export async function POST(request: Request) {
     const validPatientId = Number(patientId);
     const validDoctorId = doctorId && Number(doctorId) > 0 ? Number(doctorId) : null;
 
-    if (isNaN(validPatientId)) {
+    if (Number.isNaN(validPatientId)) {
       return NextResponse.json(
         { success: false, message: 'รหัสผู้ป่วยไม่ถูกต้อง' },
         { status: 400 }
@@ -130,12 +130,12 @@ export async function GET(request: Request) {
     
     if (patientId) {
       const pId = Number(patientId);
-      if (!isNaN(pId)) whereCondition.patientId = pId;
+      if (!Number.isNaN(pId)) whereCondition.patientId = pId;
     }
     
     if (doctorId) {
       const dId = Number(doctorId);
-      if (!isNaN(dId)) whereCondition.doctorId = dId;
+      if (!Number.isNaN(dId)) whereCondition.doctorId = dId;
     }
 
     const appointments = await prisma.appointment.findMany({

@@ -54,7 +54,14 @@ export default function DoctorMainPage() {
     const first = (doctorUser?.firstName || '').trim();
     const last = (doctorUser?.lastName || '').trim();
     const hasTitle = TITLE_RE.test(first);
-    const fullName = doctorUser ? `${hasTitle ? '' : 'นพ. '}${first} ${last}`.trim() : 'แพทย์ผู้เชี่ยวชาญ';
+
+    // 🟢 แยกตัวแปรจัดการชื่อเพื่อเลี่ยงเทอร์นารีซ้อน
+    let prefixTitle = 'นพ. ';
+    if (hasTitle) {
+        prefixTitle = '';
+    }
+    const baseName = doctorUser ? `${prefixTitle}${first} ${last}`.trim() : 'แพทย์ผู้เชี่ยวชาญ';
+    const fullName = baseName;
 
     return (
         <div className={`${plex.className} min-h-screen bg-[#f6f8fb] text-slate-800 pb-20`}>
@@ -75,7 +82,6 @@ export default function DoctorMainPage() {
             {/* ---------- ส่วนต้อนรับ ---------- */}
             <section className="max-w-7xl mx-auto px-4 md:px-8 pt-8">
                 <div className="rise relative overflow-hidden rounded-2xl border border-[#d6e0ee] bg-[#e9eff7]">
-                    {/* คลื่นวงแหวนแผ่ออกจากแผงสถานะ (จุดเด่นของหน้านี้) */}
                     <div className="pointer-events-none absolute right-[11%] top-1/2 w-0 h-0 hidden md:block" aria-hidden="true">
                         <span className="ripple-ring w-[300px] h-[300px]" style={{ animationDelay: '0s' }} />
                         <span className="ripple-ring w-[300px] h-[300px]" style={{ animationDelay: '2s' }} />
@@ -93,7 +99,7 @@ export default function DoctorMainPage() {
 
                         {/* แผงสถานะวันนี้ */}
                         <div className="relative min-w-[230px] rounded-xl bg-white ring-1 ring-[#d6e0ee] px-5 py-4">
-                            <div className="text-xs text-slate-500">{today || '\u00A0'}</div>
+                            <div className="text-xs text-slate-500">{today || 'กำลังโหลดวันที่...'}</div>
                             <div className="mt-1 text-3xl font-semibold tabular-nums tracking-tight text-[#1e3a6e]">
                                 {clock || '--:--'} <span className="text-sm font-normal text-slate-400">น.</span>
                             </div>

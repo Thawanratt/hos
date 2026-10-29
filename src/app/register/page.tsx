@@ -29,7 +29,6 @@ export default function RegisterPage() {
     e.preventDefault();
     setErrorMessage('');
 
-    // 🟢 ตรวจสอบความถูกต้องของข้อมูลก่อนส่ง
     if (!formData.firstName.trim() || !formData.lastName.trim()) {
       setErrorMessage('กรุณากรอกชื่อจริงและนามสกุลให้ครบถ้วน');
       return;
@@ -88,7 +87,6 @@ export default function RegisterPage() {
     }
   };
 
-  // ฟังก์ชันสมัคร/ล็อกอินผ่าน Google SDK
   const handleGoogleRegister = useGoogleLogin({
     onSuccess: async (tokenResponse) => {
       setGoogleLoading(true);
@@ -146,7 +144,6 @@ export default function RegisterPage() {
       />
 
       <div className="relative z-10 w-full max-w-md space-y-6 text-center">
-        {/* HEADER SECTION */}
         <div className="space-y-2">
           <div className="flex justify-center">
             <Image 
@@ -163,14 +160,12 @@ export default function RegisterPage() {
           <p className="text-xs text-gray-500">สร้างบัญชีใหม่เพื่อใช้งานบริการของเรา</p>
         </div>
 
-        {/* 🔴 ข้อความ Error */}
         {errorMessage && (
           <div className="bg-red-50 text-red-600 border border-red-200 text-xs py-2 px-4 rounded-xl font-semibold">
             {errorMessage}
           </div>
         )}
 
-        {/* 🟢 ข้อความแจ้งเตือนเมื่อสำเร็จ */}
         {successMessage && (
           <div className="bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 animate-fade-in font-semibold">
             <svg className="w-4 h-4 text-emerald-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -181,14 +176,15 @@ export default function RegisterPage() {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-3.5 text-left pt-2">
-          {/* FIELD 1: FIRST NAME */}
+          {/* FIRST NAME */}
           <div className="space-y-1">
-            <label className="text-xs font-semibold text-gray-700">ชื่อ</label>
+            <label htmlFor="firstName" className="text-xs font-semibold text-gray-700">ชื่อ</label>
             <div className="relative flex items-center">
               <span className="absolute left-4 text-gray-400">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
               </span>
               <input
+                id="firstName"
                 type="text"
                 placeholder="กรอกชื่อจริง"
                 value={formData.firstName}
@@ -199,14 +195,15 @@ export default function RegisterPage() {
             </div>
           </div>
 
-          {/* FIELD 2: LAST NAME */}
+          {/* LAST NAME */}
           <div className="space-y-1">
-            <label className="text-xs font-semibold text-gray-700">นามสกุล</label>
+            <label htmlFor="lastName" className="text-xs font-semibold text-gray-700">นามสกุล</label>
             <div className="relative flex items-center">
               <span className="absolute left-4 text-gray-400">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
               </span>
               <input
+                id="lastName"
                 type="text"
                 placeholder="กรอกนามสกุล"
                 value={formData.lastName}
@@ -217,14 +214,15 @@ export default function RegisterPage() {
             </div>
           </div>
 
-          {/* FIELD 3: ID CARD (บังคับตัวเลข 13 หลัก) */}
+          {/* ID CARD */}
           <div className="space-y-1">
-            <label className="text-xs font-semibold text-gray-700">เลขบัตรประชาชน (13 หลัก)</label>
+            <label htmlFor="idCard" className="text-xs font-semibold text-gray-700">เลขบัตรประชาชน (13 หลัก)</label>
             <div className="relative flex items-center">
               <span className="absolute left-4 text-gray-400">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3 3 0 00-3 3h6a3 3 0 00-3-3z" /></svg>
               </span>
               <input
+                id="idCard"
                 type="text"
                 inputMode="numeric"
                 maxLength={13}
@@ -240,14 +238,15 @@ export default function RegisterPage() {
             </div>
           </div>
 
-          {/* FIELD 4: PHONE NUMBER (บังคับตัวเลข 10 หลัก) */}
+          {/* PHONE NUMBER */}
           <div className="space-y-1">
-            <label className="text-xs font-semibold text-gray-700">เบอร์โทรศัพท์ (10 หลัก)</label>
+            <label htmlFor="phone" className="text-xs font-semibold text-gray-700">เบอร์โทรศัพท์ (10 หลัก)</label>
             <div className="relative flex items-center">
               <span className="absolute left-4 text-gray-400">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
               </span>
               <input
+                id="phone"
                 type="tel"
                 inputMode="numeric"
                 maxLength={10}
@@ -263,14 +262,15 @@ export default function RegisterPage() {
             </div>
           </div>
 
-          {/* FIELD 5: EMAIL */}
+          {/* EMAIL */}
           <div className="space-y-1">
-            <label className="text-xs font-semibold text-gray-700">อีเมล</label>
+            <label htmlFor="email" className="text-xs font-semibold text-gray-700">อีเมล</label>
             <div className="relative flex items-center">
               <span className="absolute left-4 text-gray-400">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
               </span>
               <input
+                id="email"
                 type="email"
                 placeholder="กรอกอีเมล"
                 value={formData.email}
@@ -281,14 +281,15 @@ export default function RegisterPage() {
             </div>
           </div>
 
-          {/* FIELD 6: PASSWORD */}
+          {/* PASSWORD */}
           <div className="space-y-1">
-            <label className="text-xs font-semibold text-gray-700">รหัสผ่าน (อย่างน้อย 8 ตัวอักษร)</label>
+            <label htmlFor="password" className="text-xs font-semibold text-gray-700">รหัสผ่าน (อย่างน้อย 8 ตัวอักษร)</label>
             <div className="relative flex items-center">
               <span className="absolute left-4 text-gray-400">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
               </span>
               <input
+                id="password"
                 type="password"
                 placeholder="กรอกรหัสผ่าน"
                 value={formData.password}
@@ -299,14 +300,15 @@ export default function RegisterPage() {
             </div>
           </div>
 
-          {/* FIELD 7: CONFIRM PASSWORD */}
+          {/* CONFIRM PASSWORD */}
           <div className="space-y-1">
-            <label className="text-xs font-semibold text-gray-700">ยืนยันรหัสผ่าน</label>
+            <label htmlFor="confirmPassword" className="text-xs font-semibold text-gray-700">ยืนยันรหัสผ่าน</label>
             <div className="relative flex items-center">
               <span className="absolute left-4 text-gray-400">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
               </span>
               <input
+                id="confirmPassword"
                 type="password"
                 placeholder="ยืนยันรหัสผ่านอีกครั้ง"
                 value={formData.confirmPassword}
@@ -318,8 +320,9 @@ export default function RegisterPage() {
           </div>
 
           <div className="pt-2 px-1">
-            <label className="flex items-start space-x-2 cursor-pointer text-[11px] text-[#8a7226]">
+            <label htmlFor="acceptTerms" className="flex items-start space-x-2 cursor-pointer text-[11px] text-[#8a7226]">
               <input
+                id="acceptTerms"
                 type="checkbox"
                 checked={formData.acceptTerms}
                 onChange={(e) => setFormData({ ...formData, acceptTerms: e.target.checked })}
@@ -343,13 +346,11 @@ export default function RegisterPage() {
           </div>
         </form>
 
-        {/* เส้นแบ่ง หรือ */}
         <div className="relative flex items-center justify-center my-4">
           <div className="border-t border-gray-300 w-full"></div>
           <span className="bg-[#fff9ed] px-3 text-[11px] text-gray-500 uppercase tracking-wider absolute">หรือ</span>
         </div>
 
-        {/* ปุ่ม GOOGLE REGISTER */}
         <button
           type="button"
           onClick={() => handleGoogleRegister()}

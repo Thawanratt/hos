@@ -2,4 +2,4 @@ curl -u <token>: \
   "http://localhost:9000/api/issues/search?componentKeys=novaria-hospital&ps=200" \
   -o issues.json
   
-  docker run --rm --memory=8g -e SONAR_HOST_URL="http://host.docker.internal:9000" -e SONAR_TOKEN="sqa_abf4b9b57b340afad92bc43c73d1f780d054a285" -v "$(pwd):/usr/src" sonarsource/sonar-scanner-cli
+  docker run --rm --memory=8g -e SONAR_HOST_URL="http://host.docker.internal:9000" -e SONAR_TOKEN="sqa_3e233d3d9be3e183a57e296b193afd1ca54ca18b" -v "$(pwd):/usr/src" sonarsource/sonar-scanner-cli

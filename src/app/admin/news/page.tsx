@@ -163,21 +163,21 @@ export default function AdminNewsPage() {
     <div className="min-h-screen bg-[#f8fafc] text-slate-800 font-sans pb-20 relative">
 
       {/* TOAST NOTIFICATION */}
-      {toast.show && (
+      {Boolean(toast.show) && (
         <div className="fixed bottom-6 right-6 z-50 bg-slate-900 text-white px-4 py-3 rounded-xl text-xs font-semibold shadow-xl">
           {toast.message}
         </div>
       )}
 
       {/* CONFIRM MODAL */}
-      {confirmModal.show && (
+      {Boolean(confirmModal.show) && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-xl max-w-sm w-full p-6 shadow-xl space-y-4">
             <h3 className="font-bold text-slate-800 text-sm">ยืนยันการทำรายการ</h3>
             <p className="text-xs text-slate-600">{confirmModal.message}</p>
             <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
-              <button onClick={() => setConfirmModal((prev) => ({ ...prev, show: false }))} className="px-3 py-1.5 text-xs border rounded-md">ยกเลิก</button>
-              <button onClick={confirmModal.onConfirm} className="px-3 py-1.5 text-xs bg-red-600 text-white rounded-md">ยืนยันการลบ</button>
+              <button onClick={() => setConfirmModal((prev) => ({ ...prev, show: false }))} className="px-3 py-1.5 text-xs border rounded-md cursor-pointer">ยกเลิก</button>
+              <button onClick={confirmModal.onConfirm} className="px-3 py-1.5 text-xs bg-red-600 text-white rounded-md cursor-pointer">ยืนยันการลบ</button>
             </div>
           </div>
         </div>
@@ -202,8 +202,8 @@ export default function AdminNewsPage() {
             <h2 className="font-bold text-[#1a2b6d] text-base">
               {editingId ? 'แก้ไขข้อมูลข่าวสาร' : 'จัดการและเพิ่มข่าวสารใหม่'}
             </h2>
-            {editingId && (
-              <button onClick={resetForm} className="text-xs text-slate-600 border px-3 py-1.5 rounded-md bg-slate-50">
+            {Boolean(editingId) && (
+              <button onClick={resetForm} className="text-xs text-slate-600 border px-3 py-1.5 rounded-md bg-slate-50 cursor-pointer">
                 ยกเลิกการแก้ไข
               </button>
             )}
@@ -212,8 +212,9 @@ export default function AdminNewsPage() {
           <form onSubmit={handleSubmitNews} className="space-y-3 text-xs">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               <div className="md:col-span-2 space-y-1">
-                <label className="font-semibold text-slate-700">หัวข้อข่าวสาร</label>
+                <label htmlFor="input-newstitle" className="font-semibold text-slate-700 block">หัวข้อข่าวสาร</label>
                 <input
+                  id="input-newstitle"
                   type="text"
                   value={newsTitle}
                   onChange={(e) => setNewsTitle(e.target.value)}
@@ -223,8 +224,9 @@ export default function AdminNewsPage() {
                 />
               </div>
               <div className="space-y-1">
-                <label className="font-semibold text-slate-700">หมวดหมู่</label>
+                <label htmlFor="select-newscategory" className="font-semibold text-slate-700 block">หมวดหมู่</label>
                 <select
+                  id="select-newscategory"
                   value={newsCategory}
                   onChange={(e) => setNewsCategory(e.target.value)}
                   className="w-full p-2.5 rounded-lg border border-slate-300 bg-white"
@@ -238,8 +240,9 @@ export default function AdminNewsPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 border-t border-slate-100 pt-3">
               <div className="space-y-1">
-                <label className="font-semibold text-slate-700">อัปโหลดรูปภาพ</label>
+                <label htmlFor="file-newsimage" className="font-semibold text-slate-700 block">อัปโหลดรูปภาพ</label>
                 <input
+                  id="file-newsimage"
                   type="file"
                   accept="image/*"
                   onChange={handleFileUpload}
@@ -247,8 +250,9 @@ export default function AdminNewsPage() {
                 />
               </div>
               <div className="space-y-1">
-                <label className="font-semibold text-slate-700">หรือระบุ URL รูปภาพ</label>
+                <label htmlFor="input-newsimageurl" className="font-semibold text-slate-700 block">หรือระบุ URL รูปภาพ</label>
                 <input
+                  id="input-newsimageurl"
                   type="text"
                   value={newsImageUrl}
                   onChange={(e) => setNewsImageUrl(e.target.value)}
@@ -258,7 +262,7 @@ export default function AdminNewsPage() {
               </div>
             </div>
 
-            {newsImageUrl && (
+            {Boolean(newsImageUrl) && (
               <div className="flex items-center gap-3 bg-slate-50 p-2 border rounded-lg w-fit">
                 <span className="text-[11px] text-slate-500">ตัวอย่าง:</span>
                 <img src={newsImageUrl} alt="Preview" className="h-12 w-20 object-cover rounded border" />
@@ -266,8 +270,9 @@ export default function AdminNewsPage() {
             )}
 
             <div className="space-y-1 border-t border-slate-100 pt-3">
-              <label className="font-semibold text-slate-700">เนื้อหาข่าวสาร</label>
+              <label htmlFor="textarea-newscontent" className="font-semibold text-slate-700 block">เนื้อหาข่าวสาร</label>
               <textarea
+                id="textarea-newscontent"
                 rows={4}
                 value={newsContent}
                 onChange={(e) => setNewsContent(e.target.value)}
@@ -280,7 +285,7 @@ export default function AdminNewsPage() {
             <button
               type="submit"
               disabled={submitting || uploadingImage}
-              className="bg-[#1a2b6d] text-white font-semibold px-4 py-2 rounded-lg hover:bg-[#0f1a42] transition cursor-pointer"
+              className="bg-[#1a2b6d] text-white font-semibold px-4 py-2 rounded-lg hover:bg-[#0f1a42] transition cursor-pointer disabled:bg-slate-400"
             >
               {submitting ? 'กำลังบันทึก...' : editingId ? 'บันทึกการแก้ไข' : 'เผยแพร่ข่าวสาร'}
             </button>
@@ -295,8 +300,8 @@ export default function AdminNewsPage() {
               <div key={article.id} className="border border-slate-200 rounded-xl p-3 bg-slate-50 flex flex-col justify-between space-y-3">
                 <div className="space-y-1.5">
                   <div className="h-28 bg-slate-200 rounded-lg overflow-hidden relative">
-                    {article.imageUrl ? (
-                      <img src={article.imageUrl} alt={article.title} className="w-full h-full object-cover" />
+                    {Boolean(article.imageUrl) ? (
+                      <img src={article.imageUrl!} alt={article.title} className="w-full h-full object-cover" />
                     ) : (
                       <div className="flex items-center justify-center h-full text-[10px] text-slate-400">[ ไม่มีรูป ]</div>
                     )}
@@ -307,8 +312,8 @@ export default function AdminNewsPage() {
                 <div className="flex items-center justify-between pt-2 border-t border-slate-200">
                   <span className="text-[10px] text-slate-400">{new Date(article.createdAt).toLocaleDateString('th-TH')}</span>
                   <div className="flex gap-1.5">
-                    <button onClick={() => handleEditClick(article)} className="text-[10px] bg-white border border-slate-300 px-2 py-1 rounded font-semibold">แก้ไข</button>
-                    <button onClick={() => handleDeleteNews(article.id)} className="text-[10px] bg-red-50 text-red-600 px-2 py-1 rounded font-semibold">ลบ</button>
+                    <button onClick={() => handleEditClick(article)} className="text-[10px] bg-white border border-slate-300 px-2 py-1 rounded font-semibold cursor-pointer">แก้ไข</button>
+                    <button onClick={() => handleDeleteNews(article.id)} className="text-[10px] bg-red-50 text-red-600 px-2 py-1 rounded font-semibold cursor-pointer">ลบ</button>
                   </div>
                 </div>
               </div>
